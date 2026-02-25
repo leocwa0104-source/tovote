@@ -279,7 +279,7 @@ export async function getUserDashboardData() {
           }
         }
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { joinedAt: 'desc' }
     }),
     prisma.topic.findMany({
       where: { creatorId: user.id },
