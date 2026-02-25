@@ -3,7 +3,7 @@
 import { login, logout } from '@/app/actions'
 import { useState } from 'react'
 
-export default function AuthControl({ user }: { user: any }) {
+export default function AuthControl({ user }: { user: { username: string } | null }) {
   const [loading, setLoading] = useState(false)
 
   if (user) {

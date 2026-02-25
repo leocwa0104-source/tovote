@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getTopic, getUserMembership, createFaction, joinFaction, leaveFaction, postMessage, getCurrentUser } from '@/app/actions'
 import AuthControl from '@/app/components/AuthControl'
@@ -14,7 +15,7 @@ export default async function TopicPage(props: { params: Promise<{ id: string }>
   return (
     <main className="flex min-h-screen flex-col items-center p-8 bg-gray-50 text-gray-900">
       <div className="z-10 max-w-5xl w-full flex items-center justify-between font-mono text-sm">
-        <a href="/" className="text-blue-600 hover:underline">&larr; Back to Topics</a>
+        <Link href="/" className="text-blue-600 hover:underline">&larr; Back to Topics</Link>
         <div className="flex items-center gap-4">
            <h1 className="text-2xl font-bold text-gray-800">Factions Debate</h1>
            <AuthControl user={user ? { username: user.username } : null} />
