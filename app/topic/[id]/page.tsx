@@ -4,6 +4,7 @@ import { getTopic, getUserMembership, createFaction, joinFaction, leaveFaction, 
 import AuthControl from '@/app/components/AuthControl'
 import TopicGate from '@/app/components/TopicGate'
 import ShareButton from '@/app/components/ShareButton'
+import OpinionCard from '@/app/components/OpinionCard'
 
 function getAvatarColor(username: string) {
   const colors = [
@@ -192,54 +193,82 @@ export default async function TopicPage(props: { params: Promise<{ id: string }>
               {/* Reasons Section */}
               <div className="grid grid-cols-2 divide-x divide-gray-100 flex-grow bg-white min-h-[300px]">
                 {/* WHY Section */}
-                <div className="flex flex-col">
-                  <div className="p-2 bg-green-50/50 text-green-800 text-xs font-bold uppercase text-center border-b border-green-100">
+                <div className="flex flex-col h-full">
+                  <div className="p-3 bg-green-50/50 text-green-800 text-sm font-bold uppercase text-center border-b border-green-100">
                     Why Join?
                   </div>
-                  <div className="flex-grow p-3 space-y-2 overflow-y-auto bg-green-50/10">
-                    {faction.messages.filter(m => m.type === 'WHY').map(msg => (
-                      <div key={msg.id} className="bg-white p-2 rounded border border-green-100 shadow-sm text-sm">
-                        <p className="text-gray-800">{msg.content}</p>
-                        <p className="text-[10px] text-gray-400 mt-1 text-right">- {msg.author.username}</p>
-                      </div>
-                    ))}
-                    {faction.messages.filter(m => m.type === 'WHY').length === 0 && (
-                      <p className="text-gray-400 text-center text-xs italic mt-4">No reasons yet.</p>
+                  <div className="flex-grow p-4 space-y-4 overflow-y-auto bg-green-50/10">
+                    {/* User's Own Opinion (Create/Edit) */}
+                    {user && isMember && (
+                      <OpinionCard 
+                        opinion={faction.opinions.find(o => o.type === 'WHY' && o.authorId === user.id)}
+                        factionId={faction.id}
+                        type="WHY"
+                        currentUser={user}
+                        isMember={isMember}
+                      />
                     )}
-                  </div>
-                  <div className="p-2 border-t border-gray-100">
-                    {user ? (
-                      <form action={postReason.bind(null, faction.id, 'WHY')} className="flex gap-1">
-                        <input name="content" className="flex-grow text-xs p-1 border rounded" placeholder="Add a reason..." required autoComplete="off" />
-                        <button type="submit" className="bg-green-600 text-white text-xs px-2 py-1 rounded hover:bg-green-700">+</button>
-                      </form>
-                    ) : <div className="text-center text-[10px] text-gray-400">Login to add</div>}
+                    
+                    {/* Other Members' Opinions */}
+                    {faction.opinions
+                      .filter(o => o.type === 'WHY' && (!user || o.authorId !== user.id))
+                      .map(opinion => (
+                        <OpinionCard 
+                          key={opinion.id}
+                          opinion={opinion}
+                          factionId={faction.id}
+                          type="WHY"
+                          currentUser={user}
+                          isMember={isMember}
+                        />
+                      ))
+                    }
+                    
+                    {faction.opinions.filter(o => o.type === 'WHY').length === 0 && (!user || !isMember) && (
+                      <div className="text-center py-8 text-gray-400 text-sm italic">
+                        No arguments yet.
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {/* WHY NOT Section */}
-                <div className="flex flex-col">
-                  <div className="p-2 bg-red-50/50 text-red-800 text-xs font-bold uppercase text-center border-b border-red-100">
+                <div className="flex flex-col h-full">
+                  <div className="p-3 bg-red-50/50 text-red-800 text-sm font-bold uppercase text-center border-b border-red-100">
                     Why Not?
                   </div>
-                  <div className="flex-grow p-3 space-y-2 overflow-y-auto bg-red-50/10">
-                    {faction.messages.filter(m => m.type === 'WHY_NOT').map(msg => (
-                      <div key={msg.id} className="bg-white p-2 rounded border border-red-100 shadow-sm text-sm">
-                        <p className="text-gray-800">{msg.content}</p>
-                        <p className="text-[10px] text-gray-400 mt-1 text-right">- {msg.author.username}</p>
-                      </div>
-                    ))}
-                    {faction.messages.filter(m => m.type === 'WHY_NOT').length === 0 && (
-                      <p className="text-gray-400 text-center text-xs italic mt-4">No counter-points.</p>
+                  <div className="flex-grow p-4 space-y-4 overflow-y-auto bg-red-50/10">
+                    {/* User's Own Opinion (Create/Edit) */}
+                    {user && isMember && (
+                      <OpinionCard 
+                        opinion={faction.opinions.find(o => o.type === 'WHY_NOT' && o.authorId === user.id)}
+                        factionId={faction.id}
+                        type="WHY_NOT"
+                        currentUser={user}
+                        isMember={isMember}
+                      />
                     )}
-                  </div>
-                  <div className="p-2 border-t border-gray-100">
-                    {user ? (
-                      <form action={postReason.bind(null, faction.id, 'WHY_NOT')} className="flex gap-1">
-                        <input name="content" className="flex-grow text-xs p-1 border rounded" placeholder="Add a counter-point..." required autoComplete="off" />
-                        <button type="submit" className="bg-red-600 text-white text-xs px-2 py-1 rounded hover:bg-red-700">+</button>
-                      </form>
-                    ) : <div className="text-center text-[10px] text-gray-400">Login to add</div>}
+                    
+                    {/* Other Members' Opinions */}
+                    {faction.opinions
+                      .filter(o => o.type === 'WHY_NOT' && (!user || o.authorId !== user.id))
+                      .map(opinion => (
+                        <OpinionCard 
+                          key={opinion.id}
+                          opinion={opinion}
+                          factionId={faction.id}
+                          type="WHY_NOT"
+                          currentUser={user}
+                          isMember={isMember}
+                        />
+                      ))
+                    }
+                    
+                    {faction.opinions.filter(o => o.type === 'WHY_NOT').length === 0 && (!user || !isMember) && (
+                      <div className="text-center py-8 text-gray-400 text-sm italic">
+                        No counter-arguments yet.
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

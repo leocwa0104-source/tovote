@@ -120,7 +120,7 @@ export async function getTopic(id: string) {
               user: true
             }
           },
-          messages: {
+          opinions: {
             orderBy: { createdAt: 'desc' },
             include: { author: true }
           }
@@ -227,37 +227,79 @@ export async function getUserMembership(topicId: string) {
 
 // --- Messages ---
 
-export async function postReason(factionId: string, type: 'WHY' | 'WHY_NOT', formData: FormData) {
-  const content = formData.get('content') as string
-  if (!content) return;
-
-  const user = await getCurrentUser()
-  if (!user) throw new Error("Unauthorized")
-  
-  await prisma.message.create({
-    data: {
-      content,
-      type,
-      factionId,
-      authorId: user.id
-    }
-  })
-  
-  revalidatePath(`/topic/`) // Revalidate broadly or specifically
-  
-  // We need to know the topicId to revalidate the page
-  const faction = await prisma.faction.findUnique({ where: { id: factionId } })
-  if (faction) {
-    revalidatePath(`/topic/${faction.topicId}`)
-  }
+export async function postReason(formData: FormData) {
+  // This function is deprecated and replaced by createOpinion
+  // Keeping it temporarily if needed, but the UI should now use createOpinion
+  // or we can remove it entirely if we are sure no one uses it.
+  // For now, let's just implement it as a wrapper around createOpinion if possible,
+  // or just throw an error.
+  throw new Error("Deprecated: Use createOpinion instead")
 }
 
-export async function getFactionMessages(factionId: string) {
-  return prisma.message.findMany({
+export async function getFactionOpinions(factionId: string) {
+  return prisma.opinion.findMany({
     where: { factionId },
     orderBy: { createdAt: 'desc' },
     include: { author: true }
   })
+}
+
+export async function createOpinion(formData: FormData) {
+  const factionId = formData.get('factionId') as string
+  const type = formData.get('type') as 'WHY' | 'WHY_NOT'
+  const summary = formData.get('summary') as string
+  const detail = formData.get('detail') as string
+  
+  const user = await getCurrentUser()
+  if (!user) throw new Error("Unauthorized")
+  
+  const faction = await prisma.faction.findUnique({ where: { id: factionId } })
+  if (!faction) throw new Error("Faction not found")
+
+  const hasAccess = await checkTopicAccess(faction.topicId)
+  if (!hasAccess) throw new Error("Unauthorized")
+  
+  await prisma.opinion.upsert({
+    where: {
+      authorId_factionId_type: {
+        authorId: user.id,
+        factionId,
+        type
+      }
+    },
+    update: {
+      summary,
+      detail,
+      updatedAt: new Date()
+    },
+    create: {
+      summary,
+      detail,
+      type,
+      authorId: user.id,
+      factionId
+    }
+  })
+  
+  revalidatePath(`/topic/${faction.topicId}`)
+}
+
+export async function deleteOpinion(opinionId: string) {
+  const user = await getCurrentUser()
+  if (!user) throw new Error("Unauthorized")
+  
+  const opinion = await prisma.opinion.findUnique({ where: { id: opinionId } })
+  if (!opinion) throw new Error("Opinion not found")
+  
+  if (opinion.authorId !== user.id) throw new Error("Forbidden")
+  
+  const faction = await prisma.faction.findUnique({ where: { id: opinion.factionId } })
+  
+  await prisma.opinion.delete({ where: { id: opinionId } })
+  
+  if (faction) {
+    revalidatePath(`/topic/${faction.topicId}`)
+  }
 }
 
 // --- Dashboard ---

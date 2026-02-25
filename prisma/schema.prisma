@@ -17,7 +17,7 @@ model User {
 
   topics      Topic[]
   memberships Membership[]
-  messages    Message[]
+  opinions    Opinion[]
 }
 
 model Topic {
@@ -43,7 +43,7 @@ model Faction {
   topic       Topic    @relation(fields: [topicId], references: [id])
   
   members     Membership[]
-  messages    Message[]
+  opinions    Opinion[]
 }
 
 model Membership {
@@ -59,10 +59,13 @@ model Membership {
   @@unique([userId, topicId]) // Ensures a user can only join one faction per topic
 }
 
-model Message {
+model Opinion {
   id        String   @id @default(uuid())
-  content   String
+  summary   String
+  detail    String?
+  type      ReasonType
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   
   authorId  String
   author    User     @relation(fields: [authorId], references: [id])
@@ -70,7 +73,7 @@ model Message {
   factionId String
   faction   Faction  @relation(fields: [factionId], references: [id])
   
-  type      ReasonType @default(WHY)
+  @@unique([authorId, factionId, type]) // Ensures one opinion per type per faction for a user
 }
 
 enum ReasonType {
