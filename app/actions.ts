@@ -75,10 +75,11 @@ export async function getTopic(id: string) {
           _count: {
             select: { members: true }
           },
-          messages: {
-            orderBy: { createdAt: 'desc' },
-            take: 20,
-            include: { author: true }
+          members: {
+            take: 50, // Limit to 50 members for now
+            include: {
+              user: true
+            }
           }
         }
       }

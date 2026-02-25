@@ -1,7 +1,23 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { getTopic, getUserMembership, createFaction, joinFaction, leaveFaction, postMessage, getCurrentUser } from '@/app/actions'
+import { getTopic, getUserMembership, createFaction, joinFaction, leaveFaction, getCurrentUser } from '@/app/actions'
 import AuthControl from '@/app/components/AuthControl'
+
+function getAvatarColor(username: string) {
+  const colors = [
+    'bg-red-500', 'bg-orange-500', 'bg-amber-500', 
+    'bg-yellow-500', 'bg-lime-500', 'bg-green-500', 
+    'bg-emerald-500', 'bg-teal-500', 'bg-cyan-500', 
+    'bg-sky-500', 'bg-blue-500', 'bg-indigo-500', 
+    'bg-violet-500', 'bg-purple-500', 'bg-fuchsia-500', 
+    'bg-pink-500', 'bg-rose-500'
+  ];
+  let hash = 0;
+  for (let i = 0; i < username.length; i++) {
+    hash = username.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+}
 
 export default async function TopicPage(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -104,49 +120,41 @@ export default async function TopicPage(props: { params: Promise<{ id: string }>
                 </div>
               </div>
 
-              {/* Message Board */}
-              <div className="flex-grow flex flex-col bg-white h-96">
-                <div className="p-3 bg-gray-100 border-b border-gray-200 font-semibold text-gray-700 text-sm uppercase tracking-wide">
-                  Discussion Board
+              {/* Members Area */}
+              <div className="flex-grow flex flex-col bg-white min-h-64">
+                <div className="p-3 bg-gray-50 border-b border-gray-200 font-semibold text-gray-700 text-sm uppercase tracking-wide flex justify-between items-center">
+                  <span>Members</span>
+                  <span className="text-xs font-normal text-gray-500">
+                    {faction.members.length} joined
+                  </span>
                 </div>
-                <div className="flex-grow overflow-y-auto p-4 space-y-3 bg-gray-50">
-                  {faction.messages.length === 0 ? (
-                    <p className="text-gray-400 text-center text-sm italic py-4">No messages yet. Start the conversation!</p>
+                <div className="p-4 bg-white flex-grow">
+                  {faction.members.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center text-gray-400 text-sm italic">
+                      <p>No members yet.</p>
+                      <p>Be the first to join!</p>
+                    </div>
                   ) : (
-                    faction.messages.map((msg) => (
-                      <div key={msg.id} className="bg-white p-3 rounded shadow-sm text-sm border border-gray-100">
-                        <p className="text-gray-800 break-words">{msg.content}</p>
-                        <div className="mt-2 text-xs text-gray-400 flex justify-between">
-                          <span>{msg.author.username}</span>
-                          <span>{new Date(msg.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-                
-                {/* Message Input */}
-                <div className="p-3 border-t border-gray-200 bg-white">
-                  {user ? (
-                    <form action={postMessage.bind(null, faction.id)} className="flex gap-2">
-                      <input
-                        type="text"
-                        name="content"
-                        placeholder="Type a message..."
-                        className="flex-grow p-2 border rounded border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                        required
-                        autoComplete="off"
-                      />
-                      <button
-                        type="submit"
-                        className="bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition-colors text-sm font-medium"
-                      >
-                        Send
-                      </button>
-                    </form>
-                  ) : (
-                    <div className="text-center text-xs text-gray-500 py-2">
-                      Login to post
+                    <div className="grid grid-cols-5 gap-3 align-start content-start">
+                      {faction.members.map((member) => {
+                        const bgColor = getAvatarColor(member.user.username);
+                        const initial = member.user.username.charAt(0).toUpperCase();
+                        return (
+                          <div 
+                            key={member.user.id} 
+                            className="group relative flex flex-col items-center"
+                          >
+                            <div className={`w-10 h-10 rounded-full ${bgColor} flex items-center justify-center text-white font-bold text-sm shadow-sm ring-2 ring-white`}>
+                              {initial}
+                            </div>
+                            {/* Tooltip */}
+                            <div className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs py-1 px-2 rounded whitespace-nowrap z-20">
+                              {member.user.username}
+                              <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
