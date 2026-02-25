@@ -1,6 +1,8 @@
-import { getTopics, createTopic, getCurrentUser } from './actions'
+import { getTopics, getCurrentUser } from './actions'
 import Link from 'next/link'
 import AuthControl from '@/app/components/AuthControl'
+import CreateTopicForm from '@/app/components/CreateTopicForm'
+import { Lock } from '@/app/components/Icons'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,34 +39,7 @@ export default async function Home() {
 
       <div className="w-full max-w-2xl bg-white p-6 rounded-lg shadow-md mb-8">
         <h2 className="text-2xl font-semibold mb-4">Create a New Topic</h2>
-        {user ? (
-          <form action={createTopic} className="flex flex-col gap-4">
-            <input
-              type="text"
-              name="title"
-              placeholder="Topic Title (e.g., Cats vs Dogs)"
-              className="p-2 border rounded border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-            <textarea
-              name="description"
-              placeholder="Brief description..."
-              className="p-2 border rounded border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              rows={3}
-            />
-            <button
-              type="submit"
-              className="bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition-colors"
-            >
-              Create Topic
-            </button>
-          </form>
-        ) : (
-          <div className="text-center p-6 bg-gray-50 rounded border border-gray-200 text-gray-600">
-            <p className="mb-2">Please login to create a topic.</p>
-            <p className="text-sm text-gray-500">Enter a username in the top right corner.</p>
-          </div>
-        )}
+        <CreateTopicForm user={user} />
       </div>
 
       <div className="w-full max-w-2xl">
@@ -77,16 +52,22 @@ export default async function Home() {
               <Link
                 key={topic.id}
                 href={`/topic/${topic.id}`}
-                className="block p-6 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200"
+                className="block p-6 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200 relative group"
               >
-                <h3 className="text-xl font-bold text-gray-800">{topic.title}</h3>
+                <div className="flex justify-between items-start">
+                  <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    {topic.title}
+                    {topic.isPrivate && (
+                      <span title="Private Topic">
+                        <Lock className="w-4 h-4 text-gray-400" />
+                      </span>
+                    )}
+                  </h3>
+                </div>
                 <p className="text-gray-600 mt-2">{topic.description}</p>
                 <div className="mt-4 text-sm text-gray-400 flex gap-4">
                   <span>{new Date(topic.createdAt).toLocaleDateString()}</span>
                   <span>{topic._count.factions} Factions</span>
-                  {/* Note: memberships count is total across all factions if we implement it correctly in schema relation, 
-                      but currently it counts direct relation if any. 
-                      Actually, Topic->Membership relation exists in schema. */}
                 </div>
               </Link>
             ))}
@@ -96,3 +77,4 @@ export default async function Home() {
     </main>
   )
 }
+

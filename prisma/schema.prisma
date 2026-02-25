@@ -27,6 +27,9 @@ model Topic {
   createdAt   DateTime @default(now())
   creatorId   String
   creator     User     @relation(fields: [creatorId], references: [id])
+  
+  isPrivate   Boolean  @default(false)
+  password    String?
 
   factions    Faction[]
   memberships Membership[] // Helper to track user participation in topic

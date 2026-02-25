@@ -3,6 +3,7 @@
 import prisma from '@/lib/prisma'
 import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
+import bcrypt from 'bcryptjs'
 
 // --- User Management ---
 
@@ -39,19 +40,56 @@ export async function getCurrentUser() {
 export async function createTopic(formData: FormData) {
   const title = formData.get('title') as string
   const description = formData.get('description') as string
+  const isPrivate = formData.get('isPrivate') === 'on'
+  const password = formData.get('password') as string
   
   const user = await getCurrentUser()
   if (!user) throw new Error("Unauthorized")
+
+  let hashedPassword = null
+  if (isPrivate && password) {
+    hashedPassword = await bcrypt.hash(password, 10)
+  }
 
   await prisma.topic.create({
     data: {
       title,
       description,
-      creatorId: user.id
+      creatorId: user.id,
+      isPrivate,
+      password: hashedPassword
     }
   })
   
   revalidatePath('/')
+}
+
+export async function verifyTopicPassword(topicId: string, password: string) {
+  const topic = await prisma.topic.findUnique({ where: { id: topicId } })
+  if (!topic || !topic.isPrivate || !topic.password) return { success: false, error: 'Topic not found or public' }
+
+  const isValid = await bcrypt.compare(password, topic.password)
+  if (isValid) {
+    const cookieStore = await cookies()
+    cookieStore.set(`access_topic_${topicId}`, 'true', { httpOnly: true, secure: process.env.NODE_ENV === 'production' })
+    return { success: true }
+  }
+  
+  return { success: false, error: 'Incorrect password' }
+}
+
+export async function checkTopicAccess(topicId: string) {
+    const topic = await prisma.topic.findUnique({ where: { id: topicId } })
+    if (!topic) return false
+    if (!topic.isPrivate) return true
+    
+    const cookieStore = await cookies()
+    const hasAccess = cookieStore.get(`access_topic_${topicId}`)?.value === 'true'
+    
+    const user = await getCurrentUser()
+    if (user && user.id === topic.creatorId) return true
+
+    return hasAccess
 }
 
 export async function getTopics() {

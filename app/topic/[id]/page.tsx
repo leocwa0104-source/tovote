@@ -24,6 +24,11 @@ export default async function TopicPage(props: { params: Promise<{ id: string }>
   const topic = await getTopic(params.id)
   if (!topic) notFound()
 
+  const hasAccess = await checkTopicAccess(params.id)
+  if (!hasAccess) {
+    return <TopicGate topicId={topic.id} title={topic.title} />
+  }
+
   const user = await getCurrentUser()
   const userMembership = await getUserMembership(params.id)
   const currentFactionId = userMembership?.factionId
