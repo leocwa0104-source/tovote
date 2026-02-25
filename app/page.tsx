@@ -3,8 +3,28 @@ import Link from 'next/link'
 import AuthControl from '@/app/components/AuthControl'
 
 export default async function Home() {
-  const topics = await getTopics()
-  const user = await getCurrentUser()
+  let topics = []
+  let user = null
+  let errorMsg = null
+
+  try {
+    topics = await getTopics()
+    user = await getCurrentUser()
+  } catch (e: any) {
+    console.error("Home page error:", e)
+    errorMsg = e.message + (e.stack ? "\n" + e.stack : "")
+  }
+
+  if (errorMsg) {
+    return (
+      <main className="flex min-h-screen flex-col items-center p-8 bg-gray-50 text-gray-900">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative max-w-2xl">
+          <strong className="font-bold">System Error: </strong>
+          <pre className="block sm:inline whitespace-pre-wrap text-xs mt-2">{errorMsg}</pre>
+        </div>
+      </main>
+    )
+  }
 
   return (
     <main className="flex min-h-screen flex-col items-center p-8 bg-gray-50 text-gray-900">
