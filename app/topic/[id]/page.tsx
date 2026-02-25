@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getTopic, getUserMembership, createFaction, joinFaction, leaveFaction, getCurrentUser, postReason, checkTopicAccess } from '@/app/actions'
 import AuthControl from '@/app/components/AuthControl'
+import TopicGate from '@/app/components/TopicGate'
 
 function getAvatarColor(username: string) {
   const colors = [
