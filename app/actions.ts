@@ -205,7 +205,6 @@ export async function postReason(factionId: string, type: 'WHY' | 'WHY_NOT', for
   })
   
   revalidatePath(`/topic/`) // Revalidate broadly or specifically
-}
   
   // We need to know the topicId to revalidate the page
   const faction = await prisma.faction.findUnique({ where: { id: factionId } })
