@@ -199,7 +199,7 @@ export default async function TopicPage(props: { params: Promise<{ id: string }>
                   </div>
                   <div className="flex-grow p-4 space-y-4 overflow-y-auto bg-green-50/10">
                     {/* User's Own Opinion (Create/Edit) */}
-                    {user && isMember && (
+                    {user && (
                       <OpinionCard 
                         opinion={faction.opinions.find(o => o.type === 'WHY' && o.authorId === user.id)}
                         factionId={faction.id}
@@ -224,7 +224,7 @@ export default async function TopicPage(props: { params: Promise<{ id: string }>
                       ))
                     }
                     
-                    {faction.opinions.filter(o => o.type === 'WHY').length === 0 && (!user || !isMember) && (
+                    {faction.opinions.filter(o => o.type === 'WHY').length === 0 && !user && (
                       <div className="text-center py-8 text-gray-400 text-sm italic">
                         No arguments yet.
                       </div>
@@ -239,7 +239,7 @@ export default async function TopicPage(props: { params: Promise<{ id: string }>
                   </div>
                   <div className="flex-grow p-4 space-y-4 overflow-y-auto bg-red-50/10">
                     {/* User's Own Opinion (Create/Edit) */}
-                    {user && isMember && (
+                    {user && (
                       <OpinionCard 
                         opinion={faction.opinions.find(o => o.type === 'WHY_NOT' && o.authorId === user.id)}
                         factionId={faction.id}
@@ -264,7 +264,7 @@ export default async function TopicPage(props: { params: Promise<{ id: string }>
                       ))
                     }
                     
-                    {faction.opinions.filter(o => o.type === 'WHY_NOT').length === 0 && (!user || !isMember) && (
+                    {faction.opinions.filter(o => o.type === 'WHY_NOT').length === 0 && !user && (
                       <div className="text-center py-8 text-gray-400 text-sm italic">
                         No counter-arguments yet.
                       </div>

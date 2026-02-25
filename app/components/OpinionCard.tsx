@@ -75,11 +75,8 @@ export default function OpinionCard({ opinion, factionId, type, currentUser, isM
     }
   }
 
-  // If editing or no opinion yet (and is member), show form
-  if (isEditing || (!opinion && isMember)) {
-    // If not member, don't show create form
-    if (!isMember) return null
-
+  // If editing or no opinion yet (and user is logged in), show form
+  if (isEditing || (!opinion && currentUser)) {
     return (
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-4">
         <h4 className="font-semibold text-gray-700 mb-2">
