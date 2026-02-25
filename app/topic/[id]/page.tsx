@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { getTopic, getUserMembership, createFaction, joinFaction, leaveFaction, getCurrentUser, postReason } from '@/app/actions'
+import { getTopic, getUserMembership, createFaction, joinFaction, leaveFaction, getCurrentUser, postReason, checkTopicAccess } from '@/app/actions'
 import AuthControl from '@/app/components/AuthControl'
 
 function getAvatarColor(username: string) {
