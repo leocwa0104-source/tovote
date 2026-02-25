@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { getTopic, getUserMembership, createFaction, joinFaction, leaveFaction, getCurrentUser, postReason, checkTopicAccess } from '@/app/actions'
 import AuthControl from '@/app/components/AuthControl'
 import TopicGate from '@/app/components/TopicGate'
+import ShareButton from '@/app/components/ShareButton'
 
 function getAvatarColor(username: string) {
   const colors = [
@@ -18,6 +19,32 @@ function getAvatarColor(username: string) {
     hash = username.charCodeAt(i) + ((hash << 5) - hash);
   }
   return colors[Math.abs(hash) % colors.length];
+}
+
+export async function generateMetadata(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
+  const topic = await getTopic(params.id)
+  
+  if (!topic) {
+    return {
+      title: 'Topic Not Found - ToVote',
+    }
+  }
+
+  return {
+    title: `${topic.title} - ToVote Debate`,
+    description: topic.description || `Join the debate on "${topic.title}"!`,
+    openGraph: {
+      title: topic.title,
+      description: topic.description || `Join the debate on "${topic.title}"!`,
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: topic.title,
+      description: topic.description || `Join the debate on "${topic.title}"!`,
+    }
+  }
 }
 
 export default async function TopicPage(props: { params: Promise<{ id: string }> }) {
@@ -46,9 +73,14 @@ export default async function TopicPage(props: { params: Promise<{ id: string }>
 
       <div className="w-full max-w-4xl mt-8 mb-12 text-center">
         <h2 className="text-4xl font-extrabold text-gray-900 mb-4">{topic.title}</h2>
-        <p className="text-xl text-gray-600">{topic.description}</p>
-        <div className="mt-4 text-sm text-gray-500">
-          Created by {topic.creator.username} on {new Date(topic.createdAt).toLocaleDateString()}
+        <p className="text-xl text-gray-600 mb-4">{topic.description}</p>
+        
+        <div className="flex flex-col items-center gap-4">
+          <ShareButton title={topic.title} text={topic.description || "Join the debate!"} />
+          
+          <div className="text-sm text-gray-500">
+            Created by {topic.creator.username} on {new Date(topic.createdAt).toLocaleDateString()}
+          </div>
         </div>
       </div>
 
