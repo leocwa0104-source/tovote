@@ -2,10 +2,12 @@ import { getTopics, createTopic, getCurrentUser } from './actions'
 import Link from 'next/link'
 import AuthControl from '@/app/components/AuthControl'
 
+export const dynamic = 'force-dynamic'
+
 export default async function Home() {
-  let topics = []
-  let user = null
-  let errorMsg = null
+  let topics: Awaited<ReturnType<typeof getTopics>> = []
+  let user: Awaited<ReturnType<typeof getCurrentUser>> = null
+  let errorMsg: string | null = null
 
   try {
     topics = await getTopics()
