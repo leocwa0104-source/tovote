@@ -1,0 +1,69 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String?  @default("Anonymous")
+  createdAt DateTime @default(now())
+
+  topics      Topic[]
+  memberships Membership[]
+  messages    Message[]
+}
+
+model Topic {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  createdAt   DateTime @default(now())
+  creatorId   String
+  creator     User     @relation(fields: [creatorId], references: [id])
+
+  factions    Faction[]
+  memberships Membership[] // Helper to track user participation in topic
+}
+
+model Faction {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  topicId     String
+  topic       Topic    @relation(fields: [topicId], references: [id])
+  
+  members     Membership[]
+  messages    Message[]
+}
+
+model Membership {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  factionId String
+  faction   Faction  @relation(fields: [factionId], references: [id])
+  topicId   String
+  topic     Topic    @relation(fields: [topicId], references: [id])
+  joinedAt  DateTime @default(now())
+
+  @@unique([userId, topicId]) // Ensures a user can only join one faction per topic
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  content   String
+  createdAt DateTime @default(now())
+  
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  
+  factionId String
+  faction   Faction  @relation(fields: [factionId], references: [id])
+}
