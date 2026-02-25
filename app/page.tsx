@@ -18,10 +18,15 @@ export default async function Home() {
   }
 
   if (errorMsg) {
+    const dbUrl = process.env.DATABASE_URL || 'Not Set';
+    const maskedDbUrl = dbUrl.replace(/:[^:@]+@/, ':***@');
     return (
       <main className="flex min-h-screen flex-col items-center p-8 bg-gray-50 text-gray-900">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative max-w-2xl">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative max-w-2xl overflow-auto">
           <strong className="font-bold">System Error: </strong>
+          <div className="mb-4">
+            <strong>DB Connection: </strong> {maskedDbUrl}
+          </div>
           <pre className="block sm:inline whitespace-pre-wrap text-xs mt-2">{errorMsg}</pre>
         </div>
       </main>
