@@ -3,6 +3,7 @@
 import prisma from '@/lib/prisma'
 import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 import bcrypt from 'bcryptjs'
 
 // --- User Management ---
@@ -25,7 +26,7 @@ export async function login(formData: FormData) {
 export async function logout() {
   const cookieStore = await cookies()
   cookieStore.delete('userId')
-  revalidatePath('/')
+  redirect('/')
 }
 
 export async function getCurrentUser() {
@@ -257,4 +258,43 @@ export async function getFactionMessages(factionId: string) {
     orderBy: { createdAt: 'desc' },
     include: { author: true }
   })
+}
+
+// --- Dashboard ---
+
+export async function getUserDashboardData() {
+  const user = await getCurrentUser()
+  if (!user) return null
+
+  const [joinedFactions, createdTopics] = await Promise.all([
+    prisma.membership.findMany({
+      where: { userId: user.id },
+      include: {
+        topic: true,
+        faction: {
+          include: {
+            _count: {
+              select: { members: true }
+            }
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    }),
+    prisma.topic.findMany({
+      where: { creatorId: user.id },
+      include: {
+        _count: {
+          select: { factions: true, memberships: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+  ])
+
+  return {
+    user,
+    joinedFactions,
+    createdTopics
+  }
 }
