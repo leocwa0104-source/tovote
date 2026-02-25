@@ -80,6 +80,10 @@ export async function getTopic(id: string) {
             include: {
               user: true
             }
+          },
+          messages: {
+            orderBy: { createdAt: 'desc' },
+            include: { author: true }
           }
         }
       }
@@ -98,13 +102,13 @@ export async function getTopic(id: string) {
 
 export async function createFaction(topicId: string, formData: FormData) {
   const name = formData.get('name') as string
-  const description = formData.get('description') as string
+  const description = formData.get('description') as string | undefined
   
   await prisma.faction.create({
     data: {
       name,
-      description,
-      topicId
+      description: description || null, // Optional
+      topicId: topicId,
     }
   })
   
@@ -184,18 +188,24 @@ export async function getUserMembership(topicId: string) {
 
 // --- Messages ---
 
-export async function postMessage(factionId: string, formData: FormData) {
+export async function postReason(factionId: string, type: 'WHY' | 'WHY_NOT', formData: FormData) {
   const content = formData.get('content') as string
+  if (!content) return;
+
   const user = await getCurrentUser()
   if (!user) throw new Error("Unauthorized")
   
   await prisma.message.create({
     data: {
       content,
+      type,
       factionId,
       authorId: user.id
     }
   })
+  
+  revalidatePath(`/topic/`) // Revalidate broadly or specifically
+}
   
   // We need to know the topicId to revalidate the page
   const faction = await prisma.faction.findUnique({ where: { id: factionId } })

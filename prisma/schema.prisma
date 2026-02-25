@@ -66,4 +66,11 @@ model Message {
   
   factionId String
   faction   Faction  @relation(fields: [factionId], references: [id])
+  
+  type      ReasonType @default(WHY)
+}
+
+enum ReasonType {
+  WHY
+  WHY_NOT
 }

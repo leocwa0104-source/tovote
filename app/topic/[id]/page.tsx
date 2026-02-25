@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { getTopic, getUserMembership, createFaction, joinFaction, leaveFaction, getCurrentUser } from '@/app/actions'
+import { getTopic, getUserMembership, createFaction, joinFaction, leaveFaction, getCurrentUser, postReason } from '@/app/actions'
 import AuthControl from '@/app/components/AuthControl'
 
 function getAvatarColor(username: string) {
@@ -58,12 +58,6 @@ export default async function TopicPage(props: { params: Promise<{ id: string }>
               className="p-2 border rounded border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
-            <textarea
-              name="description"
-              placeholder="Why should people join this faction?"
-              className="p-2 border rounded border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              rows={2}
-            />
             <button
               type="submit"
               className="bg-green-600 text-white p-2 rounded hover:bg-green-700 transition-colors self-start px-6"
@@ -91,7 +85,8 @@ export default async function TopicPage(props: { params: Promise<{ id: string }>
                     {faction._count.members} Members
                   </span>
                 </div>
-                <p className="text-gray-600 text-sm mb-4">{faction.description}</p>
+                {/* Description removed from creation but might still exist in DB for old ones. Optionally display if present. */}
+                {faction.description && <p className="text-gray-600 text-sm mb-4">{faction.description}</p>}
                 
                 <div className="flex gap-2">
                   {!user ? (
@@ -121,21 +116,17 @@ export default async function TopicPage(props: { params: Promise<{ id: string }>
               </div>
 
               {/* Members Area */}
-              <div className="flex-grow flex flex-col bg-white min-h-64">
-                <div className="p-3 bg-gray-50 border-b border-gray-200 font-semibold text-gray-700 text-sm uppercase tracking-wide flex justify-between items-center">
+              <div className="flex-grow-0 flex flex-col bg-white min-h-[120px] border-b border-gray-100">
+                <div className="px-6 py-2 bg-gray-50 border-b border-gray-100 font-semibold text-gray-500 text-xs uppercase tracking-wide flex justify-between items-center">
                   <span>Members</span>
-                  <span className="text-xs font-normal text-gray-500">
-                    {faction.members.length} joined
-                  </span>
                 </div>
-                <div className="p-4 bg-white flex-grow">
+                <div className="p-4 bg-white">
                   {faction.members.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-gray-400 text-sm italic">
+                    <div className="flex flex-col items-center justify-center text-gray-400 text-xs italic py-2">
                       <p>No members yet.</p>
-                      <p>Be the first to join!</p>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-5 gap-3 align-start content-start">
+                    <div className="flex flex-wrap gap-2">
                       {faction.members.map((member) => {
                         const bgColor = getAvatarColor(member.user.username);
                         const initial = member.user.username.charAt(0).toUpperCase();
@@ -144,11 +135,11 @@ export default async function TopicPage(props: { params: Promise<{ id: string }>
                             key={member.user.id} 
                             className="group relative flex flex-col items-center"
                           >
-                            <div className={`w-10 h-10 rounded-full ${bgColor} flex items-center justify-center text-white font-bold text-sm shadow-sm ring-2 ring-white`}>
+                            <div className={`w-8 h-8 rounded-full ${bgColor} flex items-center justify-center text-white font-bold text-xs shadow-sm ring-2 ring-white cursor-default`}>
                               {initial}
                             </div>
                             {/* Tooltip */}
-                            <div className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs py-1 px-2 rounded whitespace-nowrap z-20">
+                            <div className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs py-1 px-2 rounded whitespace-nowrap z-20 pointer-events-none">
                               {member.user.username}
                               <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
                             </div>
@@ -157,6 +148,61 @@ export default async function TopicPage(props: { params: Promise<{ id: string }>
                       })}
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* Reasons Section */}
+              <div className="grid grid-cols-2 divide-x divide-gray-100 flex-grow bg-white min-h-[300px]">
+                {/* WHY Section */}
+                <div className="flex flex-col">
+                  <div className="p-2 bg-green-50/50 text-green-800 text-xs font-bold uppercase text-center border-b border-green-100">
+                    Why Join?
+                  </div>
+                  <div className="flex-grow p-3 space-y-2 overflow-y-auto bg-green-50/10">
+                    {faction.messages.filter(m => m.type === 'WHY').map(msg => (
+                      <div key={msg.id} className="bg-white p-2 rounded border border-green-100 shadow-sm text-sm">
+                        <p className="text-gray-800">{msg.content}</p>
+                        <p className="text-[10px] text-gray-400 mt-1 text-right">- {msg.author.username}</p>
+                      </div>
+                    ))}
+                    {faction.messages.filter(m => m.type === 'WHY').length === 0 && (
+                      <p className="text-gray-400 text-center text-xs italic mt-4">No reasons yet.</p>
+                    )}
+                  </div>
+                  <div className="p-2 border-t border-gray-100">
+                    {user ? (
+                      <form action={postReason.bind(null, faction.id, 'WHY')} className="flex gap-1">
+                        <input name="content" className="flex-grow text-xs p-1 border rounded" placeholder="Add a reason..." required autoComplete="off" />
+                        <button type="submit" className="bg-green-600 text-white text-xs px-2 py-1 rounded hover:bg-green-700">+</button>
+                      </form>
+                    ) : <div className="text-center text-[10px] text-gray-400">Login to add</div>}
+                  </div>
+                </div>
+
+                {/* WHY NOT Section */}
+                <div className="flex flex-col">
+                  <div className="p-2 bg-red-50/50 text-red-800 text-xs font-bold uppercase text-center border-b border-red-100">
+                    Why Not?
+                  </div>
+                  <div className="flex-grow p-3 space-y-2 overflow-y-auto bg-red-50/10">
+                    {faction.messages.filter(m => m.type === 'WHY_NOT').map(msg => (
+                      <div key={msg.id} className="bg-white p-2 rounded border border-red-100 shadow-sm text-sm">
+                        <p className="text-gray-800">{msg.content}</p>
+                        <p className="text-[10px] text-gray-400 mt-1 text-right">- {msg.author.username}</p>
+                      </div>
+                    ))}
+                    {faction.messages.filter(m => m.type === 'WHY_NOT').length === 0 && (
+                      <p className="text-gray-400 text-center text-xs italic mt-4">No counter-points.</p>
+                    )}
+                  </div>
+                  <div className="p-2 border-t border-gray-100">
+                    {user ? (
+                      <form action={postReason.bind(null, faction.id, 'WHY_NOT')} className="flex gap-1">
+                        <input name="content" className="flex-grow text-xs p-1 border rounded" placeholder="Add a counter-point..." required autoComplete="off" />
+                        <button type="submit" className="bg-red-600 text-white text-xs px-2 py-1 rounded hover:bg-red-700">+</button>
+                      </form>
+                    ) : <div className="text-center text-[10px] text-gray-400">Login to add</div>}
+                  </div>
                 </div>
               </div>
             </div>
