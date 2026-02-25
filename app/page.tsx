@@ -1,38 +1,48 @@
-import { getTopics, createTopic } from './actions'
+import { getTopics, createTopic, getCurrentUser } from './actions'
 import Link from 'next/link'
+import AuthControl from '@/app/components/AuthControl'
 
 export default async function Home() {
   const topics = await getTopics()
+  const user = await getCurrentUser()
 
   return (
     <main className="flex min-h-screen flex-col items-center p-8 bg-gray-50 text-gray-900">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <h1 className="text-4xl font-bold mb-8 text-blue-600">Factions Debate</h1>
+      <div className="z-10 max-w-5xl w-full flex items-center justify-between font-mono text-sm mb-8">
+        <h1 className="text-4xl font-bold text-blue-600">Factions Debate</h1>
+        <AuthControl user={user ? { username: user.username } : null} />
       </div>
 
       <div className="w-full max-w-2xl bg-white p-6 rounded-lg shadow-md mb-8">
         <h2 className="text-2xl font-semibold mb-4">Create a New Topic</h2>
-        <form action={createTopic} className="flex flex-col gap-4">
-          <input
-            type="text"
-            name="title"
-            placeholder="Topic Title (e.g., Cats vs Dogs)"
-            className="p-2 border rounded border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
-          <textarea
-            name="description"
-            placeholder="Brief description..."
-            className="p-2 border rounded border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            rows={3}
-          />
-          <button
-            type="submit"
-            className="bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition-colors"
-          >
-            Create Topic
-          </button>
-        </form>
+        {user ? (
+          <form action={createTopic} className="flex flex-col gap-4">
+            <input
+              type="text"
+              name="title"
+              placeholder="Topic Title (e.g., Cats vs Dogs)"
+              className="p-2 border rounded border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+            <textarea
+              name="description"
+              placeholder="Brief description..."
+              className="p-2 border rounded border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows={3}
+            />
+            <button
+              type="submit"
+              className="bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition-colors"
+            >
+              Create Topic
+            </button>
+          </form>
+        ) : (
+          <div className="text-center p-6 bg-gray-50 rounded border border-gray-200 text-gray-600">
+            <p className="mb-2">Please login to create a topic.</p>
+            <p className="text-sm text-gray-500">Enter a username in the top right corner.</p>
+          </div>
+        )}
       </div>
 
       <div className="w-full max-w-2xl">

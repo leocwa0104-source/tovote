@@ -6,21 +6,25 @@ import { revalidatePath } from 'next/cache'
 
 // --- User Management ---
 
-export async function ensureUser() {
-  const cookieStore = await cookies()
-  const userId = cookieStore.get('userId')?.value
-
-  if (userId) {
-    const user = await prisma.user.findUnique({ where: { id: userId } })
-    if (user) return user
-  }
-
-  const newUser = await prisma.user.create({
-    data: { name: `User-${Math.floor(Math.random() * 10000)}` }
-  })
+export async function login(formData: FormData) {
+  const username = formData.get('username') as string
+  if (!username) throw new Error("Username required")
   
-  cookieStore.set('userId', newUser.id)
-  return newUser
+  let user = await prisma.user.findUnique({ where: { username } })
+  if (!user) {
+    user = await prisma.user.create({ data: { username } })
+  }
+  
+  const cookieStore = await cookies()
+  cookieStore.set('userId', user.id)
+  
+  revalidatePath('/')
+}
+
+export async function logout() {
+  const cookieStore = await cookies()
+  cookieStore.delete('userId')
+  revalidatePath('/')
 }
 
 export async function getCurrentUser() {
@@ -36,7 +40,8 @@ export async function createTopic(formData: FormData) {
   const title = formData.get('title') as string
   const description = formData.get('description') as string
   
-  const user = await ensureUser() // Ensure user exists when creating topic
+  const user = await getCurrentUser()
+  if (!user) throw new Error("Unauthorized")
 
   await prisma.topic.create({
     data: {
@@ -106,7 +111,8 @@ export async function createFaction(topicId: string, formData: FormData) {
 }
 
 export async function joinFaction(topicId: string, factionId: string, _formData?: FormData) {
-  const user = await ensureUser()
+  const user = await getCurrentUser()
+  if (!user) throw new Error("Unauthorized")
   
   // Check if user is already a member of a faction in this topic
   const existingMembership = await prisma.membership.findUnique({
@@ -142,7 +148,8 @@ export async function joinFaction(topicId: string, factionId: string, _formData?
 }
 
 export async function leaveFaction(topicId: string, _formData?: FormData) {
-  const user = await ensureUser()
+  const user = await getCurrentUser()
+  if (!user) throw new Error("Unauthorized")
   
   try {
     await prisma.membership.delete({
@@ -178,7 +185,8 @@ export async function getUserMembership(topicId: string) {
 
 export async function postMessage(factionId: string, formData: FormData) {
   const content = formData.get('content') as string
-  const user = await ensureUser()
+  const user = await getCurrentUser()
+  if (!user) throw new Error("Unauthorized")
   
   await prisma.message.create({
     data: {

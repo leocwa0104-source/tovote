@@ -12,7 +12,7 @@ datasource db {
 
 model User {
   id        String   @id @default(uuid())
-  name      String?  @default("Anonymous")
+  username  String   @unique
   createdAt DateTime @default(now())
 
   topics      Topic[]
