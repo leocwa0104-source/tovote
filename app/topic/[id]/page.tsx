@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { getTopic, getUserMembership, createFaction, joinFaction, leaveFaction, getCurrentUser, postReason, checkTopicAccess } from '@/app/actions'
+import { getTopic, getUserMembership, createFaction, joinFaction, leaveFaction, getCurrentUser, checkTopicAccess } from '@/app/actions'
 import AuthControl from '@/app/components/AuthControl'
 import TopicGate from '@/app/components/TopicGate'
 import ShareButton from '@/app/components/ShareButton'
