@@ -109,6 +109,9 @@ export async function getTopic(id: string) {
     where: { id },
     include: {
       creator: true,
+      _count: {
+        select: { memberships: true }
+      },
       factions: {
         include: {
           _count: {
@@ -223,6 +226,41 @@ export async function getUserMembership(topicId: string) {
       }
     }
   })
+}
+
+async function getOrCreateNeutralFaction(topicId: string) {
+  const name = 'General'
+  const existing = await prisma.faction.findFirst({ where: { topicId, name } })
+  if (existing) return existing
+  return prisma.faction.create({ data: { name, topicId } })
+}
+
+export async function joinTopic(topicId: string) {
+  const user = await getCurrentUser()
+  if (!user) throw new Error("Unauthorized")
+  const hasAccess = await checkTopicAccess(topicId)
+  if (!hasAccess) throw new Error("Unauthorized")
+  const existing = await prisma.membership.findUnique({
+    where: { userId_topicId: { userId: user.id, topicId } }
+  })
+  if (!existing) {
+    const neutral = await getOrCreateNeutralFaction(topicId)
+    await prisma.membership.create({
+      data: { userId: user.id, topicId, factionId: neutral.id }
+    })
+  }
+  revalidatePath(`/topic/${topicId}`)
+}
+
+export async function leaveTopic(topicId: string) {
+  const user = await getCurrentUser()
+  if (!user) throw new Error("Unauthorized")
+  try {
+    await prisma.membership.delete({
+      where: { userId_topicId: { userId: user.id, topicId } }
+    })
+  } catch {}
+  revalidatePath(`/topic/${topicId}`)
 }
 
 // --- Messages ---
