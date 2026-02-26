@@ -34,15 +34,22 @@ export default function MentionTextarea({
   const [debouncedQuery] = useDebounce(mentionQuery, 300)
 
   useEffect(() => {
-    if (debouncedQuery && debouncedQuery.length >= 2) {
+    // Show suggestions immediately if query is empty (user just typed @)
+    if (mentionQuery === '') {
+      searchOpinions('').then(results => {
+        setSuggestions(results)
+        setShowSuggestions(true)
+      })
+      return
+    }
+
+    if (debouncedQuery) {
       searchOpinions(debouncedQuery).then(results => {
         setSuggestions(results)
         setShowSuggestions(true)
       })
-    } else {
-      setShowSuggestions(false)
     }
-  }, [debouncedQuery])
+  }, [debouncedQuery, mentionQuery])
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value
@@ -55,8 +62,6 @@ export default function MentionTextarea({
     const lastAtSymbol = newValue.lastIndexOf('@', selectionStart - 1)
     
     if (lastAtSymbol !== -1) {
-      // Check if there are spaces between @ and cursor, which might mean we are not mentioning anymore
-      // actually spaces are allowed in search queries, but let's restrict to reasonable length
       const query = newValue.substring(lastAtSymbol + 1, selectionStart)
       
       // Simple heuristic: if query contains newline, abort
@@ -66,6 +71,7 @@ export default function MentionTextarea({
       }
     }
     
+    // If not in mention mode, clear everything
     setMentionQuery('')
     setShowSuggestions(false)
   }
