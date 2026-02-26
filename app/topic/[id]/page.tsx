@@ -53,6 +53,9 @@ export default async function TopicPage(props: { params: Promise<{ id: string }>
   const topic = await getTopic(params.id)
   if (!topic) notFound()
 
+  // checkTopicAccess is dynamic because it reads cookies.
+  // Next.js should opt out of static rendering automatically,
+  // but we must ensure it's not using stale client-side router cache for the user state.
   const hasAccess = await checkTopicAccess(params.id)
   if (!hasAccess) {
     return <TopicGate topicId={topic.id} title={topic.title} />

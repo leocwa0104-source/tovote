@@ -71,11 +71,13 @@ export async function verifyTopicPassword(topicId: string, password: string) {
 
   const isValid = await bcrypt.compare(password, topic.password)
   if (isValid) {
+    const user = await getCurrentUser()
     const cookieStore = await cookies()
-    cookieStore.set(`access_topic_${topicId}`, 'true', { httpOnly: true, secure: process.env.NODE_ENV === 'production' })
+    // Set cookie value to user ID or 'anonymous'
+    const cookieValue = user ? user.id : 'anonymous'
+    cookieStore.set(`access_topic_${topicId}`, cookieValue, { httpOnly: true, secure: process.env.NODE_ENV === 'production' })
 
     // Auto-join user
-    const user = await getCurrentUser()
     if (user) {
       const existing = await prisma.membership.findUnique({
         where: { userId_topicId: { userId: user.id, topicId } }
@@ -101,13 +103,21 @@ export async function checkTopicAccess(topicId: string) {
     if (!topic) return false
     if (!topic.isPrivate) return true
     
-    const cookieStore = await cookies()
-    const hasAccess = cookieStore.get(`access_topic_${topicId}`)?.value === 'true'
-    
     const user = await getCurrentUser()
     if (user && user.id === topic.creatorId) return true
 
-    return hasAccess
+    const cookieStore = await cookies()
+    const cookieValue = cookieStore.get(`access_topic_${topicId}`)?.value
+    
+    if (!cookieValue) return false
+
+    // If user is logged in, cookie must match user ID
+    if (user) {
+      return cookieValue === user.id
+    }
+
+    // If user is anonymous, cookie must be 'anonymous'
+    return cookieValue === 'anonymous'
 }
 
 export async function getTopics() {
