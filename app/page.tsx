@@ -86,9 +86,11 @@ export default async function Home() {
                       登录以加入
                     </button>
                   ) : topic.isPrivate ? (
-                    <button disabled className="py-2 px-3 bg-gray-100 text-gray-400 rounded text-sm cursor-not-allowed">
-                      私密话题需授权
-                    </button>
+                    <Link href={`/topic/${topic.id}`}>
+                      <button className="py-2 px-3 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+                        加入话题
+                      </button>
+                    </Link>
                   ) : joinedSet.has(topic.id) ? (
                     <form action={leaveTopic.bind(null, topic.id)}>
                       <button className="py-2 px-3 bg-red-100 text-red-700 rounded hover:bg-red-200 text-sm">

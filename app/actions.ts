@@ -73,6 +73,23 @@ export async function verifyTopicPassword(topicId: string, password: string) {
   if (isValid) {
     const cookieStore = await cookies()
     cookieStore.set(`access_topic_${topicId}`, 'true', { httpOnly: true, secure: process.env.NODE_ENV === 'production' })
+
+    // Auto-join user
+    const user = await getCurrentUser()
+    if (user) {
+      const existing = await prisma.membership.findUnique({
+        where: { userId_topicId: { userId: user.id, topicId } }
+      })
+      if (!existing) {
+        const neutral = await getOrCreateNeutralFaction(topicId)
+        await prisma.membership.create({
+          data: { userId: user.id, topicId, factionId: neutral.id }
+        })
+        revalidatePath(`/topic/${topicId}`)
+        revalidatePath('/')
+      }
+    }
+    
     return { success: true }
   }
   
