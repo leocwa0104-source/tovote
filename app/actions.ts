@@ -139,7 +139,6 @@ export async function getTopic(id: string) {
         select: { memberships: true }
       },
       factions: {
-        where: { name: { not: 'General' } },
         include: {
           _count: {
             select: { members: true }
@@ -410,7 +409,7 @@ export async function getUserDashboardData() {
   const user = await getCurrentUser()
   if (!user) return null
 
-  const [joinedMemberships, createdTopics] = await Promise.all([
+  const [joinedFactions, createdTopics] = await Promise.all([
     prisma.membership.findMany({
       where: { userId: user.id },
       include: {
@@ -435,14 +434,6 @@ export async function getUserDashboardData() {
       orderBy: { createdAt: 'desc' }
     })
   ])
-
-  // Filter out or adjust memberships where faction is 'General'
-  const joinedFactions = joinedMemberships.map(m => {
-    if (m.faction?.name === 'General') {
-      return { ...m, faction: null, factionId: null }
-    }
-    return m
-  })
 
   return {
     user,
