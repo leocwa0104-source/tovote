@@ -228,6 +228,16 @@ export async function getUserMembership(topicId: string) {
   })
 }
 
+export async function getUserTopicMemberships() {
+  const user = await getCurrentUser()
+  if (!user) return []
+  const memberships = await prisma.membership.findMany({
+    where: { userId: user.id },
+    select: { topicId: true }
+  })
+  return memberships.map(m => m.topicId)
+}
+
 async function getOrCreateNeutralFaction(topicId: string) {
   const name = 'General'
   const existing = await prisma.faction.findFirst({ where: { topicId, name } })

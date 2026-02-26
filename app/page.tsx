@@ -1,4 +1,4 @@
-import { getTopics, getCurrentUser } from './actions'
+import { getTopics, getCurrentUser, joinTopic, leaveTopic, getUserTopicMemberships } from './actions'
 import Link from 'next/link'
 import AuthControl from '@/app/components/AuthControl'
 import CreateTopicForm from '@/app/components/CreateTopicForm'
@@ -10,13 +10,17 @@ export default async function Home() {
   let topics: Awaited<ReturnType<typeof getTopics>> = []
   let user: Awaited<ReturnType<typeof getCurrentUser>> = null
   let errorMsg: string | null = null
+  let joinedSet: Set<string> = new Set()
 
   try {
     topics = await getTopics()
     user = await getCurrentUser()
-  } catch (e: any) {
+    // Build joined topic set for current user
+    const joinedIds = await getUserTopicMemberships()
+    joinedSet = new Set(joinedIds)
+  } catch (e: unknown) {
     console.error("Home page error:", e)
-    errorMsg = e.message + (e.stack ? "\n" + e.stack : "")
+    errorMsg = String(e)
   }
 
   if (errorMsg) {
@@ -49,27 +53,47 @@ export default async function Home() {
         ) : (
           <div className="flex flex-col gap-4">
             {topics.map((topic) => (
-              <Link
+              <div
                 key={topic.id}
-                href={`/topic/${topic.id}`}
-                className="block p-6 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200 relative group"
+                className="p-6 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200 relative group"
               >
                 <div className="flex justify-between items-start">
-                  <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                  <Link href={`/topic/${topic.id}`} className="text-xl font-bold text-gray-800 flex items-center gap-2 hover:underline">
                     {topic.title}
                     {topic.isPrivate && (
                       <span title="Private Topic">
                         <Lock className="w-4 h-4 text-gray-400" />
                       </span>
                     )}
-                  </h3>
+                  </Link>
                 </div>
                 <p className="text-gray-600 mt-2">{topic.description}</p>
-                <div className="mt-4 text-sm text-gray-400 flex gap-4">
-                  <span>{new Date(topic.createdAt).toLocaleDateString()}</span>
-                  <span>{topic._count.factions} Factions</span>
+                <div className="mt-4 text-sm text-gray-500 flex items-center gap-4">
+                  <span className="font-mono">已有 {topic._count.memberships} 人加入</span>
+                  {!user ? (
+                    <button disabled className="py-2 px-3 bg-gray-100 text-gray-400 rounded text-sm cursor-not-allowed">
+                      登录以加入
+                    </button>
+                  ) : topic.isPrivate ? (
+                    <button disabled className="py-2 px-3 bg-gray-100 text-gray-400 rounded text-sm cursor-not-allowed">
+                      私密话题需授权
+                    </button>
+                  ) : joinedSet.has(topic.id) ? (
+                    <form action={leaveTopic.bind(null, topic.id)}>
+                      <button className="py-2 px-3 bg-red-100 text-red-700 rounded hover:bg-red-200 text-sm">
+                        退出话题
+                      </button>
+                    </form>
+                  ) : (
+                    <form action={joinTopic.bind(null, topic.id)}>
+                      <button className="py-2 px-3 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+                        加入话题
+                      </button>
+                    </form>
+                  )}
+                  <span className="ml-auto text-gray-400">{new Date(topic.createdAt).toLocaleDateString()}</span>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         )}
@@ -77,4 +101,3 @@ export default async function Home() {
     </main>
   )
 }
-
