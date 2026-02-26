@@ -13,6 +13,16 @@ interface Opinion {
     username: string
   }
   updatedAt: Date
+  citations?: {
+    id: string
+    target: {
+      id: string
+      summary: string
+      author: {
+        username: string
+      }
+    }
+  }[]
 }
 
 interface OpinionCardProps {
@@ -27,6 +37,7 @@ export default function OpinionCard({ opinion, factionId, type, currentUser, isM
   const [isEditing, setIsEditing] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [citationId, setCitationId] = useState('') // For simple manual citation input
 
   const isOwner = currentUser && opinion?.authorId === currentUser.id
   
@@ -108,6 +119,25 @@ export default function OpinionCard({ opinion, factionId, type, currentUser, isM
               className="w-full p-2 border rounded border-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm min-h-[100px]"
             />
           </div>
+
+          {!opinion && (
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Citation (Optional Opinion ID)</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={citationId}
+                  onChange={(e) => setCitationId(e.target.value)}
+                  placeholder="Paste Opinion ID to cite..."
+                  className="w-full p-2 border rounded border-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm font-mono"
+                />
+                {citationId && <input type="hidden" name="citationIds" value={JSON.stringify([citationId])} />}
+              </div>
+              <p className="text-[10px] text-gray-400 mt-1">
+                Tip: Copy the ID from another opinion to link them.
+              </p>
+            </div>
+          )}
           
           <div className="flex gap-2 justify-end">
             {opinion && (
@@ -147,26 +177,51 @@ export default function OpinionCard({ opinion, factionId, type, currentUser, isM
         <div className="flex-grow min-w-0">
           <div className="flex justify-between items-start">
             <span className="text-xs text-gray-500 font-medium">{opinion.author.username}</span>
-            {isOwner && (
-              <div className="flex gap-2">
-                <button 
-                  onClick={() => setIsEditing(true)} 
-                  className="text-xs text-blue-600 hover:text-blue-800"
-                >
-                  Edit
-                </button>
-                <button 
-                  onClick={handleDelete} 
-                  className="text-xs text-red-600 hover:text-red-800"
-                >
-                  Delete
-                </button>
-              </div>
-            )}
+            <div className="flex gap-2">
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(opinion.id)
+                  alert('Opinion ID copied!')
+                }} 
+                className="text-xs text-gray-400 hover:text-gray-600"
+                title="Copy ID to cite"
+              >
+                Copy ID
+              </button>
+              {isOwner && (
+                <>
+                  <button 
+                    onClick={() => setIsEditing(true)} 
+                    className="text-xs text-blue-600 hover:text-blue-800"
+                  >
+                    Edit
+                  </button>
+                  <button 
+                    onClick={handleDelete} 
+                    className="text-xs text-red-600 hover:text-red-800"
+                  >
+                    Delete
+                  </button>
+                </>
+              )}
+            </div>
           </div>
           
           <h5 className="font-semibold text-gray-800 text-sm mt-1 break-words">{opinion.summary}</h5>
           
+          {opinion.citations && opinion.citations.length > 0 && (
+            <div className="mt-2 flex flex-col gap-1">
+              {opinion.citations.map(citation => (
+                <div key={citation.id} className="text-xs bg-gray-50 border-l-2 border-blue-300 p-2 rounded-r text-gray-600">
+                  <span className="font-semibold text-gray-700 block mb-0.5">
+                    Cited: {citation.target.author.username}
+                  </span>
+                  "{citation.target.summary}"
+                </div>
+              ))}
+            </div>
+          )}
+
           {opinion.detail && (
             <div className="mt-2">
               {isExpanded ? (

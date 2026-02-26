@@ -155,7 +155,16 @@ export async function getTopic(id: string) {
           },
           opinions: {
             orderBy: { createdAt: 'desc' },
-            include: { author: true }
+            include: { 
+              author: true,
+              citations: {
+                include: {
+                  target: {
+                    include: { author: true }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -332,6 +341,7 @@ export async function createOpinion(formData: FormData) {
   const type = formData.get('type') as 'WHY' | 'WHY_NOT'
   const summary = formData.get('summary') as string
   const detail = formData.get('detail') as string
+  const citationIds = formData.get('citationIds') as string // JSON array string
   
   const user = await getCurrentUser()
   if (!user) throw new Error("Unauthorized")
@@ -342,7 +352,7 @@ export async function createOpinion(formData: FormData) {
   const hasAccess = await checkTopicAccess(faction.topicId)
   if (!hasAccess) throw new Error("Unauthorized")
   
-  await prisma.opinion.upsert({
+  const opinion = await prisma.opinion.upsert({
     where: {
       authorId_factionId_type: {
         authorId: user.id,
@@ -363,6 +373,33 @@ export async function createOpinion(formData: FormData) {
       factionId
     }
   })
+
+  // Handle citations
+  if (citationIds) {
+    try {
+      const ids = JSON.parse(citationIds) as string[]
+      if (Array.isArray(ids) && ids.length > 0) {
+        // Create citations
+        await Promise.all(ids.map(targetId => 
+          prisma.citation.upsert({
+            where: {
+              sourceId_targetId: {
+                sourceId: opinion.id,
+                targetId
+              }
+            },
+            update: {}, // Do nothing if exists
+            create: {
+              sourceId: opinion.id,
+              targetId
+            }
+          })
+        ))
+      }
+    } catch (e) {
+      console.error("Failed to parse citation IDs", e)
+    }
+  }
   
   // Ensure user is in the faction they are posting to
   const existingMembership = await prisma.membership.findUnique({

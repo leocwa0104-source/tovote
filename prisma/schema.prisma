@@ -76,7 +76,24 @@ model Opinion {
   factionId String
   faction   Faction  @relation(fields: [factionId], references: [id])
   
+  // Citations
+  citedBy   Citation[] @relation("TargetOpinion")
+  citations Citation[] @relation("SourceOpinion")
+
   @@unique([authorId, factionId, type]) // Ensures one opinion per type per faction for a user
+}
+
+model Citation {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  sourceId  String
+  source    Opinion  @relation("SourceOpinion", fields: [sourceId], references: [id], onDelete: Cascade)
+
+  targetId  String
+  target    Opinion  @relation("TargetOpinion", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceId, targetId]) // Prevent duplicate citations
 }
 
 enum ReasonType {
