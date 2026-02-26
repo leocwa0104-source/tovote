@@ -66,12 +66,14 @@ export default function MentionTextarea({
       }
     }
     
+    setMentionQuery('')
     setShowSuggestions(false)
   }
 
   const handleSelectSuggestion = (suggestion: any) => {
     if (!textareaRef.current) return
 
+    // Find the @ symbol we are currently replacing
     const lastAtSymbol = value.lastIndexOf('@', cursorPosition - 1)
     if (lastAtSymbol === -1) return
 
@@ -79,21 +81,27 @@ export default function MentionTextarea({
     const afterMention = value.substring(cursorPosition)
     
     // Insert the mention text. We use a format that is readable but unique enough.
-    // For now, let's just use the summary or author.
-    // Ideally, we might want a specific format like @[User: Summary]
     const mentionText = `@[${suggestion.author.username}: ${suggestion.summary.substring(0, 20)}...]`
     
+    // Add a space after the mention
     const newValue = beforeMention + mentionText + ' ' + afterMention
     setValue(newValue)
     setShowSuggestions(false)
+    setMentionQuery('')
     
     // Notify parent to add hidden citation ID
     if (onCitationAdd) {
       onCitationAdd(suggestion)
     }
 
-    // Restore focus
-    textareaRef.current.focus()
+    // Restore focus and set cursor after the inserted mention
+    setTimeout(() => {
+        if (textareaRef.current) {
+            textareaRef.current.focus()
+            const newCursorPos = beforeMention.length + mentionText.length + 1 // +1 for space
+            textareaRef.current.setSelectionRange(newCursorPos, newCursorPos)
+        }
+    }, 0)
   }
 
   return (
@@ -103,6 +111,9 @@ export default function MentionTextarea({
         name={name}
         value={value}
         onChange={handleInput}
+        // Handle click/keyup to update cursor position for mention detection
+        onKeyUp={(e) => setCursorPosition(e.currentTarget.selectionStart)}
+        onClick={(e) => setCursorPosition(e.currentTarget.selectionStart)}
         placeholder={placeholder}
         className={className}
         required={required}
