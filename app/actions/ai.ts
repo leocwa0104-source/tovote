@@ -24,7 +24,7 @@ export async function checkTopicSimilarity(newTitle: string): Promise<Similarity
   // Break down the title into keywords (filtering out short words)
   const keywords = query
     .split(/\s+/)
-    .filter(word => word.length > 3)
+    .filter(word => word.length > 1) // Allow 2-letter words like "AI", "Go"
     .map(word => word.replace(/[^\w\s]/gi, '')) // Remove special chars
 
   if (keywords.length === 0) {
