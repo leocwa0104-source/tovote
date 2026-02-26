@@ -58,14 +58,25 @@ export default async function Home() {
                 className="p-6 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200 relative group"
               >
                 <div className="flex justify-between items-start">
-                  <Link href={`/topic/${topic.id}`} className="text-xl font-bold text-gray-800 flex items-center gap-2 hover:underline">
-                    {topic.title}
-                    {topic.isPrivate && (
-                      <span title="Private Topic">
-                        <Lock className="w-4 h-4 text-gray-400" />
-                      </span>
-                    )}
-                  </Link>
+                  {joinedSet.has(topic.id) ? (
+                    <Link href={`/topic/${topic.id}`} className="text-xl font-bold text-gray-800 flex items-center gap-2 hover:underline">
+                      {topic.title}
+                      {topic.isPrivate && (
+                        <span title="Private Topic">
+                          <Lock className="w-4 h-4 text-gray-400" />
+                        </span>
+                      )}
+                    </Link>
+                  ) : (
+                    <div className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                      {topic.title}
+                      {topic.isPrivate && (
+                        <span title="Private Topic">
+                          <Lock className="w-4 h-4 text-gray-400" />
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <p className="text-gray-600 mt-2">{topic.description}</p>
                 <div className="mt-4 text-sm text-gray-500 flex items-center gap-4">
