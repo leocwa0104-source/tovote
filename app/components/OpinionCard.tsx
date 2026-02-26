@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { createOpinion, deleteOpinion } from '@/app/actions'
 import OpinionDetailModal from './OpinionDetailModal'
+import MentionTextarea from './MentionTextarea'
 
 interface CitationTarget {
   id: string
@@ -29,27 +30,37 @@ interface Opinion {
   author: {
     username: string
   }
-  updatedAt: Date
-  citations?: {
+  createdAt: Date
+  citations: {
     id: string
     target: CitationTarget
   }[]
+  citedBy: {
+    id: string
+    source: {
+      id: string
+      summary: string
+      type: 'WHY' | 'WHY_NOT'
+      author: { username: string }
+    }
+  }[]
+  factionId: string
 }
 
 interface OpinionCardProps {
   opinion?: Opinion
   factionId: string
   type: 'WHY' | 'WHY_NOT'
-  currentUser: { id: string; username: string } | null
-  isMember: boolean
+  currentUser: { id: string } | null
 }
 
-export default function OpinionCard({ opinion, factionId, type, currentUser, isMember }: OpinionCardProps) {
+export default function OpinionCard({ opinion, factionId, type, currentUser }: OpinionCardProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const [loading, setLoading] = useState(false)
   const [citationId, setCitationId] = useState('') // For simple manual citation input
   const [selectedCitation, setSelectedCitation] = useState<CitationTarget | null>(null)
+  const [mentionedCitations, setMentionedCitations] = useState<CitationTarget[]>([])
 
   const isOwner = currentUser && opinion?.authorId === currentUser.id
   
@@ -124,16 +135,27 @@ export default function OpinionCard({ opinion, factionId, type, currentUser, isM
           
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">Detailed Explanation (Optional)</label>
-            <textarea
+            <MentionTextarea
               name="detail"
               defaultValue={opinion?.detail || ''}
-              placeholder="Expand on your point..."
+              placeholder="Expand on your point... Use @ to cite others"
               className="w-full p-2 border rounded border-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm min-h-[100px]"
+              onCitationAdd={(citation) => {
+                setMentionedCitations(prev => {
+                  if (prev.find(c => c.id === citation.id)) return prev
+                  return [...prev, citation]
+                })
+              }}
             />
           </div>
 
           {!opinion && (
             <div>
+              {/* Hidden inputs for mentions */}
+              {mentionedCitations.map(c => (
+                <input key={c.id} type="hidden" name="citationIds" value={JSON.stringify([c.id])} />
+              ))}
+              
               <label className="block text-xs font-medium text-gray-500 mb-1">Citation (Optional Opinion ID)</label>
               <div className="flex gap-2">
                 <input
@@ -146,7 +168,7 @@ export default function OpinionCard({ opinion, factionId, type, currentUser, isM
                 {citationId && <input type="hidden" name="citationIds" value={JSON.stringify([citationId])} />}
               </div>
               <p className="text-[10px] text-gray-400 mt-1">
-                Tip: Copy the ID from another opinion to link them.
+                Tip: Copy the ID from another opinion or use @ to mention.
               </p>
             </div>
           )}
@@ -272,12 +294,12 @@ export default function OpinionCard({ opinion, factionId, type, currentUser, isM
       </div>
 
       {selectedCitation && (
-        <OpinionDetailModal
-          isOpen={!!selectedCitation}
-          onClose={() => setSelectedCitation(null)}
-          opinion={selectedCitation}
-        />
-      )}
-    </div>
-  )
+        <OpinionDetailModal 
+        isOpen={!!selectedCitation}
+        onClose={() => setSelectedCitation(null)}
+        opinion={selectedCitation}
+      />
+    )}
+  </div>
+)
 }

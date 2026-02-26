@@ -489,3 +489,32 @@ export async function getUserDashboardData() {
     createdTopics
   }
 }
+
+// --- Search ---
+
+export async function searchOpinions(query: string) {
+  if (!query || query.length < 2) return []
+  
+  const user = await getCurrentUser()
+  if (!user) return []
+
+  return prisma.opinion.findMany({
+    where: {
+      OR: [
+        { summary: { contains: query, mode: 'insensitive' } },
+        { detail: { contains: query, mode: 'insensitive' } },
+        { author: { username: { contains: query, mode: 'insensitive' } } }
+      ]
+    },
+    take: 5,
+    orderBy: { createdAt: 'desc' },
+    include: {
+      author: true,
+      faction: {
+        include: {
+          topic: true
+        }
+      }
+    }
+  })
+}

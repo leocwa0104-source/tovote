@@ -86,10 +86,6 @@ export default async function TopicPage(props: { params: Promise<{ id: string }>
           <div className="text-sm text-gray-500">
             Created by {topic.creator.username} on {new Date(topic.createdAt).toLocaleDateString()}
           </div>
-          
-          <div className="text-sm text-gray-500">
-            Created by {topic.creator.username} on {new Date(topic.createdAt).toLocaleDateString()}
-          </div>
         </div>
       </div>
       
@@ -159,7 +155,7 @@ export default async function TopicPage(props: { params: Promise<{ id: string }>
                         return (
                           <div 
                             key={member.user.id} 
-                            className="group relative flex flex-col items中心"
+                            className="group relative flex flex-col items-center"
                           >
                             <div className={`w-8 h-8 rounded-full ${bgColor} flex items-center justify-center text-white font-bold text-xs shadow-sm ring-2 ring-white cursor-default`}>
                               {initial}
@@ -176,20 +172,21 @@ export default async function TopicPage(props: { params: Promise<{ id: string }>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 divide-x divide-gray-100 flex-grow bg白 min-h-[300px]">
+              <div className="grid grid-cols-2 divide-x divide-gray-100 flex-grow bg-white min-h-[300px]">
                 <div className="flex flex-col h-full">
                   <div className="p-3 bg-green-50/50 text-green-800 text-sm font-bold uppercase text-center border-b border-green-100">
                     Why Join?
                   </div>
                   <div className="flex-grow p-4 space-y-4 overflow-y-auto bg-green-50/10">
                     {user && (
-                      <OpinionCard 
-                        opinion={faction.opinions.find(o => o.type === 'WHY' && o.authorId === user.id)}
-                        factionId={faction.id}
-                        type="WHY"
-                        currentUser={user}
-                        isMember={isMember}
-                      />
+                      <div className="p-3 border-b border-green-100 bg-green-50/20">
+                        <OpinionCard 
+                          opinion={faction.opinions.find(o => o.type === 'WHY' && o.authorId === user.id)}
+                          factionId={faction.id}
+                          type="WHY"
+                          currentUser={user}
+                        />
+                      </div>
                     )}
                     
                     {faction.opinions
@@ -201,7 +198,6 @@ export default async function TopicPage(props: { params: Promise<{ id: string }>
                           factionId={faction.id}
                           type="WHY"
                           currentUser={user}
-                          isMember={isMember}
                         />
                       ))
                     }
@@ -220,13 +216,14 @@ export default async function TopicPage(props: { params: Promise<{ id: string }>
                   </div>
                   <div className="flex-grow p-4 space-y-4 overflow-y-auto bg-red-50/10">
                     {user && (
-                      <OpinionCard 
-                        opinion={faction.opinions.find(o => o.type === 'WHY_NOT' && o.authorId === user.id)}
-                        factionId={faction.id}
-                        type="WHY_NOT"
-                        currentUser={user}
-                        isMember={isMember}
-                      />
+                      <div className="p-3 border-b border-red-100 bg-red-50/20">
+                        <OpinionCard 
+                          opinion={faction.opinions.find(o => o.type === 'WHY_NOT' && o.authorId === user.id)}
+                          factionId={faction.id}
+                          type="WHY_NOT"
+                          currentUser={user}
+                        />
+                      </div>
                     )}
                     
                     {faction.opinions
@@ -238,7 +235,6 @@ export default async function TopicPage(props: { params: Promise<{ id: string }>
                           factionId={faction.id}
                           type="WHY_NOT"
                           currentUser={user}
-                          isMember={isMember}
                         />
                       ))
                     }
