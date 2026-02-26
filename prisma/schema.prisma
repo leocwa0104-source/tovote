@@ -50,8 +50,8 @@ model Membership {
   id        String   @id @default(uuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id])
-  factionId String
-  faction   Faction  @relation(fields: [factionId], references: [id])
+  factionId String?
+  faction   Faction? @relation(fields: [factionId], references: [id])
   topicId   String
   topic     Topic    @relation(fields: [topicId], references: [id])
   joinedAt  DateTime @default(now())

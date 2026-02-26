@@ -83,9 +83,8 @@ export async function verifyTopicPassword(topicId: string, password: string) {
         where: { userId_topicId: { userId: user.id, topicId } }
       })
       if (!existing) {
-        const neutral = await getOrCreateNeutralFaction(topicId)
         await prisma.membership.create({
-          data: { userId: user.id, topicId, factionId: neutral.id }
+          data: { userId: user.id, topicId }
         })
         revalidatePath(`/topic/${topicId}`)
         revalidatePath('/')
@@ -209,6 +208,9 @@ export async function joinFaction(topicId: string, factionId: string, _formData?
     })
   } else {
     // Join new
+    const hasAccess = await checkTopicAccess(topicId)
+    if (!hasAccess) throw new Error("Unauthorized")
+
     await prisma.membership.create({
       data: {
         userId: user.id,
@@ -281,12 +283,12 @@ export async function joinTopic(topicId: string) {
     where: { userId_topicId: { userId: user.id, topicId } }
   })
   if (!existing) {
-    const neutral = await getOrCreateNeutralFaction(topicId)
     await prisma.membership.create({
-      data: { userId: user.id, topicId, factionId: neutral.id }
+      data: { userId: user.id, topicId }
     })
   }
   revalidatePath(`/topic/${topicId}`)
+  revalidatePath('/')
   redirect(`/topic/${topicId}`)
 }
 
@@ -299,6 +301,7 @@ export async function leaveTopic(topicId: string) {
     })
   } catch {}
   revalidatePath(`/topic/${topicId}`)
+  revalidatePath('/')
 }
 
 // --- Messages ---
@@ -357,6 +360,28 @@ export async function createOpinion(formData: FormData) {
     }
   })
   
+  // Ensure user is in the faction they are posting to
+  const existingMembership = await prisma.membership.findUnique({
+    where: { userId_topicId: { userId: user.id, topicId: faction.topicId } }
+  })
+  
+  if (existingMembership) {
+    if (existingMembership.factionId !== factionId) {
+      await prisma.membership.update({
+        where: { id: existingMembership.id },
+        data: { factionId }
+      })
+    }
+  } else {
+    await prisma.membership.create({
+      data: {
+        userId: user.id,
+        topicId: faction.topicId,
+        factionId
+      }
+    })
+  }
+
   revalidatePath(`/topic/${faction.topicId}`)
 }
 
