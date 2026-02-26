@@ -12,6 +12,15 @@ export type SimilarityResult = {
   }[]
 }
 
+export type FactionSimilarityResult = {
+  matches: {
+    id: string
+    name: string
+    reason: string
+    similarityScore: number
+  }[]
+}
+
 /**
  * Checks for similar topics using database keyword matching.
  * This is a lightweight alternative to AI/Vector search.
@@ -71,6 +80,53 @@ export async function checkTopicSimilarity(newTitle: string): Promise<Similarity
     }
   } catch (error) {
     console.error('Keyword Search Failed:', error)
+    return { matches: [] }
+  }
+}
+
+export async function checkFactionSimilarity(topicId: string, newName: string): Promise<FactionSimilarityResult> {
+  if (!topicId || !newName || newName.trim().length < 2) return { matches: [] }
+  
+  const query = newName.trim()
+  const STOP_WORDS = new Set(['the', 'and', 'or', 'of', 'in', 'on', 'at', 'to', 'is', 'are', 'was', 'were', 'it', 'that', 'this'])
+  
+  const keywords = query
+    .split(/\s+/)
+    .map(word => word.replace(/[^\p{L}\p{N}]/gu, ''))
+    .filter(word => word.length > 1 && !STOP_WORDS.has(word.toLowerCase()))
+
+  try {
+    const keywordConditions = keywords.map(word => ({
+      name: { contains: word, mode: 'insensitive' as const }
+    }))
+
+    const matches = await prisma.faction.findMany({
+      where: {
+        topicId,
+        OR: [
+          { name: { contains: query, mode: 'insensitive' } },
+          { description: { contains: query, mode: 'insensitive' } },
+          ...keywordConditions
+        ]
+      },
+      take: 5,
+      select: { id: true, name: true, description: true },
+      orderBy: { id: 'desc' }
+    })
+
+    return {
+      matches: matches.map(m => {
+        const isExactPhrase = m.name.toLowerCase().includes(query.toLowerCase())
+        return {
+          id: m.id,
+          name: m.name,
+          reason: isExactPhrase ? 'Contains exact phrase' : 'Contains similar keywords',
+          similarityScore: isExactPhrase ? 1 : 0.8
+        }
+      })
+    }
+  } catch (error) {
+    console.error('Faction Keyword Search Failed:', error)
     return { matches: [] }
   }
 }

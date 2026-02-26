@@ -1,10 +1,11 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { getTopic, getUserMembership, createFaction, joinFaction, leaveFaction, getCurrentUser, checkTopicAccess } from '@/app/actions'
+import { getTopic, getUserMembership, joinFaction, leaveFaction, getCurrentUser, checkTopicAccess } from '@/app/actions'
 import AuthControl from '@/app/components/AuthControl'
 import TopicGate from '@/app/components/TopicGate'
 import ShareButton from '@/app/components/ShareButton'
 import OpinionCard from '@/app/components/OpinionCard'
+import CreateFactionForm from '@/app/components/CreateFactionForm'
 
 function getAvatarColor(username: string) {
   const colors = [
@@ -85,29 +86,7 @@ export default async function TopicPage(props: { params: Promise<{ id: string }>
         </div>
       </div>
 
-      {/* Faction Creation Form */}
-      <div className="w-full max-w-2xl bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-12">
-        <h3 className="text-lg font-semibold mb-4">Start a New Faction</h3>
-        {user ? (
-          <form action={createFaction.bind(null, params.id)} className="flex flex-col gap-4">
-            <input
-              type="text"
-              name="name"
-              placeholder="Faction Name (e.g., Team Cats)"
-              className="p-2 border rounded border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-            <button
-              type="submit"
-              className="bg-green-600 text-white p-2 rounded hover:bg-green-700 transition-colors self-start px-6"
-            >
-              Create Faction
-            </button>
-          </form>
-        ) : (
-          <p className="text-gray-500 italic">Login to create a new faction.</p>
-        )}
-      </div>
+      <CreateFactionForm topicId={topic.id} user={user} />
 
       {/* Factions List */}
       <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
