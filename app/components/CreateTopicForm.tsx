@@ -98,13 +98,6 @@ export default function CreateTopicForm({ user }: { user: any }) {
         </div>
       )}
 
-      <textarea
-        name="description"
-        placeholder="Brief description..."
-        className="p-2 border rounded border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        rows={3}
-      />
-      
       <div className="flex flex-col gap-2 p-3 bg-gray-50 rounded border border-gray-100">
         <span className="text-sm font-semibold text-gray-700">Discussion Style (Optional):</span>
         <div className="flex gap-4">

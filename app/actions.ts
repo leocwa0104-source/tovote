@@ -40,7 +40,7 @@ export async function getCurrentUser() {
 
 export async function createTopic(prevState: any, formData: FormData) {
   const title = formData.get('title') as string
-  const description = formData.get('description') as string
+  const description = formData.get('description') as string | null
   const isPrivate = formData.get('isPrivate') === 'on'
   const password = formData.get('password') as string
   const seekBrainstorming = formData.get('seekBrainstorming') === 'on'
@@ -66,7 +66,7 @@ export async function createTopic(prevState: any, formData: FormData) {
     await prisma.topic.create({
       data: {
         title,
-        description,
+        description: description || null,
         creatorId: user.id,
         isPrivate,
         password: hashedPassword,
