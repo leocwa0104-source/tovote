@@ -21,11 +21,14 @@ export async function checkTopicSimilarity(newTitle: string): Promise<Similarity
 
   const query = newTitle.trim()
   
-  // Break down the title into keywords (filtering out short words)
+  const STOP_WORDS = new Set(['the', 'and', 'or', 'of', 'in', 'on', 'at', 'to', 'is', 'are', 'was', 'were', 'it', 'that', 'this'])
+
+  // Break down the title into keywords (filtering out short words and stop words)
   const keywords = query
     .split(/\s+/)
-    .filter(word => word.length > 1) // Allow 2-letter words like "AI", "Go"
-    .map(word => word.replace(/[^\w\s]/gi, '')) // Remove special chars
+    .map(word => word.replace(/[^\p{L}\p{N}]/gu, '')) // Keep letters (including unicode) and numbers
+    .filter(word => word.length > 1 && !STOP_WORDS.has(word.toLowerCase())) // Filter short words and stop words
+
 
   if (keywords.length === 0) {
     // If no significant keywords, just do a direct partial match
