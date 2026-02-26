@@ -31,6 +31,9 @@ model Topic {
   isPrivate   Boolean  @default(false)
   password    String?
 
+  seekBrainstorming Boolean @default(false)
+  seekRational      Boolean @default(false)
+
   factions    Faction[]
   memberships Membership[] // Helper to track user participation in topic
 }

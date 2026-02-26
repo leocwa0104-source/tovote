@@ -43,6 +43,8 @@ export async function createTopic(formData: FormData) {
   const description = formData.get('description') as string
   const isPrivate = formData.get('isPrivate') === 'on'
   const password = formData.get('password') as string
+  const seekBrainstorming = formData.get('seekBrainstorming') === 'on'
+  const seekRational = formData.get('seekRational') === 'on'
   
   const user = await getCurrentUser()
   if (!user) throw new Error("Unauthorized")
@@ -58,7 +60,9 @@ export async function createTopic(formData: FormData) {
       description,
       creatorId: user.id,
       isPrivate,
-      password: hashedPassword
+      password: hashedPassword,
+      seekBrainstorming,
+      seekRational
     }
   })
   

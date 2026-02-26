@@ -98,6 +98,34 @@ export default function CreateTopicForm({ user }: { user: any }) {
         rows={3}
       />
       
+      <div className="flex flex-col gap-2 p-3 bg-gray-50 rounded border border-gray-100">
+        <span className="text-sm font-semibold text-gray-700">Discussion Style (Optional):</span>
+        <div className="flex gap-4">
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="seekBrainstorming"
+              name="seekBrainstorming"
+              className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500 border-gray-300"
+            />
+            <label htmlFor="seekBrainstorming" className="text-sm text-gray-700 select-none cursor-pointer flex items-center gap-1">
+              <span>🧠</span> Seek Brainstorming
+            </label>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="seekRational"
+              name="seekRational"
+              className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 border-gray-300"
+            />
+            <label htmlFor="seekRational" className="text-sm text-gray-700 select-none cursor-pointer flex items-center gap-1">
+              <span>📊</span> Seek Rational
+            </label>
+          </div>
+        </div>
+      </div>
+
       <div className="flex items-center gap-2">
         <input
           type="checkbox"
