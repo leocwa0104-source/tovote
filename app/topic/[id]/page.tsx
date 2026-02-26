@@ -95,156 +95,54 @@ export default async function TopicPage(props: { params: Promise<{ id: string }>
       </div>
 
       {/* Factions List */}
-      <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="w-full max-w-4xl space-y-4">
         {topic.factions.map((faction) => {
           const isMember = currentFactionId === faction.id
           const isOtherMember = currentFactionId && !isMember
 
           return (
-            <div key={faction.id} className={`flex flex-col bg-white rounded-xl shadow-md border-2 ${isMember ? 'border-blue-500 ring-4 ring-blue-100' : 'border-gray-200'} overflow-hidden`}>
-              <div className="p-6 border-b border-gray-100 bg-gray-50 flex-grow-0">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-xl font-bold text-gray-900">{faction.name}</h3>
-                  <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">
-                    {faction._count.members} Members
-                  </span>
+            <div key={faction.id} className={`group relative flex items-center justify-between p-6 bg-white rounded-lg shadow-sm border transition-all hover:shadow-md ${isMember ? 'border-blue-500 ring-1 ring-blue-500 bg-blue-50/10' : 'border-gray-200 hover:border-blue-300'}`}>
+              <Link href={`/topic/${topic.id}/faction/${faction.id}`} className="absolute inset-0 z-0" aria-label={`View ${faction.name} faction details`}>
+              </Link>
+              
+              <div className="flex flex-col z-10 pointer-events-none">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{faction.name}</h3>
+                  {isMember && <span className="text-xs font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">YOUR FACTION</span>}
                 </div>
-                {faction.description && <p className="text-gray-600 text-sm mb-4">{faction.description}</p>}
+                {faction.description && <p className="text-gray-500 text-sm mt-1 max-w-xl truncate">{faction.description}</p>}
+              </div>
+
+              <div className="flex items-center gap-6 z-10">
+                <div className="flex flex-col items-end pointer-events-none">
+                  <span className="text-2xl font-bold text-gray-800">{faction._count.members}</span>
+                  <span className="text-xs text-gray-500 uppercase tracking-wider">Members</span>
+                </div>
                 
-                <div className="flex gap-2">
+                <div className="flex gap-2 pointer-events-auto">
                   {!user ? (
-                     <button disabled className="w-full py-2 px-4 bg-gray-100 text-gray-400 rounded font-medium cursor-not-allowed text-sm">
-                       Login to Join
+                     <button disabled className="py-2 px-4 bg-gray-100 text-gray-400 rounded font-medium cursor-not-allowed text-sm">
+                       Join
                      </button>
                   ) : isMember ? (
-                    <form action={leaveFaction.bind(null, params.id)} className="w-full">
-                      <button className="w-full py-2 px-4 bg-red-100 text-red-700 rounded hover:bg-red-200 font-medium transition-colors">
-                        Leave Faction
+                    <form action={leaveFaction.bind(null, params.id)}>
+                      <button className="py-2 px-4 bg-red-50 text-red-600 rounded hover:bg-red-100 font-medium transition-colors text-sm border border-red-100">
+                        Leave
                       </button>
                     </form>
                   ) : (
-                    <form action={joinFaction.bind(null, params.id, faction.id)} className="w-full">
+                    <form action={joinFaction.bind(null, params.id, faction.id)}>
                       <button 
-                        className={`w-full py-2 px-4 rounded font-medium transition-colors ${
+                        className={`py-2 px-4 rounded font-medium transition-colors text-sm shadow-sm ${
                           isOtherMember 
-                            ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' 
+                            ? 'bg-white text-yellow-600 border border-yellow-200 hover:bg-yellow-50' 
                             : 'bg-blue-600 text-white hover:bg-blue-700'
                         }`}
                       >
-                        {isOtherMember ? 'Switch to this Faction' : 'Join Faction'}
+                        {isOtherMember ? 'Switch' : 'Join'}
                       </button>
                     </form>
                   )}
-                </div>
-              </div>
-
-              <div className="flex-grow-0 flex flex-col bg-white min-h-[120px] border-b border-gray-100">
-                <div className="px-6 py-2 bg-gray-50 border-b border-gray-100 font-semibold text-gray-500 text-xs uppercase tracking-wide flex justify-between items-center">
-                  <span>Members</span>
-                </div>
-                <div className="p-4 bg-white">
-                  {faction.members.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center text-gray-400 text-xs italic py-2">
-                      <p>No members yet.</p>
-                    </div>
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
-                      {faction.members.map((member) => {
-                        const bgColor = getAvatarColor(member.user.username);
-                        const initial = member.user.username.charAt(0).toUpperCase();
-                        return (
-                          <div 
-                            key={member.user.id} 
-                            className="group relative flex flex-col items-center"
-                          >
-                            <div className={`w-8 h-8 rounded-full ${bgColor} flex items-center justify-center text-white font-bold text-xs shadow-sm ring-2 ring-white cursor-default`}>
-                              {initial}
-                            </div>
-                            <div className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs py-1 px-2 rounded whitespace-nowrap z-20 pointer-events-none">
-                              {member.user.username}
-                              <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 divide-x divide-gray-100 flex-grow bg-white min-h-[300px]">
-                <div className="flex flex-col h-full">
-                  <div className="p-3 bg-green-50/50 text-green-800 text-sm font-bold uppercase text-center border-b border-green-100">
-                    Why Join?
-                  </div>
-                  <div className="flex-grow p-4 space-y-4 overflow-y-auto bg-green-50/10">
-                    {user && (
-                      <div className="p-3 border-b border-green-100 bg-green-50/20">
-                        <OpinionCard 
-                          opinion={faction.opinions.find(o => o.type === 'WHY' && o.authorId === user.id)}
-                          factionId={faction.id}
-                          type="WHY"
-                          currentUser={user}
-                        />
-                      </div>
-                    )}
-                    
-                    {faction.opinions
-                      .filter(o => o.type === 'WHY' && (!user || o.authorId !== user.id))
-                      .map(opinion => (
-                        <OpinionCard 
-                          key={opinion.id}
-                          opinion={opinion}
-                          factionId={faction.id}
-                          type="WHY"
-                          currentUser={user}
-                        />
-                      ))
-                    }
-                    
-                    {faction.opinions.filter(o => o.type === 'WHY').length === 0 && !user && (
-                      <div className="text-center py-8 text-gray-400 text-sm italic">
-                        No arguments yet.
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex flex-col h-full">
-                  <div className="p-3 bg-red-50/50 text-red-800 text-sm font-bold uppercase text-center border-b border-red-100">
-                    Why Not?
-                  </div>
-                  <div className="flex-grow p-4 space-y-4 overflow-y-auto bg-red-50/10">
-                    {user && (
-                      <div className="p-3 border-b border-red-100 bg-red-50/20">
-                        <OpinionCard 
-                          opinion={faction.opinions.find(o => o.type === 'WHY_NOT' && o.authorId === user.id)}
-                          factionId={faction.id}
-                          type="WHY_NOT"
-                          currentUser={user}
-                        />
-                      </div>
-                    )}
-                    
-                    {faction.opinions
-                      .filter(o => o.type === 'WHY_NOT' && (!user || o.authorId !== user.id))
-                      .map(opinion => (
-                        <OpinionCard 
-                          key={opinion.id}
-                          opinion={opinion}
-                          factionId={faction.id}
-                          type="WHY_NOT"
-                          currentUser={user}
-                        />
-                      ))
-                    }
-                    
-                    {faction.opinions.filter(o => o.type === 'WHY_NOT').length === 0 && !user && (
-                      <div className="text-center py-8 text-gray-400 text-sm italic">
-                        No counter-arguments yet.
-                      </div>
-                    )}
-                  </div>
                 </div>
               </div>
             </div>

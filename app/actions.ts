@@ -272,6 +272,48 @@ export async function leaveFaction(topicId: string, _formData?: FormData) {
   revalidatePath(`/topic/${topicId}`)
 }
 
+export async function getFaction(factionId: string) {
+  const faction = await prisma.faction.findUnique({
+    where: { id: factionId },
+    include: {
+      topic: true,
+      _count: {
+        select: { members: true }
+      },
+      opinions: {
+        orderBy: { createdAt: 'desc' },
+        include: {
+          author: true,
+          citations: {
+            include: {
+              target: {
+                include: {
+                  author: true,
+                  faction: {
+                    include: {
+                      topic: true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          citedBy: {
+            include: {
+              source: {
+                include: {
+                  author: true
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  })
+  return faction
+}
+
 export async function getUserMembership(topicId: string) {
   const user = await getCurrentUser()
   if (!user) return null
