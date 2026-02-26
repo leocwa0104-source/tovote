@@ -13,6 +13,7 @@ interface CitationTarget {
     username: string
   }
   faction: {
+    name: string
     topic: {
       title: string
     }
