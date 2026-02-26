@@ -65,11 +65,11 @@ export default async function DashboardPage() {
                     <div className="flex items-center justify-between bg-gray-50 p-3 rounded border border-gray-100">
                       <div>
                         <span className="text-xs text-gray-500 block">Your Faction</span>
-                        <span className="font-semibold text-blue-700">{membership.faction.name}</span>
+                        <span className="font-semibold text-blue-700">{membership.faction?.name ?? '未加入阵营'}</span>
                       </div>
                       <div className="text-right">
                         <span className="text-xs text-gray-500 block">Teammates</span>
-                        <span className="font-mono font-medium">{membership.faction._count.members - 1}</span>
+                        <span className="font-mono font-medium">{Math.max(0, (membership.faction?._count?.members ?? 1) - 1)}</span>
                       </div>
                     </div>
                   </Link>
