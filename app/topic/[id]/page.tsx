@@ -4,6 +4,7 @@ import { getTopic, getUserMembership, joinFaction, leaveFaction, getCurrentUser,
 import AuthControl from '@/app/components/AuthControl'
 import TopicGate from '@/app/components/TopicGate'
 import ShareButton from '@/app/components/ShareButton'
+import CreateFactionForm from '@/app/components/CreateFactionForm'
 import OpinionCard from '@/app/components/OpinionCard'
 
 function getAvatarColor(username: string) {
@@ -93,8 +94,8 @@ export default async function TopicPage(props: { params: Promise<{ id: string }>
       </div>
       
       {/* Factions creation */}
-      <div className="w-full max-w-4xl mb-8">
-        {/* The creation form may be hidden or shown based on your needs */}
+      <div className="w-full max-w-4xl mb-8 flex justify-center">
+        <CreateFactionForm topicId={topic.id} user={user} />
       </div>
 
       {/* Factions List */}
