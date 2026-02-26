@@ -170,6 +170,15 @@ export async function getTopic(id: string) {
                     }
                   }
                 }
+              },
+              citedBy: {
+                include: {
+                  source: {
+                    include: {
+                      author: true
+                    }
+                  }
+                }
               }
             }
           }
