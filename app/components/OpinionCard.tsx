@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createOpinion, deleteOpinion } from '@/app/actions'
+import OpinionDetailModal from './OpinionDetailModal'
 
 interface Opinion {
   id: string
@@ -18,8 +19,15 @@ interface Opinion {
     target: {
       id: string
       summary: string
+      detail: string | null
+      type: 'WHY' | 'WHY_NOT'
       author: {
         username: string
+      }
+      faction: {
+        topic: {
+          title: string
+        }
       }
     }
   }[]
@@ -38,6 +46,7 @@ export default function OpinionCard({ opinion, factionId, type, currentUser, isM
   const [isExpanded, setIsExpanded] = useState(false)
   const [loading, setLoading] = useState(false)
   const [citationId, setCitationId] = useState('') // For simple manual citation input
+  const [selectedCitation, setSelectedCitation] = useState<Opinion['citations'][0]['target'] | null>(null)
 
   const isOwner = currentUser && opinion?.authorId === currentUser.id
   
@@ -212,12 +221,24 @@ export default function OpinionCard({ opinion, factionId, type, currentUser, isM
           {opinion.citations && opinion.citations.length > 0 && (
             <div className="mt-2 flex flex-col gap-1">
               {opinion.citations.map(citation => (
-                <div key={citation.id} className="text-xs bg-gray-50 border-l-2 border-blue-300 p-2 rounded-r text-gray-600">
-                  <span className="font-semibold text-gray-700 block mb-0.5">
-                    Cited: {citation.target.author.username}
-                  </span>
-                  "{citation.target.summary}"
-                </div>
+                <button 
+                  key={citation.id} 
+                  type="button"
+                  onClick={() => setSelectedCitation(citation.target)}
+                  className="text-left group"
+                >
+                  <div className="text-xs bg-gray-50 border-l-2 border-blue-300 p-2 rounded-r text-gray-600 hover:bg-blue-50 transition-colors">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="font-semibold text-gray-700">
+                        {citation.target.author.username}
+                      </span>
+                      <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full group-hover:bg-white">
+                        {citation.target.faction.topic.title}
+                      </span>
+                    </div>
+                    "{citation.target.summary}"
+                  </div>
+                </button>
               ))}
             </div>
           )}
@@ -246,6 +267,14 @@ export default function OpinionCard({ opinion, factionId, type, currentUser, isM
           )}
         </div>
       </div>
+
+      {selectedCitation && (
+        <OpinionDetailModal
+          isOpen={!!selectedCitation}
+          onClose={() => setSelectedCitation(null)}
+          opinion={selectedCitation}
+        />
+      )}
     </div>
   )
 }

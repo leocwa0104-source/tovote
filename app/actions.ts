@@ -160,7 +160,14 @@ export async function getTopic(id: string) {
               citations: {
                 include: {
                   target: {
-                    include: { author: true }
+                    include: { 
+                      author: true,
+                      faction: {
+                        include: {
+                          topic: true
+                        }
+                      }
+                    }
                   }
                 }
               }
