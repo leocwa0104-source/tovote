@@ -260,6 +260,7 @@ export async function joinTopic(topicId: string) {
     })
   }
   revalidatePath(`/topic/${topicId}`)
+  redirect(`/topic/${topicId}`)
 }
 
 export async function leaveTopic(topicId: string) {
