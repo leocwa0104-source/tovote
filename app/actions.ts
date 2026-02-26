@@ -502,25 +502,10 @@ export async function getUserDashboardData() {
 // --- Search ---
 
 export async function searchOpinions(query: string) {
-  // Allow empty query to return recent opinions
+  if (!query || query.length < 2) return []
+  
   const user = await getCurrentUser()
   if (!user) return []
-
-  if (!query || query.length < 2) {
-    // Return recent opinions across all topics
-    return prisma.opinion.findMany({
-      take: 5,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        author: true,
-        faction: {
-          include: {
-            topic: true
-          }
-        }
-      }
-    })
-  }
 
   return prisma.opinion.findMany({
     where: {
