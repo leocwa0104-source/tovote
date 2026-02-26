@@ -38,7 +38,7 @@ export async function getCurrentUser() {
 
 // --- Topics ---
 
-export async function createTopic(formData: FormData) {
+export async function createTopic(prevState: any, formData: FormData) {
   const title = formData.get('title') as string
   const description = formData.get('description') as string
   const isPrivate = formData.get('isPrivate') === 'on'
@@ -47,26 +47,39 @@ export async function createTopic(formData: FormData) {
   const seekRational = formData.get('seekRational') === 'on'
   
   const user = await getCurrentUser()
-  if (!user) throw new Error("Unauthorized")
+  if (!user) return { message: 'Unauthorized' }
 
-  let hashedPassword = null
-  if (isPrivate && password) {
-    hashedPassword = await bcrypt.hash(password, 10)
-  }
+  try {
+    const existingTopic = await prisma.topic.findUnique({
+      where: { title }
+    })
 
-  await prisma.topic.create({
-    data: {
-      title,
-      description,
-      creatorId: user.id,
-      isPrivate,
-      password: hashedPassword,
-      seekBrainstorming,
-      seekRational
+    if (existingTopic) {
+      return { message: 'Topic with this title already exists. Please choose a different title.' }
     }
-  })
-  
-  revalidatePath('/')
+
+    let hashedPassword = null
+    if (isPrivate && password) {
+      hashedPassword = await bcrypt.hash(password, 10)
+    }
+
+    await prisma.topic.create({
+      data: {
+        title,
+        description,
+        creatorId: user.id,
+        isPrivate,
+        password: hashedPassword,
+        seekBrainstorming,
+        seekRational
+      }
+    })
+    
+    revalidatePath('/')
+    return { message: 'success' }
+  } catch (e) {
+    return { message: 'Failed to create topic' }
+  }
 }
 
 export async function verifyTopicPassword(topicId: string, password: string) {

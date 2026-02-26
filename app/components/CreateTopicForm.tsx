@@ -47,8 +47,15 @@ export default function CreateTopicForm({ user }: { user: any }) {
     )
   }
 
+  const handleSubmit = async (formData: FormData) => {
+    const result = await createTopic(null, formData)
+    if (result && result.message !== 'success') {
+      alert(result.message)
+    }
+  }
+
   return (
-    <form action={createTopic} className="flex flex-col gap-4">
+    <form action={handleSubmit} className="flex flex-col gap-4">
       <div className="relative">
         <input
           type="text"
