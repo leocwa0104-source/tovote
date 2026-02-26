@@ -4,6 +4,21 @@ import { useState } from 'react'
 import { createOpinion, deleteOpinion } from '@/app/actions'
 import OpinionDetailModal from './OpinionDetailModal'
 
+interface CitationTarget {
+  id: string
+  summary: string
+  detail: string | null
+  type: 'WHY' | 'WHY_NOT'
+  author: {
+    username: string
+  }
+  faction: {
+    topic: {
+      title: string
+    }
+  }
+}
+
 interface Opinion {
   id: string
   summary: string
@@ -16,20 +31,7 @@ interface Opinion {
   updatedAt: Date
   citations?: {
     id: string
-    target: {
-      id: string
-      summary: string
-      detail: string | null
-      type: 'WHY' | 'WHY_NOT'
-      author: {
-        username: string
-      }
-      faction: {
-        topic: {
-          title: string
-        }
-      }
-    }
+    target: CitationTarget
   }[]
 }
 
@@ -46,7 +48,7 @@ export default function OpinionCard({ opinion, factionId, type, currentUser, isM
   const [isExpanded, setIsExpanded] = useState(false)
   const [loading, setLoading] = useState(false)
   const [citationId, setCitationId] = useState('') // For simple manual citation input
-  const [selectedCitation, setSelectedCitation] = useState<Opinion['citations'][0]['target'] | null>(null)
+  const [selectedCitation, setSelectedCitation] = useState<CitationTarget | null>(null)
 
   const isOwner = currentUser && opinion?.authorId === currentUser.id
   
