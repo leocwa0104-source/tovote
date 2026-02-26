@@ -10,36 +10,43 @@
    const [isChecking, setIsChecking] = useState(false)
  
    useEffect(() => {
-     const timer = setTimeout(async () => {
-       if (name.trim().length < 2) {
-         setSimilarFactions([])
-         return
-       }
- 
-       setIsChecking(true)
-       try {
-         const result = await checkFactionSimilarity(topicId, name)
-         if (result && Array.isArray(result.matches)) {
-           setSimilarFactions(result.matches)
-         } else {
-           setSimilarFactions([])
-         }
-       } catch (_e) {
-         setSimilarFactions([])
-       } finally {
-         setIsChecking(false)
-       }
-     }, 600)
- 
-     return () => clearTimeout(timer)
-   }, [name, topicId])
- 
-   return (
-     <div className="w-full max-w-2xl bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-12">
-       <h3 className="text-lg font-semibold mb-4">Start a New Faction</h3>
-       {user ? (
-         <form action={createFaction.bind(null, topicId)} className="flex flex-col gap-4">
-           <div className="relative">
+    const timer = setTimeout(async () => {
+      if (name.trim().length < 2) {
+        setSimilarFactions([])
+        return
+      }
+
+      setIsChecking(true)
+      try {
+        const result = await checkFactionSimilarity(topicId, name)
+        if (result && Array.isArray(result.matches)) {
+          setSimilarFactions(result.matches)
+        } else {
+          setSimilarFactions([])
+        }
+      } catch (_e) {
+        setSimilarFactions([])
+      } finally {
+        setIsChecking(false)
+      }
+    }, 600)
+
+    return () => clearTimeout(timer)
+  }, [name, topicId])
+
+  const handleSubmit = async (formData: FormData) => {
+    const result = await createFaction(topicId, null, formData)
+    if (result && result.message !== 'success') {
+      alert(result.message)
+    }
+  }
+
+  return (
+    <div className="w-full max-w-2xl bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-12">
+      <h3 className="text-lg font-semibold mb-4">Start a New Faction</h3>
+      {user ? (
+        <form action={handleSubmit} className="flex flex-col gap-4">
+          <div className="relative">
              <input
                type="text"
                name="name"

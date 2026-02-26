@@ -210,19 +210,35 @@ export async function getTopic(id: string) {
 
 // --- Factions ---
 
-export async function createFaction(topicId: string, formData: FormData) {
+export async function createFaction(topicId: string, prevState: any, formData: FormData) {
   const name = formData.get('name') as string
   const description = formData.get('description') as string | undefined
   
-  await prisma.faction.create({
-    data: {
-      name,
-      description: description || null, // Optional
-      topicId: topicId,
+  try {
+    const existingFaction = await prisma.faction.findFirst({
+      where: {
+        topicId: topicId,
+        name: name
+      }
+    })
+
+    if (existingFaction) {
+      return { message: 'Faction with this name already exists in this topic. Please choose a different name.' }
     }
-  })
-  
-  revalidatePath(`/topic/${topicId}`)
+
+    await prisma.faction.create({
+      data: {
+        name,
+        description: description || null, // Optional
+        topicId: topicId,
+      }
+    })
+    
+    revalidatePath(`/topic/${topicId}`)
+    return { message: 'success' }
+  } catch (e) {
+    return { message: 'Failed to create faction' }
+  }
 }
 
 export async function joinFaction(topicId: string, factionId: string, _formData?: FormData) {
