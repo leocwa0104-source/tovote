@@ -125,6 +125,64 @@ export default function OpinionCard({ opinion, factionId, type, currentUser }: O
     }
   }
 
+  const renderDetailWithCitations = (text: string, citations: { id: string, target: CitationTarget }[]) => {
+    if (!text) return null;
+    
+    // Regex to match @[username: summary...]
+    const regex = /@\[([^:]+): (.*?)\]/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(text)) !== null) {
+      // Add text before the match
+      if (match.index > lastIndex) {
+        parts.push(text.substring(lastIndex, match.index));
+      }
+
+      const fullMatch = match[0];
+      const username = match[1];
+      const summarySnippet = match[2]; 
+      
+      const cleanSnippet = summarySnippet.endsWith('...') 
+        ? summarySnippet.slice(0, -3) 
+        : summarySnippet;
+
+      // Find corresponding citation
+      const citation = citations.find(c => 
+        c.target.author.username === username && 
+        (c.target.summary.includes(cleanSnippet) || c.target.summary.startsWith(cleanSnippet))
+      );
+
+      if (citation) {
+        parts.push(
+          <button
+            key={match.index}
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedCitation(citation.target);
+            }}
+            className="text-blue-600 hover:text-blue-800 hover:underline font-medium inline-flex items-center gap-0.5 mx-1"
+          >
+            @{username}
+          </button>
+        );
+      } else {
+        parts.push(<span key={match.index} className="text-gray-500">{fullMatch}</span>);
+      }
+
+      lastIndex = regex.lastIndex;
+    }
+
+    // Add remaining text
+    if (lastIndex < text.length) {
+      parts.push(text.substring(lastIndex));
+    }
+
+    return parts.length > 0 ? parts : text;
+  };
+
   // If editing or no opinion yet (and user is logged in), show form
   if (isEditing || (!opinion && currentUser)) {
     return (
@@ -255,36 +313,11 @@ export default function OpinionCard({ opinion, factionId, type, currentUser }: O
           
           <h5 className="font-semibold text-gray-800 text-sm mt-1 break-words">{opinion.summary}</h5>
           
-          {opinion.citations && opinion.citations.length > 0 && (
-            <div className="mt-2 flex flex-col gap-1">
-              {opinion.citations.map(citation => (
-                <button 
-                  key={citation.id} 
-                  type="button"
-                  onClick={() => setSelectedCitation(citation.target)}
-                  className="text-left group"
-                >
-                  <div className="text-xs bg-gray-50 border-l-2 border-blue-300 p-2 rounded-r text-gray-600 hover:bg-blue-50 transition-colors">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="font-semibold text-gray-700">
-                        {citation.target.author.username}
-                      </span>
-                      <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full group-hover:bg-white">
-                        {citation.target.faction.topic.title}
-                      </span>
-                    </div>
-                    "{citation.target.summary}"
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-
           {opinion.detail && (
             <div className="mt-2">
               {isExpanded ? (
                 <div className="text-sm text-gray-600 whitespace-pre-wrap break-words border-t border-gray-100 pt-2 mt-2">
-                  {opinion.detail}
+                  {renderDetailWithCitations(opinion.detail, opinion.citations)}
                   <button 
                     onClick={() => setIsExpanded(false)}
                     className="block mt-2 text-xs text-blue-500 hover:underline"
