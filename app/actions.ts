@@ -600,3 +600,25 @@ export async function searchOpinions(query: string) {
     }
   })
 }
+
+export async function getOpinionById(id: string) {
+  const user = await getCurrentUser()
+  if (!user) return null
+  
+  try {
+    const opinion = await prisma.opinion.findUnique({
+      where: { id },
+      include: {
+        author: true,
+        faction: {
+          include: {
+            topic: true
+          }
+        }
+      }
+    })
+    return opinion
+  } catch (e) {
+    return null
+  }
+}

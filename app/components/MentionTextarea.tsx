@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { searchOpinions } from '@/app/actions'
+import { searchOpinions, getOpinionById } from '@/app/actions'
 import { useDebounce } from 'use-debounce'
 
 interface MentionTextareaProps {
@@ -133,6 +133,69 @@ export default function MentionTextarea({
     }
   }
 
+  const insertMention = (opinion: any) => {
+    if (!textareaRef.current) return
+
+    const mentionText = `@[${opinion.author.username}: ${opinion.summary.substring(0, 20)}...]`
+    const cursor = textareaRef.current.selectionStart
+    
+    const beforeCursor = value.substring(0, cursor)
+    const afterCursor = value.substring(textareaRef.current.selectionEnd)
+    
+    const newValue = beforeCursor + mentionText + ' ' + afterCursor
+    setValue(newValue)
+    
+    // Notify parent to add hidden citation ID
+    if (onCitationAdd) {
+      onCitationAdd(opinion)
+    }
+
+    // Set cursor position after the inserted mention
+    setTimeout(() => {
+        if (textareaRef.current) {
+            textareaRef.current.focus()
+            const newCursorPos = cursor + mentionText.length + 1
+            textareaRef.current.setSelectionRange(newCursorPos, newCursorPos)
+        }
+    }, 0)
+  }
+
+  const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const text = e.clipboardData.getData('text').trim()
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+    if (uuidRegex.test(text)) {
+      e.preventDefault()
+      // Optimistically fetch opinion
+      try {
+        const opinion = await getOpinionById(text)
+        if (opinion) {
+          insertMention(opinion)
+        } else {
+          // Fallback to default paste if not found
+          // Since we prevented default, we must insert manually
+          const cursor = e.currentTarget.selectionStart
+          const before = value.substring(0, cursor)
+          const after = value.substring(e.currentTarget.selectionEnd)
+          setValue(before + text + after)
+          
+          setTimeout(() => {
+            if (textareaRef.current) {
+              const newPos = cursor + text.length
+              textareaRef.current.setSelectionRange(newPos, newPos)
+            }
+          }, 0)
+        }
+      } catch (err) {
+        // Fallback
+        const cursor = e.currentTarget.selectionStart
+        const before = value.substring(0, cursor)
+        const after = value.substring(e.currentTarget.selectionEnd)
+        setValue(before + text + after)
+      }
+    }
+  }
+
   return (
     <div className="relative w-full">
       <textarea
@@ -141,6 +204,7 @@ export default function MentionTextarea({
         value={value}
         onChange={handleInput}
         onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
         // Handle click/keyup to update cursor position for mention detection
         onKeyUp={(e) => setCursorPosition(e.currentTarget.selectionStart)}
         onClick={(e) => setCursorPosition(e.currentTarget.selectionStart)}

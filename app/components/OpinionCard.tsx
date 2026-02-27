@@ -58,7 +58,6 @@ export default function OpinionCard({ opinion, factionId, type, currentUser }: O
   const [isEditing, setIsEditing] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [citationId, setCitationId] = useState('') // For simple manual citation input
   const [selectedCitation, setSelectedCitation] = useState<CitationTarget | null>(null)
   const [mentionedCitations, setMentionedCitations] = useState<CitationTarget[]>([])
 
@@ -179,26 +178,11 @@ export default function OpinionCard({ opinion, factionId, type, currentUser }: O
           </div>
 
           {!opinion && (
-            <div className="mt-4 pt-4 border-t border-yellow-200/50">
-              {/* Hidden inputs for mentions */}
+            <>
               {mentionedCitations.map(c => (
                 <input key={c.id} type="hidden" name="citationIds" value={JSON.stringify([c.id])} />
               ))}
-              
-              <div className="flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity">
-                <span className="text-xs font-medium text-yellow-700">Add Citation:</span>
-                <div className="flex-grow flex gap-2">
-                  <input
-                    type="text"
-                    value={citationId}
-                    onChange={(e) => setCitationId(e.target.value)}
-                    placeholder="Paste Opinion ID..."
-                    className="flex-grow bg-white/50 border-0 border-b border-yellow-300 focus:border-yellow-600 focus:ring-0 text-xs py-1 px-0 bg-transparent"
-                  />
-                  {citationId && <input type="hidden" name="citationIds" value={JSON.stringify([citationId])} />}
-                </div>
-              </div>
-            </div>
+            </>
           )}
           
           <div className="flex gap-3 justify-end mt-4">
