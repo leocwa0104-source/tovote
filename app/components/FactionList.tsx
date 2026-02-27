@@ -64,23 +64,25 @@ export default function FactionList({
             key={faction.id}
             href={`/topic/${topicId}?factionId=${faction.id}`}
             className={`
-              group relative p-4 rounded-lg border transition-all duration-200
+              group relative p-4 rounded-lg border transition-all duration-200 overflow-hidden
               ${isSelected 
                 ? 'bg-white border-gray-900 shadow-sm' 
                 : 'bg-white border-transparent hover:border-gray-200 hover:bg-gray-50'
               }
             `}
           >
+            {(faction.seekBrainstorming || faction.seekRational) && (
+              <div className="absolute top-0 left-4 flex gap-1">
+                {faction.seekBrainstorming && <div className="w-1.5 h-3 bg-orange-400 rounded-b-sm shadow-sm" title="Brainstorming" />}
+                {faction.seekRational && <div className="w-1.5 h-3 bg-teal-400 rounded-b-sm shadow-sm" title="Rational" />}
+              </div>
+            )}
             <div className="flex flex-col gap-1">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <h4 className={`font-bold ${isSelected ? 'text-gray-900' : 'text-gray-600 group-hover:text-gray-900'}`}>
                     {faction.name}
                   </h4>
-                  <div className="flex items-center gap-1 text-xs">
-                    {faction.seekBrainstorming && <span title="Brainstorming">🧠</span>}
-                    {faction.seekRational && <span title="Rational">📊</span>}
-                  </div>
                 </div>
                 {isMember && (
                   <span className="w-2 h-2 rounded-full bg-green-500" title="Your Faction"></span>
