@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { Lock } from './Icons'
-import JoinPrivateTopicModal from './JoinPrivateTopicModal'
 
 interface Topic {
   id: string
@@ -25,7 +24,6 @@ export default function TopicNav({ topics, privateTopics = [], isAuthenticated }
   const pathname = usePathname()
   const [query, setQuery] = useState('')
   const [activeTab, setActiveTab] = useState<'public' | 'private'>('public')
-  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false)
 
   const currentList = activeTab === 'public' ? topics : privateTopics
 
@@ -132,21 +130,16 @@ export default function TopicNav({ topics, privateTopics = [], isAuthenticated }
 
         {activeTab === 'private' && (
           <div className="mt-4 px-2">
-            <button
-              onClick={() => setIsJoinModalOpen(true)}
+            <Link
+              href="/?action=join-private"
               className="w-full py-2 px-3 bg-purple-50 text-purple-700 border border-purple-200 rounded-md text-sm font-medium hover:bg-purple-100 transition-colors flex items-center justify-center gap-2"
             >
               <Lock className="w-3 h-3" />
               Join Private Topic
-            </button>
+            </Link>
           </div>
         )}
       </div>
-      
-      <JoinPrivateTopicModal 
-        isOpen={isJoinModalOpen} 
-        onClose={() => setIsJoinModalOpen(false)} 
-      />
     </nav>
   )
 }
