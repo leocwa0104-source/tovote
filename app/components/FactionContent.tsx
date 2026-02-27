@@ -80,7 +80,7 @@ export default function FactionContent({
   
   // Sort opinions: User's own opinion first (if exists), then by date (newest first)
   // Actually, let's separate user opinion from others for clarity as before
-  const userOpinion = user ? currentOpinions.find((o: Opinion) => o.authorId === user.id) : null
+  const userOpinion = user ? currentOpinions.find((o: Opinion) => o.authorId === user.id) : undefined
   const otherOpinions = currentOpinions
     .filter((o: Opinion) => !user || o.authorId !== user.id)
     .sort((a: Opinion, b: Opinion) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
