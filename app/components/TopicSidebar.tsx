@@ -1,4 +1,4 @@
-import { getTopics, getCurrentUser } from '@/app/actions'
+import { getTopics, getCurrentUser, getJoinedPrivateTopics } from '@/app/actions'
 import TopicNav from './TopicNav'
 import Link from 'next/link'
 import AuthControl from './AuthControl'
@@ -6,6 +6,7 @@ import AuthControl from './AuthControl'
 export default async function TopicSidebar() {
   const topics = await getTopics()
   const user = await getCurrentUser()
+  const privateTopics = user ? await getJoinedPrivateTopics() : []
 
   return (
     <div className="w-64 flex-shrink-0 bg-gray-50 border-r border-gray-200 h-full flex flex-col">
@@ -18,10 +19,7 @@ export default async function TopicSidebar() {
       </div>
 
       {/* Topic List */}
-      <div className="flex-grow overflow-y-auto py-2">
-        <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-          Topics
-        </div>
+      <div className="flex-grow overflow-hidden">
         <TopicNav 
           topics={topics.map(t => ({ 
             id: t.id, 
@@ -31,6 +29,14 @@ export default async function TopicSidebar() {
             seekRational: t.seekRational,
             creator: t.creator
           }))} 
+          privateTopics={privateTopics.map(t => ({ 
+            id: t.id, 
+            title: t.title, 
+            isPrivate: t.isPrivate,
+            seekBrainstorming: t.seekBrainstorming,
+            seekRational: t.seekRational,
+            creator: t.creator
+          }))}
           isAuthenticated={!!user}
         />
       </div>

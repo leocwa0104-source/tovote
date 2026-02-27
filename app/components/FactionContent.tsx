@@ -64,6 +64,7 @@ interface FactionContentProps {
   topicId: string
   isMember: boolean
   isOtherMember: boolean
+  isPrivateTopic?: boolean
 }
 
 export default function FactionContent({ 
@@ -71,7 +72,8 @@ export default function FactionContent({
   user, 
   topicId,
   isMember,
-  isOtherMember 
+  isOtherMember,
+  isPrivateTopic
 }: FactionContentProps) {
   const [activeTab, setActiveTab] = useState<'WHY' | 'WHY_NOT'>('WHY')
 
@@ -181,12 +183,13 @@ export default function FactionContent({
             
             {user ? (
                <OpinionCard 
-                key={`user-${activeTab}`} // Force re-render on tab switch
-                opinion={userOpinion}
-                factionId={faction.id}
-                type={activeTab}
-                currentUser={user}
-              />
+            key={`user-${activeTab}`} // Force re-render on tab switch
+            opinion={userOpinion}
+            factionId={faction.id}
+            type={activeTab}
+            currentUser={user}
+            isPrivateTopic={isPrivateTopic}
+          />
             ) : (
               <div className="bg-white/50 p-6 rounded-lg text-center border border-dashed border-gray-300">
                 <p className="text-gray-500 mb-2">Sign in to share your thoughts</p>
@@ -208,12 +211,13 @@ export default function FactionContent({
               {otherOpinions.length > 0 ? (
                 otherOpinions.map((opinion: Opinion) => (
                   <OpinionCard 
-                    key={opinion.id}
-                    opinion={opinion}
-                    factionId={faction.id}
-                    type={activeTab}
-                    currentUser={user}
-                  />
+            key={opinion.id}
+            opinion={opinion}
+            factionId={faction.id}
+            type={activeTab}
+            currentUser={user}
+            isPrivateTopic={isPrivateTopic}
+          />
                 ))
               ) : (
                 <div className="text-center py-12 text-gray-400 italic bg-white/50 rounded-xl border border-transparent">

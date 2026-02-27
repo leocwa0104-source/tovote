@@ -111,6 +111,7 @@ export default async function TopicPage(props: {
               topicId={topic.id}
               isMember={currentFactionId === selectedFaction.id}
               isOtherMember={!!(currentFactionId && currentFactionId !== selectedFaction.id)}
+              isPrivateTopic={topic.isPrivate}
             />
           </div>
         ) : (

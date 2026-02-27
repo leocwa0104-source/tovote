@@ -52,9 +52,10 @@ interface OpinionCardProps {
   factionId: string
   type: 'WHY' | 'WHY_NOT'
   currentUser: { id: string } | null
+  isPrivateTopic?: boolean
 }
 
-export default function OpinionCard({ opinion, factionId, type, currentUser }: OpinionCardProps) {
+export default function OpinionCard({ opinion, factionId, type, currentUser, isPrivateTopic }: OpinionCardProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -299,19 +300,21 @@ export default function OpinionCard({ opinion, factionId, type, currentUser }: O
 
         {/* Actions: Absolute positioned on hover */}
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute right-2 top-2 bg-white/90 backdrop-blur-sm px-1.5 py-0.5 rounded-md shadow-sm border border-gray-100">
-          <button 
-            onClick={() => {
-              navigator.clipboard.writeText(opinion.id)
-              alert('Opinion ID copied!')
-            }} 
-            className="text-gray-400 hover:text-gray-700 p-1.5 rounded-sm hover:bg-gray-100"
-            title="Copy ID"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-            </svg>
-          </button>
+          {!isPrivateTopic && (
+            <button 
+              onClick={() => {
+                navigator.clipboard.writeText(opinion.id)
+                alert('Opinion ID copied!')
+              }} 
+              className="text-gray-400 hover:text-gray-700 p-1.5 rounded-sm hover:bg-gray-100"
+              title="Copy ID"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+            </button>
+          )}
           {isOwner && (
             <>
               <button 

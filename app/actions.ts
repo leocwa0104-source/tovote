@@ -148,6 +148,7 @@ export async function checkTopicAccess(topicId: string) {
 
 export async function getTopics() {
   return prisma.topic.findMany({
+    where: { isPrivate: false },
     orderBy: { createdAt: 'desc' },
     include: {
       creator: {
@@ -158,6 +159,72 @@ export async function getTopics() {
       }
     }
   })
+}
+
+export async function getJoinedPrivateTopics() {
+  const user = await getCurrentUser()
+  if (!user) return []
+
+  const memberships = await prisma.membership.findMany({
+    where: { 
+      userId: user.id,
+      topic: { isPrivate: true }
+    },
+    include: {
+      topic: {
+        include: {
+          creator: {
+            select: { username: true }
+          },
+          _count: {
+            select: { factions: true, memberships: true }
+          }
+        }
+      }
+    },
+    orderBy: { joinedAt: 'desc' }
+  })
+
+  return memberships.map(m => m.topic)
+}
+
+export async function joinPrivateTopic(title: string, creatorName: string, password: string) {
+  const user = await getCurrentUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
+
+  const creator = await prisma.user.findUnique({ where: { username: creatorName } })
+  if (!creator) return { success: false, error: 'Topic not found' }
+
+  const topic = await prisma.topic.findFirst({
+    where: { 
+      title,
+      creatorId: creator.id,
+      isPrivate: true
+    }
+  })
+
+  if (!topic || !topic.password) return { success: false, error: 'Topic not found' }
+
+  const isValid = await bcrypt.compare(password, topic.password)
+  if (!isValid) return { success: false, error: 'Incorrect password' }
+
+  // Set access cookie
+  const cookieStore = await cookies()
+  cookieStore.set(`access_topic_${topic.id}`, user.id, { httpOnly: true, secure: process.env.NODE_ENV === 'production' })
+
+  // Add membership if not exists
+  const existing = await prisma.membership.findUnique({
+    where: { userId_topicId: { userId: user.id, topicId: topic.id } }
+  })
+  
+  if (!existing) {
+    await prisma.membership.create({
+      data: { userId: user.id, topicId: topic.id }
+    })
+  }
+
+  revalidatePath('/')
+  return { success: true, topicId: topic.id }
 }
 
 export async function getTopic(id: string) {
