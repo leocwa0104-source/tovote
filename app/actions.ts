@@ -511,6 +511,7 @@ export async function createOpinion(formData: FormData) {
   }
 
   revalidatePath(`/topic/${faction.topicId}`)
+  revalidatePath(`/topic/${faction.topicId}/faction/${faction.id}`)
 }
 
 export async function deleteOpinion(opinionId: string) {
@@ -528,6 +529,7 @@ export async function deleteOpinion(opinionId: string) {
   
   if (faction) {
     revalidatePath(`/topic/${faction.topicId}`)
+    revalidatePath(`/topic/${faction.topicId}/faction/${faction.id}`)
   }
 }
 
