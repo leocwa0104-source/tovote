@@ -41,7 +41,7 @@ export default async function DashboardPage() {
             
             {joinedFactions.length === 0 ? (
               <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 text-center text-gray-500">
-                You haven't joined any factions yet.
+                You haven&apos;t joined any factions yet.
                 <br />
                 <Link href="/" className="text-blue-600 hover:underline mt-2 inline-block">
                   Browse Topics
@@ -89,7 +89,7 @@ export default async function DashboardPage() {
 
             {createdTopics.length === 0 ? (
               <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 text-center text-gray-500">
-                You haven't created any topics yet.
+                You haven&apos;t created any topics yet.
               </div>
             ) : (
               <div className="flex flex-col gap-4">

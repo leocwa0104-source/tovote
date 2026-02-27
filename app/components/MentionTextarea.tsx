@@ -3,6 +3,22 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { getOpinionById } from '@/app/actions'
 
+interface CitationTarget {
+  id: string
+  summary: string
+  detail: string | null
+  type: 'WHY' | 'WHY_NOT'
+  author: {
+    username: string
+  }
+  faction: {
+    name: string
+    topic: {
+      title: string
+    }
+  }
+}
+
 interface MentionTextareaProps {
   name: string
   placeholder: string
@@ -10,7 +26,7 @@ interface MentionTextareaProps {
   className?: string
   required?: boolean
   maxLength?: number
-  onCitationAdd?: (citation: any) => void
+  onCitationAdd?: (citation: CitationTarget) => void
   onKeyDown?: (e: React.KeyboardEvent<HTMLDivElement>) => void
   ref?: React.RefObject<HTMLDivElement | null>
 }
@@ -76,8 +92,8 @@ export default function MentionTextarea({
   // Use either the passed ref or the internal ref
   useEffect(() => {
     if (ref && internalRef.current) {
-        // @ts-ignore - we are syncing the refs
-        ref.current = internalRef.current
+      // @ts-expect-error - syncing forwarded refs
+      ref.current = internalRef.current
     }
   }, [ref])
 
@@ -105,7 +121,7 @@ export default function MentionTextarea({
     }
   }
 
-  const insertMentionChip = (opinion: any) => {
+  const insertMentionChip = (opinion: CitationTarget) => {
     if (!divRef.current) return
 
     const selection = window.getSelection();
@@ -168,11 +184,11 @@ export default function MentionTextarea({
       try {
         const opinion = await getOpinionById(text)
         if (opinion) {
-          insertMentionChip(opinion)
+          insertMentionChip(opinion as CitationTarget)
         } else {
           insertTextAtCursor(text);
         }
-      } catch (err) {
+      } catch (_err) {
         insertTextAtCursor(text);
       }
     } else {

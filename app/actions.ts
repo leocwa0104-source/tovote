@@ -38,7 +38,7 @@ export async function getCurrentUser() {
 
 // --- Topics ---
 
-export async function createTopic(prevState: any, formData: FormData) {
+export async function createTopic(prevState: unknown, formData: FormData) {
   const title = formData.get('title') as string
   const description = formData.get('description') as string | null
   const isPrivate = formData.get('isPrivate') === 'on'
@@ -214,7 +214,7 @@ export async function getTopic(id: string) {
 
 // --- Factions ---
 
-export async function createFaction(topicId: string, prevState: any, formData: FormData) {
+export async function createFaction(topicId: string, prevState: unknown, formData: FormData) {
   const name = formData.get('name') as string
   const description = formData.get('description') as string | undefined
   const seekBrainstorming = formData.get('seekBrainstorming') === 'on'

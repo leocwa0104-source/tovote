@@ -1,22 +1,27 @@
 'use client'
 
 import Link from 'next/link'
-import { joinFaction, leaveFaction } from '@/app/actions'
+
+interface FactionListItem {
+  id: string
+  name: string
+  seekBrainstorming?: boolean
+  seekRational?: boolean
+  _count: { members: number }
+}
 
 interface FactionListProps {
   topicId: string
-  factions: any[]
+  factions: FactionListItem[]
   currentFactionId?: string | null
   selectedFactionId?: string | null
-  user: any
 }
 
 export default function FactionList({ 
   topicId, 
   factions, 
   currentFactionId, 
-  selectedFactionId,
-  user 
+  selectedFactionId
 }: FactionListProps) {
   return (
     <div className="flex flex-col gap-2">

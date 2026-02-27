@@ -1,27 +1,10 @@
 import { notFound } from 'next/navigation'
-import { getTopic, getUserMembership, joinFaction, leaveFaction, getCurrentUser, checkTopicAccess } from '@/app/actions'
+import { getTopic, getUserMembership, getCurrentUser, checkTopicAccess } from '@/app/actions'
 import TopicGate from '@/app/components/TopicGate'
 import ShareButton from '@/app/components/ShareButton'
 import CreateFactionForm from '@/app/components/CreateFactionForm'
-import OpinionCard from '@/app/components/OpinionCard'
 import FactionList from '@/app/components/FactionList'
 import FactionContent from '@/app/components/FactionContent'
-
-function getAvatarColor(username: string) {
-  const colors = [
-    'bg-red-500', 'bg-orange-500', 'bg-amber-500', 
-    'bg-yellow-500', 'bg-lime-500', 'bg-green-500', 
-    'bg-emerald-500', 'bg-teal-500', 'bg-cyan-500', 
-    'bg-sky-500', 'bg-blue-500', 'bg-indigo-500', 
-    'bg-violet-500', 'bg-purple-500', 'bg-fuchsia-500', 
-    'bg-pink-500', 'bg-rose-500'
-  ];
-  let hash = 0;
-  for (let i = 0; i < username.length; i++) {
-    hash = username.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return colors[Math.abs(hash) % colors.length];
-}
 
 export async function generateMetadata(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -81,6 +64,7 @@ export default async function TopicPage(props: {
       <div className="flex-shrink-0 z-10 w-full flex items-center justify-between font-mono text-sm px-6 py-4 bg-white border-b border-gray-200">
         <div className="flex items-center gap-4">
           <h1 className="text-lg font-bold text-gray-800 truncate max-w-md" title={topic.title}>{topic.title}</h1>
+          <ShareButton title={topic.title} text={topic.description || "Join the debate!"} />
         </div>
         <div className="flex items-center gap-4">
            {/* Actions or Status could go here */}
@@ -92,14 +76,6 @@ export default async function TopicPage(props: {
         <div className="w-80 flex-shrink-0 border-r border-gray-200 bg-white overflow-y-auto p-4 flex flex-col gap-6">
           <div className="text-sm text-gray-500">
             <p className="mb-4">{topic.description}</p>
-            <div className="flex items-center gap-2 text-xs">
-              <span>By {topic.creator.username}</span>
-              <span>•</span>
-              <span>{new Date(topic.createdAt).toLocaleDateString()}</span>
-            </div>
-            <div className="mt-4">
-              <ShareButton title={topic.title} text={topic.description || "Join the debate!"} />
-            </div>
           </div>
           
           <hr className="border-gray-100" />
@@ -109,7 +85,6 @@ export default async function TopicPage(props: {
             factions={topic.factions} 
             currentFactionId={currentFactionId}
             selectedFactionId={selectedFactionId}
-            user={user}
           />
           
           <div className="mt-auto pt-6">

@@ -5,7 +5,9 @@ import { checkTopicSimilarity, type SimilarityResult } from '@/app/actions/ai'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 
-export default function CreateTopicForm({ user }: { user: any }) {
+type User = { id: string; username: string }
+
+export default function CreateTopicForm({ user }: { user: User | null }) {
   const [isPrivate, setIsPrivate] = useState(false)
   const [title, setTitle] = useState('')
   const [seekBrainstorming, setSeekBrainstorming] = useState(false)

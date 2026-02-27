@@ -4,7 +4,9 @@
  import { checkFactionSimilarity, type FactionSimilarityResult } from '@/app/actions/ai'
  import { useEffect, useState } from 'react'
  
- export default function CreateFactionForm({ topicId, user }: { topicId: string, user: any }) {
+type User = { id: string; username: string }
+
+export default function CreateFactionForm({ topicId, user }: { topicId: string; user: User | null }) {
    const [name, setName] = useState('')
   const [seekBrainstorming, setSeekBrainstorming] = useState(false)
   const [seekRational, setSeekRational] = useState(false)

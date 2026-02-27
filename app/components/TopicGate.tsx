@@ -37,7 +37,7 @@ export default function TopicGate({ topicId, title }: { topicId: string, title: 
         
         <h2 className="text-2xl font-bold text-gray-800 mb-2">Private Topic</h2>
         <p className="text-gray-600 mb-6">
-          The topic <strong>"{title}"</strong> is password protected.
+          The topic <strong>{title}</strong> is password protected.
         </p>
         
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">

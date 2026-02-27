@@ -5,10 +5,62 @@ import Link from 'next/link'
 import OpinionCard from './OpinionCard'
 import { joinFaction, leaveFaction } from '@/app/actions'
 
+interface CitationTarget {
+  id: string
+  summary: string
+  detail: string | null
+  type: 'WHY' | 'WHY_NOT'
+  author: {
+    username: string
+  }
+  faction: {
+    name: string
+    topic: {
+      title: string
+    }
+  }
+}
+
+interface Opinion {
+  id: string
+  summary: string
+  detail: string | null
+  type: 'WHY' | 'WHY_NOT'
+  authorId: string
+  author: {
+    username: string
+  }
+  createdAt: Date
+  citations: {
+    id: string
+    target: CitationTarget
+  }[]
+  citedBy: {
+    id: string
+    source: {
+      id: string
+      summary: string
+      type: 'WHY' | 'WHY_NOT'
+      author: { username: string }
+    }
+  }[]
+  factionId: string
+}
+
+interface FactionWithOpinions {
+  id: string
+  name: string
+  description: string | null
+  _count: { members: number }
+  opinions: Opinion[]
+}
+
+type User = { id: string; username: string } | null
+
 interface FactionContentProps {
-  faction: any
-  user: any
-  userMembership: any
+  faction: FactionWithOpinions
+  user: User
+  userMembership?: unknown
   topicId: string
   isMember: boolean
   isOtherMember: boolean
@@ -17,7 +69,6 @@ interface FactionContentProps {
 export default function FactionContent({ 
   faction, 
   user, 
-  userMembership, 
   topicId,
   isMember,
   isOtherMember 
@@ -25,17 +76,16 @@ export default function FactionContent({
   const [activeTab, setActiveTab] = useState<'WHY' | 'WHY_NOT'>('WHY')
 
   // Filter opinions based on activeTab
-  const currentOpinions = faction.opinions.filter((o: any) => o.type === activeTab)
+  const currentOpinions = faction.opinions.filter((o: Opinion) => o.type === activeTab)
   
   // Sort opinions: User's own opinion first (if exists), then by date (newest first)
   // Actually, let's separate user opinion from others for clarity as before
-  const userOpinion = user ? currentOpinions.find((o: any) => o.authorId === user.id) : null
+  const userOpinion = user ? currentOpinions.find((o: Opinion) => o.authorId === user.id) : null
   const otherOpinions = currentOpinions
-    .filter((o: any) => !user || o.authorId !== user.id)
-    .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .filter((o: Opinion) => !user || o.authorId !== user.id)
+    .sort((a: Opinion, b: Opinion) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
   const tabColor = activeTab === 'WHY' ? 'text-green-700' : 'text-red-700'
-  const tabBg = activeTab === 'WHY' ? 'bg-green-50' : 'bg-red-50'
 
   return (
     <div className="w-full bg-white h-full flex flex-col">
@@ -89,7 +139,7 @@ export default function FactionContent({
 
           {faction.description && (
             <p className="text-gray-600 text-sm leading-relaxed pl-3 border-l-2 border-gray-200 italic mb-6">
-              "{faction.description}"
+              {faction.description}
             </p>
           )}
 
@@ -156,7 +206,7 @@ export default function FactionContent({
             
             <div className="space-y-0">
               {otherOpinions.length > 0 ? (
-                otherOpinions.map((opinion: any) => (
+                otherOpinions.map((opinion: Opinion) => (
                   <OpinionCard 
                     key={opinion.id}
                     opinion={opinion}
