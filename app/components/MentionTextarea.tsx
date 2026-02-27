@@ -92,8 +92,7 @@ export default function MentionTextarea({
   // Use either the passed ref or the internal ref
   useEffect(() => {
     if (ref && internalRef.current) {
-      // @ts-expect-error - syncing forwarded refs
-      ref.current = internalRef.current
+      ;(ref as React.MutableRefObject<HTMLDivElement | null>).current = internalRef.current
     }
   }, [ref])
 
