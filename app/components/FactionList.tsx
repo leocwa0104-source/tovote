@@ -16,13 +16,15 @@ interface FactionListProps {
   factions: FactionListItem[]
   currentFactionId?: string | null
   selectedFactionId?: string | null
+  isCreatingFaction?: boolean
 }
 
 export default function FactionList({ 
   topicId, 
   factions, 
   currentFactionId, 
-  selectedFactionId
+  selectedFactionId,
+  isCreatingFaction
 }: FactionListProps) {
   const [query, setQuery] = useState('')
 
@@ -50,6 +52,19 @@ export default function FactionList({
           autoComplete="off"
         />
       </div>
+
+      <Link
+        href={`/topic/${topicId}?createFaction=1`}
+        className={`
+          mx-2 px-3 py-2 rounded-md text-sm border transition-colors
+          ${isCreatingFaction
+            ? 'bg-white border-gray-900 text-gray-900'
+            : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+          }
+        `}
+      >
+        ➕ 新建阵营
+      </Link>
       
       {filteredFactions.map((faction) => {
         const isMember = currentFactionId === faction.id
@@ -106,7 +121,7 @@ export default function FactionList({
 
       {normalizedQuery && !hasExact && (
         <Link
-          href={`/topic/${topicId}?factionName=${encodeURIComponent(query.trim())}`}
+          href={`/topic/${topicId}?createFaction=1&factionName=${encodeURIComponent(query.trim())}`}
           className="mx-2 mt-1 px-3 py-2 rounded-md text-sm bg-green-50 text-green-700 hover:bg-green-100 border border-green-200"
         >
           ➕ 创建新阵营：{query.trim()}

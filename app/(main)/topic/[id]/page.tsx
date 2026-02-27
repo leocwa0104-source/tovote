@@ -54,9 +54,12 @@ export default async function TopicPage(props: {
   
   // Get selected faction from query params or default to the first one
   const searchParams = await props.searchParams;
+  const createFactionParam = searchParams?.createFaction
+  const createFactionRaw = Array.isArray(createFactionParam) ? createFactionParam[0] : createFactionParam
+  const isCreatingFaction = createFactionRaw === '1' || createFactionRaw === 'true'
   const factionIdParam = searchParams?.factionId;
-  const selectedFactionId = Array.isArray(factionIdParam) ? factionIdParam[0] : factionIdParam || topic.factions[0]?.id
-  const selectedFaction = topic.factions.find(f => f.id === selectedFactionId)
+  const selectedFactionId = isCreatingFaction ? undefined : (Array.isArray(factionIdParam) ? factionIdParam[0] : factionIdParam || topic.factions[0]?.id)
+  const selectedFaction = isCreatingFaction ? undefined : topic.factions.find(f => f.id === selectedFactionId)
   const initialFactionName = (() => {
     const nameParam = searchParams?.factionName
     if (!nameParam) return undefined
@@ -90,16 +93,17 @@ export default async function TopicPage(props: {
             factions={topic.factions} 
             currentFactionId={currentFactionId}
             selectedFactionId={selectedFactionId}
+            isCreatingFaction={isCreatingFaction}
           />
-          
-          <div className="mt-auto pt-6">
-            <CreateFactionForm topicId={topic.id} user={user} initialName={initialFactionName} />
-          </div>
         </div>
 
         {/* Right Column: Faction Content */}
       <div className="flex-grow bg-white overflow-hidden relative">
-        {selectedFaction ? (
+        {isCreatingFaction ? (
+          <div className="h-full overflow-y-auto p-6 md:p-8 flex justify-center">
+            <CreateFactionForm topicId={topic.id} user={user} initialName={initialFactionName} />
+          </div>
+        ) : selectedFaction ? (
           <div className="h-full overflow-y-auto">
             <FactionContent 
               faction={selectedFaction}
