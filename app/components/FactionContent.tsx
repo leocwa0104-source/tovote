@@ -38,56 +38,51 @@ export default function FactionContent({
   const tabBg = activeTab === 'WHY' ? 'bg-green-50' : 'bg-red-50'
 
   return (
-    <div className="w-full max-w-5xl bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+    <div className="w-full bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden flex flex-col h-full">
       {/* Unified Header Section */}
-      <div className="bg-slate-900 text-white p-8 relative overflow-hidden">
+      <div className="bg-slate-900 text-white p-6 md:p-8 relative overflow-hidden flex-shrink-0">
         {/* Decorative background element */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
         
         <div className="relative z-10">
           <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-6">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 text-gray-400 text-sm mb-2">
-                <Link href={`/topic/${topicId}`} className="hover:text-white transition-colors flex items-center gap-1">
-                  <span>&larr;</span> Back to {faction.topic.title}
-                </Link>
-              </div>
-              <h1 className="text-4xl font-bold mb-3 tracking-tight">{faction.name}</h1>
-              <div className="flex items-center gap-4">
-                <span className="bg-white/10 text-white text-sm font-medium px-3 py-1 rounded-full backdrop-blur-sm border border-white/10">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl md:text-3xl font-bold mb-3 tracking-tight break-words">{faction.name}</h1>
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="bg-white/10 text-white text-xs md:text-sm font-medium px-3 py-1 rounded-full backdrop-blur-sm border border-white/10 whitespace-nowrap">
                   {faction._count.members} Members
                 </span>
                 {isMember && (
-                  <span className="text-green-400 text-sm font-medium flex items-center gap-1">
+                  <span className="text-green-400 text-xs md:text-sm font-medium flex items-center gap-1 whitespace-nowrap">
                     <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-                    You are a member
+                    Member
                   </span>
                 )}
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0 w-full md:w-auto">
               {!user ? (
-                 <button disabled className="py-2.5 px-6 bg-white/10 text-gray-400 rounded-lg font-medium cursor-not-allowed border border-white/5">
+                 <button disabled className="w-full md:w-auto py-2 px-4 bg-white/10 text-gray-400 rounded-lg font-medium cursor-not-allowed border border-white/5 text-sm">
                    Login to Join
                  </button>
               ) : isMember ? (
                 <form action={leaveFaction.bind(null, topicId)}>
-                  <button className="py-2.5 px-6 bg-red-500/20 text-red-200 rounded-lg hover:bg-red-500/30 font-medium transition-colors border border-red-500/30">
-                    Leave Faction
+                  <button className="w-full md:w-auto py-2 px-4 bg-red-500/20 text-red-200 rounded-lg hover:bg-red-500/30 font-medium transition-colors border border-red-500/30 text-sm">
+                    Leave
                   </button>
                 </form>
               ) : (
                 <form action={joinFaction.bind(null, topicId, faction.id)}>
                   <button 
-                    className={`py-2.5 px-6 rounded-lg font-medium transition-colors border shadow-lg ${
+                    className={`w-full md:w-auto py-2 px-4 rounded-lg font-medium transition-colors border shadow-lg text-sm ${
                       isOtherMember 
                         ? 'bg-amber-500 text-white border-amber-600 hover:bg-amber-600' 
                         : 'bg-blue-600 text-white border-blue-500 hover:bg-blue-700'
                     }`}
                   >
-                    {isOtherMember ? 'Switch to this Faction' : 'Join Faction'}
+                    {isOtherMember ? 'Switch' : 'Join'}
                   </button>
                 </form>
               )}
@@ -95,34 +90,29 @@ export default function FactionContent({
           </div>
 
           {faction.description && (
-            <p className="text-gray-300 text-lg leading-relaxed max-w-3xl border-l-4 border-white/20 pl-4 italic">
+            <p className="text-gray-300 text-sm md:text-base leading-relaxed border-l-4 border-white/20 pl-4 italic line-clamp-3">
               "{faction.description}"
             </p>
           )}
-        </div>
-      </div>
 
-      {/* Tab Navigation (Slider) */}
-      <div className="border-b border-gray-100 bg-gray-50/50 sticky top-0 z-20 backdrop-blur-md">
-        <div className="max-w-md mx-auto py-4 px-4">
-          <div className="relative flex bg-gray-200/50 p-1 rounded-xl">
-            {/* Sliding background for active tab could be added with Framer Motion, but simple CSS active state works too */}
+          {/* Tab Navigation */}
+          <div className="flex gap-2 mt-8 pt-6 border-t border-white/10">
             <button
               onClick={() => setActiveTab('WHY')}
-              className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-bold transition-all duration-200 focus:outline-none flex items-center justify-center gap-2 ${
+              className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold transition-all duration-200 focus:outline-none flex items-center justify-center gap-2 ${
                 activeTab === 'WHY' 
                   ? 'bg-white text-green-700 shadow-sm ring-1 ring-black/5' 
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                  : 'text-gray-400 hover:text-white hover:bg-white/10'
               }`}
             >
               <span>✅</span> Why Join?
             </button>
             <button
               onClick={() => setActiveTab('WHY_NOT')}
-              className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-bold transition-all duration-200 focus:outline-none flex items-center justify-center gap-2 ${
+              className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold transition-all duration-200 focus:outline-none flex items-center justify-center gap-2 ${
                 activeTab === 'WHY_NOT' 
                   ? 'bg-white text-red-700 shadow-sm ring-1 ring-black/5' 
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                  : 'text-gray-400 hover:text-white hover:bg-white/10'
               }`}
             >
               <span>❌</span> Why Not?
@@ -132,10 +122,10 @@ export default function FactionContent({
       </div>
 
       {/* Dynamic Content Area */}
-      <div className={`flex-grow p-6 md:p-10 transition-colors duration-300 ${tabBg} min-h-[500px]`}>
-        <div className="max-w-3xl mx-auto">
+      <div className={`flex-grow p-4 md:p-8 transition-colors duration-300 ${tabBg} overflow-y-auto`}>
+        <div className="max-w-3xl mx-auto space-y-8">
           {/* User's Opinion (Input or Edit) */}
-          <div className="mb-10">
+          <div>
             <h3 className={`text-xs font-bold uppercase tracking-widest mb-4 ${tabColor} opacity-70 flex items-center gap-2`}>
               {user ? 'Your Perspective' : 'Join the discussion'}
               <span className="h-px flex-grow bg-current opacity-20"></span>
@@ -143,16 +133,18 @@ export default function FactionContent({
             
             {user ? (
                <OpinionCard 
-                key={`user-${activeTab}`} // Force re-render on tab switch to reset internal state if needed
+                key={`user-${activeTab}`} // Force re-render on tab switch
                 opinion={userOpinion}
                 factionId={faction.id}
                 type={activeTab}
                 currentUser={user}
               />
             ) : (
-              <div className="text-center py-8 bg-white rounded-xl border border-dashed border-gray-300">
-                <p className="text-gray-500 mb-4">Log in to contribute your arguments.</p>
-                <Link href="/login" className="text-blue-600 hover:underline font-medium">Go to Login</Link>
+              <div className="bg-white/50 p-6 rounded-lg text-center border border-dashed border-gray-300">
+                <p className="text-gray-500 mb-2">Sign in to share your thoughts</p>
+                <Link href="/login" className="text-blue-600 font-bold hover:underline">
+                  Login / Register
+                </Link>
               </div>
             )}
           </div>

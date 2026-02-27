@@ -6,6 +6,8 @@ import TopicGate from '@/app/components/TopicGate'
 import ShareButton from '@/app/components/ShareButton'
 import CreateFactionForm from '@/app/components/CreateFactionForm'
 import OpinionCard from '@/app/components/OpinionCard'
+import FactionList from '@/app/components/FactionList'
+import FactionContent from '@/app/components/FactionContent'
 
 function getAvatarColor(username: string) {
   const colors = [
@@ -65,89 +67,77 @@ export default async function TopicPage(props: { params: Promise<{ id: string }>
   const user = await getCurrentUser()
   const userMembership = await getUserMembership(params.id)
   const currentFactionId = userMembership?.factionId
+  
+  // Get selected faction from query params or default to the first one
+  const searchParams = await props.searchParams;
+  const selectedFactionId = searchParams?.factionId || topic.factions[0]?.id
+  const selectedFaction = topic.factions.find(f => f.id === selectedFactionId)
 
   return (
-    <main className="flex min-h-screen flex-col items-center p-8 bg-gray-50 text-gray-900">
-      <div className="z-10 max-w-5xl w-full flex items-center justify-between font-mono text-sm">
-        <Link href="/" className="text-blue-600 hover:underline">&larr; Back to Topics</Link>
+    <main className="flex min-h-screen flex-col bg-gray-50 text-gray-900 overflow-hidden">
+      {/* Header */}
+      <div className="flex-shrink-0 z-10 w-full flex items-center justify-between font-mono text-sm px-6 py-4 bg-white border-b border-gray-200">
         <div className="flex items-center gap-4">
-           <h1 className="text-2xl font-bold text-gray-800">Factions Debate</h1>
+          <Link href="/" className="text-blue-600 hover:underline">&larr; Topics</Link>
+          <h1 className="text-lg font-bold text-gray-800 truncate max-w-md" title={topic.title}>{topic.title}</h1>
+        </div>
+        <div className="flex items-center gap-4">
            <AuthControl user={user ? { username: user.username } : null} />
         </div>
       </div>
 
-      <div className="w-full max-w-4xl mt-8 mb-12 text-center">
-        <h2 className="text-4xl font-extrabold text-gray-900 mb-4">{topic.title}</h2>
-        <p className="text-xl text-gray-600 mb-4">{topic.description}</p>
-        
-        <div className="flex flex-col items-center gap-4">
-          <ShareButton title={topic.title} text={topic.description || "Join the debate!"} />
-          
+      <div className="flex-grow flex overflow-hidden">
+        {/* Left Column: Faction List */}
+        <div className="w-80 flex-shrink-0 border-r border-gray-200 bg-white overflow-y-auto p-4 flex flex-col gap-6">
           <div className="text-sm text-gray-500">
-            Created by {topic.creator.username} on {new Date(topic.createdAt).toLocaleDateString()}
+            <p className="mb-4">{topic.description}</p>
+            <div className="flex items-center gap-2 text-xs">
+              <span>By {topic.creator.username}</span>
+              <span>•</span>
+              <span>{new Date(topic.createdAt).toLocaleDateString()}</span>
+            </div>
+            <div className="mt-4">
+              <ShareButton title={topic.title} text={topic.description || "Join the debate!"} />
+            </div>
+          </div>
+          
+          <hr className="border-gray-100" />
+          
+          <FactionList 
+            topicId={topic.id} 
+            factions={topic.factions} 
+            currentFactionId={currentFactionId}
+            selectedFactionId={selectedFactionId}
+            user={user}
+          />
+          
+          <div className="mt-auto pt-6">
+            <CreateFactionForm topicId={topic.id} user={user} />
           </div>
         </div>
-      </div>
-      
-      {/* Factions creation */}
-      <div className="w-full max-w-4xl mb-8 flex justify-center">
-        <CreateFactionForm topicId={topic.id} user={user} />
-      </div>
 
-      {/* Factions List */}
-      <div className="w-full max-w-4xl space-y-4">
-        {topic.factions.map((faction) => {
-          const isMember = currentFactionId === faction.id
-          const isOtherMember = currentFactionId && !isMember
-
-          return (
-            <div key={faction.id} className={`group relative flex items-center justify-between p-6 bg-white rounded-lg shadow-sm border transition-all hover:shadow-md ${isMember ? 'border-blue-500 ring-1 ring-blue-500 bg-blue-50/10' : 'border-gray-200 hover:border-blue-300'}`}>
-              <Link href={`/topic/${topic.id}/faction/${faction.id}`} className="absolute inset-0 z-0" aria-label={`View ${faction.name} faction details`}>
-              </Link>
-              
-              <div className="flex flex-col z-10 pointer-events-none">
-                <div className="flex items-center gap-3">
-                  <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{faction.name}</h3>
-                  {isMember && <span className="text-xs font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">YOUR FACTION</span>}
-                </div>
-                {faction.description && <p className="text-gray-500 text-sm mt-1 max-w-xl truncate">{faction.description}</p>}
-              </div>
-
-              <div className="flex items-center gap-6 z-10">
-                <div className="flex flex-col items-end pointer-events-none">
-                  <span className="text-2xl font-bold text-gray-800">{faction._count.members}</span>
-                  <span className="text-xs text-gray-500 uppercase tracking-wider">Members</span>
-                </div>
-                
-                <div className="flex gap-2 pointer-events-auto">
-                  {!user ? (
-                     <button disabled className="py-2 px-4 bg-gray-100 text-gray-400 rounded font-medium cursor-not-allowed text-sm">
-                       Join
-                     </button>
-                  ) : isMember ? (
-                    <form action={leaveFaction.bind(null, params.id)}>
-                      <button className="py-2 px-4 bg-red-50 text-red-600 rounded hover:bg-red-100 font-medium transition-colors text-sm border border-red-100">
-                        Leave
-                      </button>
-                    </form>
-                  ) : (
-                    <form action={joinFaction.bind(null, params.id, faction.id)}>
-                      <button 
-                        className={`py-2 px-4 rounded font-medium transition-colors text-sm shadow-sm ${
-                          isOtherMember 
-                            ? 'bg-white text-yellow-600 border border-yellow-200 hover:bg-yellow-50' 
-                            : 'bg-blue-600 text-white hover:bg-blue-700'
-                        }`}
-                      >
-                        {isOtherMember ? 'Switch' : 'Join'}
-                      </button>
-                    </form>
-                  )}
-                </div>
+        {/* Right Column: Faction Content */}
+        <div className="flex-grow bg-gray-50 overflow-hidden relative">
+          {selectedFaction ? (
+            <div className="h-full overflow-y-auto p-4 md:p-8">
+              <FactionContent 
+                faction={selectedFaction}
+                user={user}
+                userMembership={userMembership}
+                topicId={topic.id}
+                isMember={currentFactionId === selectedFaction.id}
+                isOtherMember={!!(currentFactionId && currentFactionId !== selectedFaction.id)}
+              />
+            </div>
+          ) : (
+            <div className="h-full flex items-center justify-center text-gray-400">
+              <div className="text-center">
+                <p className="text-lg">No factions selected</p>
+                <p className="text-sm">Select a faction from the list to view details</p>
               </div>
             </div>
-          )
-        })}
+          )}
+        </div>
       </div>
     </main>
   )
