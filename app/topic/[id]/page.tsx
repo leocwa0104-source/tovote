@@ -51,7 +51,10 @@ export async function generateMetadata(props: { params: Promise<{ id: string }> 
   }
 }
 
-export default async function TopicPage(props: { params: Promise<{ id: string }> }) {
+export default async function TopicPage(props: { 
+  params: Promise<{ id: string }>,
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
   const params = await props.params;
   const topic = await getTopic(params.id)
   if (!topic) notFound()
@@ -70,7 +73,8 @@ export default async function TopicPage(props: { params: Promise<{ id: string }>
   
   // Get selected faction from query params or default to the first one
   const searchParams = await props.searchParams;
-  const selectedFactionId = searchParams?.factionId || topic.factions[0]?.id
+  const factionIdParam = searchParams?.factionId;
+  const selectedFactionId = Array.isArray(factionIdParam) ? factionIdParam[0] : factionIdParam || topic.factions[0]?.id
   const selectedFaction = topic.factions.find(f => f.id === selectedFactionId)
 
   return (
