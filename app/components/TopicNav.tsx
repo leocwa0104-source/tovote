@@ -12,6 +12,7 @@ interface Topic {
   seekBrainstorming?: boolean
   seekRational?: boolean
   creator?: { username: string }
+  memberCount?: number
 }
 
 interface TopicNavProps {
@@ -100,6 +101,11 @@ export default function TopicNav({ topics, privateTopics = [], isAuthenticated }
                   )}
                 </div>
                 <div className="flex items-center gap-1 text-xs flex-shrink-0">
+                  {topic.memberCount !== undefined && topic.memberCount > 0 && (
+                    <span className="text-gray-400 mr-1" title="Participants">
+                      {topic.memberCount}👤
+                    </span>
+                  )}
                   {topic.seekBrainstorming && <span title="Brainstorming">🧠</span>}
                   {topic.seekRational && <span title="Rational">📊</span>}
                 </div>

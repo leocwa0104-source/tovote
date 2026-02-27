@@ -27,7 +27,8 @@ export default async function TopicSidebar() {
             isPrivate: t.isPrivate,
             seekBrainstorming: t.seekBrainstorming,
             seekRational: t.seekRational,
-            creator: t.creator
+            creator: t.creator,
+            memberCount: t._count.memberships
           }))} 
           privateTopics={privateTopics.map(t => ({ 
             id: t.id, 
@@ -35,7 +36,8 @@ export default async function TopicSidebar() {
             isPrivate: t.isPrivate,
             seekBrainstorming: t.seekBrainstorming,
             seekRational: t.seekRational,
-            creator: t.creator
+            creator: t.creator,
+            memberCount: t._count.memberships
           }))}
           isAuthenticated={!!user}
         />
