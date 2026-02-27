@@ -1,7 +1,5 @@
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getTopic, getUserMembership, joinFaction, leaveFaction, getCurrentUser, checkTopicAccess } from '@/app/actions'
-import AuthControl from '@/app/components/AuthControl'
 import TopicGate from '@/app/components/TopicGate'
 import ShareButton from '@/app/components/ShareButton'
 import CreateFactionForm from '@/app/components/CreateFactionForm'
@@ -78,15 +76,14 @@ export default async function TopicPage(props: {
   const selectedFaction = topic.factions.find(f => f.id === selectedFactionId)
 
   return (
-    <main className="flex h-screen flex-col bg-gray-50 text-gray-900 overflow-hidden">
+    <div className="flex h-full flex-col bg-gray-50 text-gray-900 overflow-hidden">
       {/* Header */}
       <div className="flex-shrink-0 z-10 w-full flex items-center justify-between font-mono text-sm px-6 py-4 bg-white border-b border-gray-200">
         <div className="flex items-center gap-4">
-          <Link href="/" className="text-blue-600 hover:underline">&larr; Topics</Link>
           <h1 className="text-lg font-bold text-gray-800 truncate max-w-md" title={topic.title}>{topic.title}</h1>
         </div>
         <div className="flex items-center gap-4">
-           <AuthControl user={user ? { username: user.username } : null} />
+           {/* Actions or Status could go here */}
         </div>
       </div>
 
@@ -143,6 +140,6 @@ export default async function TopicPage(props: {
         )}
       </div>
       </div>
-    </main>
+    </div>
   )
 }
