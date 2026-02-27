@@ -334,10 +334,10 @@ export default function OpinionCard({ opinion, factionId, type, currentUser }: O
               ) : (
                 <button 
                   onClick={() => setIsExpanded(true)}
-                  className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 mt-1 group"
+                  className="flex items-center justify-center w-full mt-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 py-1 rounded transition-colors"
+                  title="Expand"
                 >
-                  <span className="group-hover:underline">Read more</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="6 9 12 15 18 9"></polyline>
                   </svg>
                 </button>
