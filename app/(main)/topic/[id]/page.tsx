@@ -101,7 +101,12 @@ export default async function TopicPage(props: {
       <div className="flex-grow bg-white overflow-hidden relative">
         {isCreatingFaction ? (
           <div className="h-full overflow-y-auto p-6 md:p-8 flex justify-center">
-            <CreateFactionForm topicId={topic.id} user={user} initialName={initialFactionName} />
+            <CreateFactionForm 
+              key={initialFactionName ?? 'new'} 
+              topicId={topic.id} 
+              user={user} 
+              initialName={initialFactionName} 
+            />
           </div>
         ) : selectedFaction ? (
           <div className="h-full overflow-y-auto">

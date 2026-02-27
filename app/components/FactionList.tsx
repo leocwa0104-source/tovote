@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 
 interface FactionListItem {
@@ -26,6 +27,7 @@ export default function FactionList({
   selectedFactionId,
   isCreatingFaction
 }: FactionListProps) {
+  const router = useRouter()
   const [query, setQuery] = useState('')
 
   const normalizedQuery = query.trim().toLowerCase()
@@ -120,12 +122,12 @@ export default function FactionList({
       )}
 
       {normalizedQuery && !hasExact && (
-        <Link
-          href={`/topic/${topicId}?createFaction=1&factionName=${encodeURIComponent(query.trim())}`}
-          className="mx-2 mt-1 px-3 py-2 rounded-md text-sm bg-green-50 text-green-700 hover:bg-green-100 border border-green-200"
+        <button
+          onClick={() => router.push(`/topic/${topicId}?createFaction=1&factionName=${encodeURIComponent(query.trim())}`)}
+          className="mx-2 mt-1 px-3 py-2 rounded-md text-sm bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 text-left"
         >
           ➕ 创建新阵营：{query.trim()}
-        </Link>
+        </button>
       )}
     </div>
   )
