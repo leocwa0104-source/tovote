@@ -35,14 +35,7 @@ export default async function TopicSidebar() {
       </div>
 
       {/* Footer / Create Action */}
-      <div className="p-4 border-t border-gray-200 bg-white">
-        <Link 
-          href="/" 
-          className="flex items-center justify-center w-full px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
-        >
-          + New Topic
-        </Link>
-      </div>
+      {/* Removed Create Action */}
     </div>
   )
 }

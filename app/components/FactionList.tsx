@@ -55,19 +55,6 @@ export default function FactionList({
         />
       </div>
 
-      <Link
-        href={`/topic/${topicId}?createFaction=1`}
-        className={`
-          mx-2 px-3 py-2 rounded-md text-sm border transition-colors
-          ${isCreatingFaction
-            ? 'bg-white border-gray-900 text-gray-900'
-            : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
-          }
-        `}
-      >
-        ➕ 新建阵营
-      </Link>
-      
       {filteredFactions.map((faction) => {
         const isMember = currentFactionId === faction.id
         const isSelected = selectedFactionId === faction.id
