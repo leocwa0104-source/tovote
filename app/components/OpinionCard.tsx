@@ -62,23 +62,6 @@ export default function OpinionCard({ opinion, factionId, type, currentUser }: O
   const [mentionedCitations, setMentionedCitations] = useState<CitationTarget[]>([])
 
   const isOwner = currentUser && opinion?.authorId === currentUser.id
-  
-  // Avatar color generator
-  const getAvatarColor = (username: string) => {
-    const colors = [
-      'bg-red-500', 'bg-orange-500', 'bg-amber-500', 
-      'bg-yellow-500', 'bg-lime-500', 'bg-green-500', 
-      'bg-emerald-500', 'bg-teal-500', 'bg-cyan-500', 
-      'bg-sky-500', 'bg-blue-500', 'bg-indigo-500', 
-      'bg-violet-500', 'bg-purple-500', 'bg-fuchsia-500', 
-      'bg-pink-500', 'bg-rose-500'
-    ];
-    let hash = 0;
-    for (let i = 0; i < username.length; i++) {
-      hash = username.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return colors[Math.abs(hash) % colors.length];
-  }
 
   const handleSubmit = async (formData: FormData) => {
     setLoading(true)
@@ -166,13 +149,13 @@ export default function OpinionCard({ opinion, factionId, type, currentUser }: O
               e.stopPropagation();
               setSelectedCitation(citation.target);
             }}
-            className="text-blue-600 hover:text-blue-800 hover:underline font-medium inline-flex items-center gap-0.5 mx-1"
+            className="bg-gray-100 hover:bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded text-xs font-mono inline-flex items-center gap-1 mx-1 transition-colors"
           >
-            @{citation.target.summary}
+            <span className="opacity-50">@</span>{citation.target.summary}
           </button>
         );
       } else {
-        parts.push(<span key={match.index} className="text-gray-500">{fullMatch}</span>);
+        parts.push(<span key={match.index} className="text-gray-400 font-mono text-xs bg-gray-50 px-1 rounded">{fullMatch}</span>);
       }
 
       lastIndex = regex.lastIndex;
@@ -189,44 +172,39 @@ export default function OpinionCard({ opinion, factionId, type, currentUser }: O
   // If editing or no opinion yet (and user is logged in), show form
   if (isEditing || (!opinion && currentUser)) {
     return (
-      <div className="bg-yellow-50 p-6 rounded-xl shadow-md border border-yellow-100 mb-6 relative overflow-hidden transition-all hover:shadow-lg group">
-        {/* Paper texture/lines effect */}
-        <div className="absolute inset-0 pointer-events-none opacity-5" style={{ backgroundImage: 'linear-gradient(#000 1px, transparent 1px)', backgroundSize: '100% 2rem', marginTop: '3rem' }}></div>
-        
-        <h4 className="font-bold text-yellow-800/80 mb-4 text-xs uppercase tracking-widest flex items-center gap-2">
-          <span>✏️</span>
-          {opinion ? 'Edit your opinion' : `Draft your "${type === 'WHY' ? 'Why Join' : 'Why Not'}" argument`}
+      <div className="mb-6 bg-white border border-gray-100 p-5 transition-all">
+        <h4 className="font-mono text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+          <span className="w-2 h-2 bg-gray-900 rounded-full"></span>
+          {opinion ? 'Edit Argument' : `New "${type === 'WHY' ? 'Pro' : 'Con'}" Argument`}
         </h4>
         
-        <form action={handleSubmit} className="flex flex-col relative z-10">
+        <form action={handleSubmit} className="flex flex-col gap-4">
           <input type="hidden" name="factionId" value={factionId} />
           <input type="hidden" name="type" value={type} />
           
-          <div className="space-y-0">
-            {/* Summary Input (Title-like) */}
-            <div className="relative">
-              <input
-                ref={summaryRef}
-                type="text"
-                name="summary"
-                defaultValue={opinion?.summary || ''}
-                placeholder="Core Argument (Headline)..."
-                className="w-full p-0 border-0 bg-transparent text-xl font-bold text-gray-900 placeholder-gray-400 focus:ring-0 focus:outline-none py-2"
-                required
-                maxLength={100}
-                onKeyDown={handleSummaryKeyDown}
-                autoComplete="off"
-              />
-            </div>
+          <div className="space-y-4">
+            {/* Summary Input */}
+            <input
+              ref={summaryRef}
+              type="text"
+              name="summary"
+              defaultValue={opinion?.summary || ''}
+              placeholder="Core Argument (Headline)..."
+              className="w-full p-2 bg-gray-50 border-b border-gray-200 focus:border-gray-800 focus:bg-white text-sm font-medium text-gray-900 placeholder-gray-400 focus:outline-none transition-colors rounded-none"
+              required
+              maxLength={100}
+              onKeyDown={handleSummaryKeyDown}
+              autoComplete="off"
+            />
             
-            {/* Detail Input (Body-like) */}
-            <div className="relative min-h-[120px]">
+            {/* Detail Input */}
+            <div className="relative min-h-[100px]">
               <MentionTextarea
                 ref={detailRef}
                 name="detail"
                 defaultValue={opinion?.detail || ''}
-                placeholder="Elaborate on your point... (Press Enter in headline to jump here)"
-                className="w-full p-0 border-0 bg-transparent text-base text-gray-700 placeholder-gray-400 focus:ring-0 focus:outline-none resize-none leading-8 min-h-[120px]"
+                placeholder="Elaborate on your point..."
+                className="w-full p-2 bg-gray-50 border-b border-gray-200 focus:border-gray-800 focus:bg-white text-sm text-gray-700 placeholder-gray-400 focus:outline-none resize-none min-h-[100px] transition-colors rounded-none"
                 onCitationAdd={(citation) => {
                   setMentionedCitations(prev => {
                     if (prev.find(c => c.id === citation.id)) return prev
@@ -246,12 +224,12 @@ export default function OpinionCard({ opinion, factionId, type, currentUser }: O
             </>
           )}
           
-          <div className="flex gap-3 justify-end mt-4">
+          <div className="flex gap-3 justify-end items-center pt-2">
             {opinion && (
               <button 
                 type="button" 
                 onClick={() => setIsEditing(false)}
-                className="px-4 py-2 text-sm font-medium text-yellow-800 hover:bg-yellow-100/50 rounded-lg transition-colors"
+                className="px-3 py-1.5 text-xs font-mono text-gray-500 hover:text-gray-900 transition-colors uppercase"
                 disabled={loading}
               >
                 Cancel
@@ -259,7 +237,7 @@ export default function OpinionCard({ opinion, factionId, type, currentUser }: O
             )}
             <button 
               type="submit" 
-              className="px-6 py-2 text-sm font-bold bg-yellow-400 text-yellow-900 rounded-lg hover:bg-yellow-500 shadow-sm hover:shadow transition-all disabled:opacity-50 disabled:shadow-none"
+              className="px-5 py-1.5 text-xs font-mono font-bold bg-gray-900 text-white hover:bg-black transition-colors disabled:opacity-50 uppercase tracking-wide"
               disabled={loading}
             >
               {loading ? 'Posting...' : 'Post Argument'}
@@ -274,59 +252,32 @@ export default function OpinionCard({ opinion, factionId, type, currentUser }: O
   if (!opinion) return null
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-4 hover:shadow-md transition-shadow">
+    <div className="group relative py-3 px-2 border-b border-gray-100 last:border-0 hover:bg-gray-50/50 transition-colors">
       <div className="flex items-start gap-3">
-        {/* Avatar */}
-        <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white font-bold text-xs ${getAvatarColor(opinion.author.username)}`}>
+        {/* Minimal Avatar */}
+        <div className="w-6 h-6 rounded bg-gray-100 flex-shrink-0 flex items-center justify-center text-gray-500 font-mono text-[10px] mt-0.5">
           {opinion.author.username[0].toUpperCase()}
         </div>
         
         <div className="flex-grow min-w-0">
-          <div className="flex justify-between items-start">
-            <span className="text-xs text-gray-500 font-medium">{opinion.author.username}</span>
-            <div className="flex gap-2">
-              <button 
-                onClick={() => {
-                  navigator.clipboard.writeText(opinion.id)
-                  alert('Opinion ID copied!')
-                }} 
-                className="text-xs text-gray-400 hover:text-gray-600"
-                title="Copy ID to cite"
-              >
-                Copy ID
-              </button>
-              {isOwner && (
-                <>
-                  <button 
-                    onClick={() => setIsEditing(true)} 
-                    className="text-xs text-blue-600 hover:text-blue-800"
-                  >
-                    Edit
-                  </button>
-                  <button 
-                    onClick={handleDelete} 
-                    className="text-xs text-red-600 hover:text-red-800"
-                  >
-                    Delete
-                  </button>
-                </>
-              )}
-            </div>
+          {/* Header Row: Username + Summary */}
+          <div className="flex items-baseline gap-2 flex-wrap pr-2">
+            <span className="font-mono text-xs text-gray-400 uppercase tracking-wide">{opinion.author.username}</span>
+            <h5 className="font-medium text-gray-900 text-sm break-words leading-snug">{opinion.summary}</h5>
           </div>
           
-          <h5 className="font-semibold text-gray-800 text-sm mt-1 break-words">{opinion.summary}</h5>
-          
+          {/* Detail Section */}
           {opinion.detail && (
-            <div className="mt-2">
+            <div className="mt-1.5 pl-0">
               {isExpanded ? (
-                <div className="text-sm text-gray-600 whitespace-pre-wrap break-words border-t border-gray-100 pt-2 mt-2">
+                <div className="text-sm text-gray-600 whitespace-pre-wrap break-words leading-relaxed font-light">
                   {renderDetailWithCitations(opinion.detail, opinion.citations)}
                   <button 
                     onClick={() => setIsExpanded(false)}
-                    className="flex items-center justify-center w-full mt-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 py-1 rounded transition-colors"
+                    className="inline-flex items-center justify-center w-full mt-2 text-gray-300 hover:text-gray-500 py-1 transition-colors"
                     title="Collapse"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="18 15 12 9 6 15"></polyline>
                     </svg>
                   </button>
@@ -334,15 +285,56 @@ export default function OpinionCard({ opinion, factionId, type, currentUser }: O
               ) : (
                 <button 
                   onClick={() => setIsExpanded(true)}
-                  className="flex items-center justify-center w-full mt-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 py-1 rounded transition-colors"
+                  className="inline-flex items-center gap-1 text-xs text-gray-300 hover:text-gray-500 mt-1 transition-colors"
                   title="Expand"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="6 9 12 15 18 9"></polyline>
                   </svg>
                 </button>
               )}
             </div>
+          )}
+        </div>
+
+        {/* Actions: Absolute positioned on hover */}
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute right-2 top-2 bg-white/90 backdrop-blur-sm px-1.5 py-0.5 rounded-md shadow-sm border border-gray-100">
+          <button 
+            onClick={() => {
+              navigator.clipboard.writeText(opinion.id)
+              alert('Opinion ID copied!')
+            }} 
+            className="text-gray-400 hover:text-gray-700 p-1.5 rounded-sm hover:bg-gray-100"
+            title="Copy ID"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </button>
+          {isOwner && (
+            <>
+              <button 
+                onClick={() => setIsEditing(true)} 
+                className="text-gray-400 hover:text-blue-600 p-1.5 rounded-sm hover:bg-blue-50"
+                title="Edit"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+              </button>
+              <button 
+                onClick={handleDelete} 
+                className="text-gray-400 hover:text-red-600 p-1.5 rounded-sm hover:bg-red-50"
+                title="Delete"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </button>
+            </>
           )}
         </div>
       </div>

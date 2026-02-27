@@ -164,7 +164,7 @@ export default function FactionContent({
               <span className="h-px flex-grow bg-current opacity-20"></span>
             </h3>
             
-            <div className="space-y-4">
+            <div className="space-y-0">
               {otherOpinions.length > 0 ? (
                 otherOpinions.map((opinion: any) => (
                   <OpinionCard 
