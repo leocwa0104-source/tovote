@@ -168,7 +168,7 @@ export default function OpinionCard({ opinion, factionId, type, currentUser }: O
             }}
             className="text-blue-600 hover:text-blue-800 hover:underline font-medium inline-flex items-center gap-0.5 mx-1"
           >
-            @{username}
+            @{citation.target.summary}
           </button>
         );
       } else {
@@ -323,17 +323,23 @@ export default function OpinionCard({ opinion, factionId, type, currentUser }: O
                   {renderDetailWithCitations(opinion.detail, opinion.citations)}
                   <button 
                     onClick={() => setIsExpanded(false)}
-                    className="block mt-2 text-xs text-blue-500 hover:underline"
+                    className="flex items-center justify-center w-full mt-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 py-1 rounded transition-colors"
+                    title="Collapse"
                   >
-                    Show less
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="18 15 12 9 6 15"></polyline>
+                    </svg>
                   </button>
                 </div>
               ) : (
                 <button 
                   onClick={() => setIsExpanded(true)}
-                  className="text-xs text-blue-500 hover:underline mt-1"
+                  className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 mt-1 group"
                 >
-                  Read more...
+                  <span className="group-hover:underline">Read more</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
                 </button>
               )}
             </div>
