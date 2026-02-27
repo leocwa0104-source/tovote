@@ -109,7 +109,7 @@ export default function OpinionCard({ opinion, factionId, type, currentUser }: O
   }
 
   const summaryRef = useRef<HTMLInputElement>(null)
-  const detailRef = useRef<HTMLTextAreaElement>(null)
+  const detailRef = useRef<HTMLDivElement>(null)
 
   const handleSummaryKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -118,8 +118,11 @@ export default function OpinionCard({ opinion, factionId, type, currentUser }: O
     }
   }
 
-  const handleDetailKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Backspace' && !detailRef.current?.value) {
+  const handleDetailKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    // Check if the content is empty or only whitespace
+    const isEmpty = !detailRef.current?.innerText || detailRef.current.innerText.trim() === '';
+    
+    if (e.key === 'Backspace' && isEmpty) {
       e.preventDefault()
       summaryRef.current?.focus()
     }
