@@ -23,7 +23,13 @@ export default async function TopicSidebar() {
           Topics
         </div>
         <TopicNav 
-          topics={topics.map(t => ({ id: t.id, title: t.title, isPrivate: t.isPrivate }))} 
+          topics={topics.map(t => ({ 
+            id: t.id, 
+            title: t.title, 
+            isPrivate: t.isPrivate,
+            seekBrainstorming: t.seekBrainstorming,
+            seekRational: t.seekRational
+          }))} 
           isAuthenticated={!!user}
         />
       </div>

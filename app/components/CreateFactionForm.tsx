@@ -6,8 +6,10 @@
  
  export default function CreateFactionForm({ topicId, user }: { topicId: string, user: any }) {
    const [name, setName] = useState('')
-   const [similarFactions, setSimilarFactions] = useState<FactionSimilarityResult['matches']>([])
-   const [isChecking, setIsChecking] = useState(false)
+  const [seekBrainstorming, setSeekBrainstorming] = useState(false)
+  const [seekRational, setSeekRational] = useState(false)
+  const [similarFactions, setSimilarFactions] = useState<FactionSimilarityResult['matches']>([])
+  const [isChecking, setIsChecking] = useState(false)
  
    useEffect(() => {
     const timer = setTimeout(async () => {
@@ -35,6 +37,15 @@
   }, [name, topicId])
 
   const handleSubmit = async (formData: FormData) => {
+    // Manual validation for checkboxes
+    const isBrainstorming = formData.get('seekBrainstorming') === 'on'
+    const isRational = formData.get('seekRational') === 'on'
+    
+    if (!isBrainstorming && !isRational) {
+      alert('Please select at least one faction style (Brainstorming or Rational).')
+      return
+    }
+
     const result = await createFaction(topicId, null, formData)
     if (result && result.message !== 'success') {
       alert(result.message)
@@ -62,6 +73,38 @@
                  <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                </div>
              )}
+           </div>
+
+           <div className="flex flex-col gap-2 p-3 bg-gray-50 rounded border border-gray-100">
+             <span className="text-sm font-semibold text-gray-700">Faction Style (Required - select at least one):</span>
+             <div className="flex gap-4">
+               <div className="flex items-center gap-2">
+                 <input
+                   type="checkbox"
+                   id="seekBrainstorming"
+                   name="seekBrainstorming"
+                   checked={seekBrainstorming}
+                   onChange={(e) => setSeekBrainstorming(e.target.checked)}
+                   className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500 border-gray-300"
+                 />
+                 <label htmlFor="seekBrainstorming" className="text-sm text-gray-700 select-none cursor-pointer flex items-center gap-1">
+                   <span>🧠</span> Brainstorming
+                 </label>
+               </div>
+               <div className="flex items-center gap-2">
+                 <input
+                   type="checkbox"
+                   id="seekRational"
+                   name="seekRational"
+                   checked={seekRational}
+                   onChange={(e) => setSeekRational(e.target.checked)}
+                   className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 border-gray-300"
+                 />
+                 <label htmlFor="seekRational" className="text-sm text-gray-700 select-none cursor-pointer flex items-center gap-1">
+                   <span>📊</span> Rational
+                 </label>
+               </div>
+             </div>
            </div>
  
            {similarFactions.length > 0 && (

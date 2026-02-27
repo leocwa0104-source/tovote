@@ -8,6 +8,8 @@ interface Topic {
   id: string
   title: string
   isPrivate: boolean
+  seekBrainstorming?: boolean
+  seekRational?: boolean
 }
 
 interface TopicNavProps {
@@ -33,7 +35,11 @@ export default function TopicNav({ topics, isAuthenticated }: TopicNavProps) {
                 : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'}
             `}
           >
-            <span className="truncate">{topic.title}</span>
+            <span className="truncate flex-grow">{topic.title}</span>
+            <div className="flex items-center gap-1 text-xs">
+              {topic.seekBrainstorming && <span title="Brainstorming">🧠</span>}
+              {topic.seekRational && <span title="Rational">📊</span>}
+            </div>
             {topic.isPrivate && <Lock className="w-3 h-3 flex-shrink-0 text-gray-400" />}
           </Link>
         )

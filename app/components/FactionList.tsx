@@ -40,9 +40,15 @@ export default function FactionList({
           >
             <div className="flex flex-col gap-1">
               <div className="flex items-center justify-between">
-                <h4 className={`font-bold ${isSelected ? 'text-gray-900' : 'text-gray-600 group-hover:text-gray-900'}`}>
-                  {faction.name}
-                </h4>
+                <div className="flex items-center gap-2">
+                  <h4 className={`font-bold ${isSelected ? 'text-gray-900' : 'text-gray-600 group-hover:text-gray-900'}`}>
+                    {faction.name}
+                  </h4>
+                  <div className="flex items-center gap-1 text-xs">
+                    {faction.seekBrainstorming && <span title="Brainstorming">🧠</span>}
+                    {faction.seekRational && <span title="Rational">📊</span>}
+                  </div>
+                </div>
                 {isMember && (
                   <span className="w-2 h-2 rounded-full bg-green-500" title="Your Faction"></span>
                 )}

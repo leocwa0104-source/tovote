@@ -46,6 +46,10 @@ export async function createTopic(prevState: any, formData: FormData) {
   const seekBrainstorming = formData.get('seekBrainstorming') === 'on'
   const seekRational = formData.get('seekRational') === 'on'
   
+  if (!seekBrainstorming && !seekRational) {
+    return { message: 'Please select at least one discussion style (Brainstorming or Rational).' }
+  }
+  
   const user = await getCurrentUser()
   if (!user) return { message: 'Unauthorized' }
 
@@ -213,6 +217,12 @@ export async function getTopic(id: string) {
 export async function createFaction(topicId: string, prevState: any, formData: FormData) {
   const name = formData.get('name') as string
   const description = formData.get('description') as string | undefined
+  const seekBrainstorming = formData.get('seekBrainstorming') === 'on'
+  const seekRational = formData.get('seekRational') === 'on'
+  
+  if (!seekBrainstorming && !seekRational) {
+    return { message: 'Please select at least one faction style (Brainstorming or Rational).' }
+  }
   
   try {
     const existingFaction = await prisma.faction.findFirst({
@@ -231,6 +241,8 @@ export async function createFaction(topicId: string, prevState: any, formData: F
         name,
         description: description || null, // Optional
         topicId: topicId,
+        seekBrainstorming,
+        seekRational
       }
     })
     

@@ -8,6 +8,8 @@ import Link from 'next/link'
 export default function CreateTopicForm({ user }: { user: any }) {
   const [isPrivate, setIsPrivate] = useState(false)
   const [title, setTitle] = useState('')
+  const [seekBrainstorming, setSeekBrainstorming] = useState(false)
+  const [seekRational, setSeekRational] = useState(false)
   const [similarTopics, setSimilarTopics] = useState<SimilarityResult['matches']>([])
   const [isChecking, setIsChecking] = useState(false)
 
@@ -48,6 +50,21 @@ export default function CreateTopicForm({ user }: { user: any }) {
   }
 
   const handleSubmit = async (formData: FormData) => {
+    if (similarTopics.length > 0) {
+      if (!confirm('There are similar topics already. Are you sure you want to create a new one?')) {
+        return
+      }
+    }
+
+    // Manual validation for checkboxes
+    const isBrainstorming = formData.get('seekBrainstorming') === 'on'
+    const isRational = formData.get('seekRational') === 'on'
+    
+    if (!isBrainstorming && !isRational) {
+      alert('Please select at least one discussion style (Brainstorming or Rational).')
+      return
+    }
+
     const result = await createTopic(null, formData)
     if (result && result.message !== 'success') {
       alert(result.message)
@@ -99,13 +116,15 @@ export default function CreateTopicForm({ user }: { user: any }) {
       )}
 
       <div className="flex flex-col gap-2 p-3 bg-gray-50 rounded border border-gray-100">
-        <span className="text-sm font-semibold text-gray-700">Discussion Style (Optional):</span>
+        <span className="text-sm font-semibold text-gray-700">Discussion Style (Required - select at least one):</span>
         <div className="flex gap-4">
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
               id="seekBrainstorming"
               name="seekBrainstorming"
+              checked={seekBrainstorming}
+              onChange={(e) => setSeekBrainstorming(e.target.checked)}
               className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500 border-gray-300"
             />
             <label htmlFor="seekBrainstorming" className="text-sm text-gray-700 select-none cursor-pointer flex items-center gap-1">
@@ -117,6 +136,8 @@ export default function CreateTopicForm({ user }: { user: any }) {
               type="checkbox"
               id="seekRational"
               name="seekRational"
+              checked={seekRational}
+              onChange={(e) => setSeekRational(e.target.checked)}
               className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 border-gray-300"
             />
             <label htmlFor="seekRational" className="text-sm text-gray-700 select-none cursor-pointer flex items-center gap-1">

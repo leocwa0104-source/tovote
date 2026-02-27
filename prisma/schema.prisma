@@ -45,6 +45,9 @@ model Faction {
   topicId     String
   topic       Topic    @relation(fields: [topicId], references: [id])
   createdAt   DateTime @default(now())
+
+  seekBrainstorming Boolean @default(false)
+  seekRational      Boolean @default(false)
   
   members     Membership[]
   opinions    Opinion[]
