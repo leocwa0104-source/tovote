@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useMemo, useState } from 'react'
 
 interface FactionListItem {
   id: string
@@ -23,11 +24,29 @@ export default function FactionList({
   currentFactionId, 
   selectedFactionId
 }: FactionListProps) {
+  const [query, setQuery] = useState('')
+
+  const normalizedQuery = query.trim().toLowerCase()
+  const filteredFactions = useMemo(() => {
+    if (!normalizedQuery) return factions
+    return factions.filter((f) => f.name.toLowerCase().includes(normalizedQuery))
+  }, [factions, normalizedQuery])
+
   return (
     <div className="flex flex-col gap-2">
       <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2 px-2">Factions</h3>
+
+      <div className="px-2">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="搜索阵营…"
+          className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          autoComplete="off"
+        />
+      </div>
       
-      {factions.map((faction) => {
+      {filteredFactions.map((faction) => {
         const isMember = currentFactionId === faction.id
         const isSelected = selectedFactionId === faction.id
         
@@ -74,6 +93,10 @@ export default function FactionList({
         <div className="p-4 text-center text-sm text-gray-400 bg-gray-50 rounded-lg border border-dashed border-gray-200">
           No factions yet.
         </div>
+      )}
+
+      {factions.length > 0 && filteredFactions.length === 0 && (
+        <div className="px-4 py-3 text-sm text-gray-400">没有匹配的阵营</div>
       )}
     </div>
   )
