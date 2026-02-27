@@ -44,6 +44,7 @@ model Faction {
   description String?
   topicId     String
   topic       Topic    @relation(fields: [topicId], references: [id])
+  createdAt   DateTime @default(now())
   
   members     Membership[]
   opinions    Opinion[]
@@ -54,7 +55,7 @@ model Membership {
   userId    String
   user      User     @relation(fields: [userId], references: [id])
   factionId String?
-  faction   Faction? @relation(fields: [factionId], references: [id])
+  faction   Faction? @relation(fields: [factionId], references: [id], onDelete: SetNull)
   topicId   String
   topic     Topic    @relation(fields: [topicId], references: [id])
   joinedAt  DateTime @default(now())
@@ -74,7 +75,7 @@ model Opinion {
   author    User     @relation(fields: [authorId], references: [id])
   
   factionId String
-  faction   Faction  @relation(fields: [factionId], references: [id])
+  faction   Faction  @relation(fields: [factionId], references: [id], onDelete: Cascade)
   
   // Citations
   citedBy   Citation[] @relation("TargetOpinion")
