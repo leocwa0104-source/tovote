@@ -6,8 +6,8 @@ import { joinFaction, leaveFaction } from '@/app/actions'
 interface FactionListProps {
   topicId: string
   factions: any[]
-  currentFactionId?: string
-  selectedFactionId?: string
+  currentFactionId?: string | null
+  selectedFactionId?: string | null
   user: any
 }
 
