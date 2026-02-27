@@ -1,1 +1,3 @@
-export { default, dynamic } from './(main)/page'
+export { default } from './(main)/page'
+
+export const dynamic = 'force-dynamic'
