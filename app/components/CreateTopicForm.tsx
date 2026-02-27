@@ -15,6 +15,13 @@ export default function CreateTopicForm({ user, initialTitle }: { user: User | n
   const [similarTopics, setSimilarTopics] = useState<SimilarityResult['matches']>([])
   const [isChecking, setIsChecking] = useState(false)
 
+  // Sync title with initialTitle when it changes
+  useEffect(() => {
+    if (initialTitle) {
+      setTitle(initialTitle)
+    }
+  }, [initialTitle])
+
   useEffect(() => {
     const timer = setTimeout(async () => {
       if (title.trim().length < 3) {
