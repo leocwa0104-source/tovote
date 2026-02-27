@@ -82,12 +82,6 @@ export default async function TopicPage(props: {
       <div className="flex-grow flex overflow-hidden">
         {/* Left Column: Faction List */}
         <div className="w-80 flex-shrink-0 border-r border-gray-200 bg-white overflow-y-auto p-4 flex flex-col gap-6">
-          <div className="text-sm text-gray-500">
-            <p className="mb-4">{topic.description}</p>
-          </div>
-          
-          <hr className="border-gray-100" />
-          
           <FactionList 
             topicId={topic.id} 
             factions={topic.factions} 

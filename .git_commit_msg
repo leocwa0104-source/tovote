@@ -1,1 +1,1 @@
-fix: resolve navigation issue where topic sidebar was missing on home page by removing duplicate root page
+chore: remove topic description from faction list sidebar
