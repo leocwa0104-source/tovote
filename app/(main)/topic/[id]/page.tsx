@@ -57,6 +57,11 @@ export default async function TopicPage(props: {
   const factionIdParam = searchParams?.factionId;
   const selectedFactionId = Array.isArray(factionIdParam) ? factionIdParam[0] : factionIdParam || topic.factions[0]?.id
   const selectedFaction = topic.factions.find(f => f.id === selectedFactionId)
+  const initialFactionName = (() => {
+    const nameParam = searchParams?.factionName
+    if (!nameParam) return undefined
+    return Array.isArray(nameParam) ? nameParam[0] : nameParam
+  })()
 
   return (
     <div className="flex h-full flex-col bg-gray-50 text-gray-900 overflow-hidden">
@@ -88,7 +93,7 @@ export default async function TopicPage(props: {
           />
           
           <div className="mt-auto pt-6">
-            <CreateFactionForm topicId={topic.id} user={user} />
+            <CreateFactionForm topicId={topic.id} user={user} initialName={initialFactionName} />
           </div>
         </div>
 

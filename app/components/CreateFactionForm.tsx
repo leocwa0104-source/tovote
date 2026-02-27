@@ -6,8 +6,8 @@
  
 type User = { id: string; username: string }
 
-export default function CreateFactionForm({ topicId, user }: { topicId: string; user: User | null }) {
-   const [name, setName] = useState('')
+export default function CreateFactionForm({ topicId, user, initialName }: { topicId: string; user: User | null, initialName?: string }) {
+   const [name, setName] = useState(initialName ?? '')
   const [seekBrainstorming, setSeekBrainstorming] = useState(false)
   const [seekRational, setSeekRational] = useState(false)
   const [similarFactions, setSimilarFactions] = useState<FactionSimilarityResult['matches']>([])

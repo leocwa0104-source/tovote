@@ -31,6 +31,11 @@ export default function FactionList({
     if (!normalizedQuery) return factions
     return factions.filter((f) => f.name.toLowerCase().includes(normalizedQuery))
   }, [factions, normalizedQuery])
+  const hasExact = useMemo(() => {
+    const nq = normalizedQuery
+    if (!nq) return false
+    return factions.some((f) => f.name.trim().toLowerCase() === nq)
+  }, [factions, normalizedQuery])
 
   return (
     <div className="flex flex-col gap-2">
@@ -97,6 +102,15 @@ export default function FactionList({
 
       {factions.length > 0 && filteredFactions.length === 0 && (
         <div className="px-4 py-3 text-sm text-gray-400">没有匹配的阵营</div>
+      )}
+
+      {normalizedQuery && !hasExact && (
+        <Link
+          href={`/topic/${topicId}?factionName=${encodeURIComponent(query.trim())}`}
+          className="mx-2 mt-1 px-3 py-2 rounded-md text-sm bg-green-50 text-green-700 hover:bg-green-100 border border-green-200"
+        >
+          ➕ 创建新阵营：{query.trim()}
+        </Link>
       )}
     </div>
   )

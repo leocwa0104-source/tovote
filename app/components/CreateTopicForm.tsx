@@ -7,9 +7,9 @@ import Link from 'next/link'
 
 type User = { id: string; username: string }
 
-export default function CreateTopicForm({ user }: { user: User | null }) {
+export default function CreateTopicForm({ user, initialTitle }: { user: User | null, initialTitle?: string }) {
   const [isPrivate, setIsPrivate] = useState(false)
-  const [title, setTitle] = useState('')
+  const [title, setTitle] = useState(initialTitle ?? '')
   const [seekBrainstorming, setSeekBrainstorming] = useState(false)
   const [seekRational, setSeekRational] = useState(false)
   const [similarTopics, setSimilarTopics] = useState<SimilarityResult['matches']>([])

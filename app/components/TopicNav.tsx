@@ -27,6 +27,11 @@ export default function TopicNav({ topics, isAuthenticated }: TopicNavProps) {
     if (!normalizedQuery) return topics
     return topics.filter((t) => t.title.toLowerCase().includes(normalizedQuery))
   }, [normalizedQuery, topics])
+  const hasExact = useMemo(() => {
+    const nq = normalizedQuery
+    if (!nq) return false
+    return topics.some((t) => t.title.trim().toLowerCase() === nq)
+  }, [normalizedQuery, topics])
 
   return (
     <nav className="flex flex-col gap-2 p-2">
@@ -67,6 +72,15 @@ export default function TopicNav({ topics, isAuthenticated }: TopicNavProps) {
 
       {topics.length > 0 && filteredTopics.length === 0 && (
         <div className="px-4 py-3 text-sm text-gray-400">没有匹配的话题</div>
+      )}
+
+      {normalizedQuery && !hasExact && (
+        <Link
+          href={`/?title=${encodeURIComponent(query.trim())}`}
+          className="mx-2 mt-1 px-3 py-2 rounded-md text-sm bg-green-50 text-green-700 hover:bg-green-100 border border-green-200"
+        >
+          ➕ 创建新话题：{query.trim()}
+        </Link>
       )}
     </nav>
   )
