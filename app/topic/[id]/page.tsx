@@ -121,27 +121,27 @@ export default async function TopicPage(props: {
         </div>
 
         {/* Right Column: Faction Content */}
-        <div className="flex-grow bg-gray-50 overflow-hidden relative">
-          {selectedFaction ? (
-            <div className="h-full overflow-y-auto p-4 md:p-8">
-              <FactionContent 
-                faction={selectedFaction}
-                user={user}
-                userMembership={userMembership}
-                topicId={topic.id}
-                isMember={currentFactionId === selectedFaction.id}
-                isOtherMember={!!(currentFactionId && currentFactionId !== selectedFaction.id)}
-              />
+      <div className="flex-grow bg-white overflow-hidden relative">
+        {selectedFaction ? (
+          <div className="h-full overflow-y-auto">
+            <FactionContent 
+              faction={selectedFaction}
+              user={user}
+              userMembership={userMembership}
+              topicId={topic.id}
+              isMember={currentFactionId === selectedFaction.id}
+              isOtherMember={!!(currentFactionId && currentFactionId !== selectedFaction.id)}
+            />
+          </div>
+        ) : (
+          <div className="h-full flex items-center justify-center text-gray-400">
+            <div className="text-center">
+              <p className="text-lg">No factions selected</p>
+              <p className="text-sm">Select a faction from the list to view details</p>
             </div>
-          ) : (
-            <div className="h-full flex items-center justify-center text-gray-400">
-              <div className="text-center">
-                <p className="text-lg">No factions selected</p>
-                <p className="text-sm">Select a faction from the list to view details</p>
-              </div>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
+      </div>
       </div>
     </main>
   )
