@@ -93,9 +93,9 @@ export default function TopicNav({ topics, privateTopics = [], isAuthenticated }
                 `}
               >
                 {(topic.seekBrainstorming || topic.seekRational) && (
-                  <div className="absolute left-0 top-0 flex flex-col gap-[1px]">
-                    {topic.seekBrainstorming && <div className="w-1 h-3 bg-orange-400 rounded-br-sm" title="Brainstorming" />}
-                    {topic.seekRational && <div className="w-1 h-3 bg-teal-400 rounded-br-sm" title="Rational" />}
+                  <div className="absolute top-0 left-4 flex gap-1">
+                    {topic.seekBrainstorming && <div className="w-1.5 h-3 bg-orange-400 rounded-b-sm shadow-sm" title="Brainstorming" />}
+                    {topic.seekRational && <div className="w-1.5 h-3 bg-teal-400 rounded-b-sm shadow-sm" title="Rational" />}
                   </div>
                 )}
                 <div className="flex flex-col flex-grow min-w-0">
