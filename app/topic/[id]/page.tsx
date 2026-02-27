@@ -78,7 +78,7 @@ export default async function TopicPage(props: {
   const selectedFaction = topic.factions.find(f => f.id === selectedFactionId)
 
   return (
-    <main className="flex min-h-screen flex-col bg-gray-50 text-gray-900 overflow-hidden">
+    <main className="flex h-screen flex-col bg-gray-50 text-gray-900 overflow-hidden">
       {/* Header */}
       <div className="flex-shrink-0 z-10 w-full flex items-center justify-between font-mono text-sm px-6 py-4 bg-white border-b border-gray-200">
         <div className="flex items-center gap-4">
