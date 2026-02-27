@@ -12,6 +12,8 @@ interface MentionTextareaProps {
   required?: boolean
   maxLength?: number
   onCitationAdd?: (citation: any) => void
+  onKeyDown?: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void
+  ref?: React.RefObject<HTMLTextAreaElement | null>
 }
 
 export default function MentionTextarea({ 
@@ -21,15 +23,29 @@ export default function MentionTextarea({
   className, 
   required,
   maxLength,
-  onCitationAdd 
+  onCitationAdd,
+  onKeyDown,
+  ref
 }: MentionTextareaProps) {
   const [value, setValue] = useState(defaultValue)
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [suggestions, setSuggestions] = useState<any[]>([])
   const [mentionQuery, setMentionQuery] = useState('')
   const [cursorPosition, setCursorPosition] = useState(0)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const internalRef = useRef<HTMLTextAreaElement>(null)
   
+  // Use either the passed ref or the internal ref
+  // This is a bit hacky but avoids forwardRef complexity for now if we just want to focus it
+  // Ideally should use forwardRef
+  useEffect(() => {
+    if (ref && internalRef.current) {
+        // @ts-ignore - we are syncing the refs
+        ref.current = internalRef.current
+    }
+  }, [ref])
+
+  const textareaRef = internalRef
+
   // Debounce the search query
   const [debouncedQuery] = useDebounce(mentionQuery, 300)
 
@@ -104,13 +120,27 @@ export default function MentionTextarea({
     }, 0)
   }
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (showSuggestions && suggestions.length > 0) {
+      if (e.key === 'Tab' || e.key === 'Enter') {
+        e.preventDefault()
+        handleSelectSuggestion(suggestions[0])
+      } else if (e.key === 'Escape') {
+        setShowSuggestions(false)
+      }
+    } else if (onKeyDown) {
+      onKeyDown(e)
+    }
+  }
+
   return (
-    <div className="relative">
+    <div className="relative w-full">
       <textarea
         ref={textareaRef}
         name={name}
         value={value}
         onChange={handleInput}
+        onKeyDown={handleKeyDown}
         // Handle click/keyup to update cursor position for mention detection
         onKeyUp={(e) => setCursorPosition(e.currentTarget.selectionStart)}
         onClick={(e) => setCursorPosition(e.currentTarget.selectionStart)}

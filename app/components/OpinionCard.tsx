@@ -109,76 +109,104 @@ export default function OpinionCard({ opinion, factionId, type, currentUser }: O
     }
   }
 
+  const summaryRef = useRef<HTMLInputElement>(null)
+  const detailRef = useRef<HTMLTextAreaElement>(null)
+
+  const handleSummaryKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      detailRef.current?.focus()
+    }
+  }
+
+  const handleDetailKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Backspace' && !detailRef.current?.value) {
+      e.preventDefault()
+      summaryRef.current?.focus()
+    }
+  }
+
   // If editing or no opinion yet (and user is logged in), show form
   if (isEditing || (!opinion && currentUser)) {
     return (
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-4">
-        <h4 className="font-semibold text-gray-700 mb-2">
-          {opinion ? 'Edit your opinion' : `Add your "${type === 'WHY' ? 'Why Join' : 'Why Not'}" opinion`}
+      <div className="bg-yellow-50 p-6 rounded-xl shadow-md border border-yellow-100 mb-6 relative overflow-hidden transition-all hover:shadow-lg group">
+        {/* Paper texture/lines effect */}
+        <div className="absolute inset-0 pointer-events-none opacity-5" style={{ backgroundImage: 'linear-gradient(#000 1px, transparent 1px)', backgroundSize: '100% 2rem', marginTop: '3rem' }}></div>
+        
+        <h4 className="font-bold text-yellow-800/80 mb-4 text-xs uppercase tracking-widest flex items-center gap-2">
+          <span>✏️</span>
+          {opinion ? 'Edit your opinion' : `Draft your "${type === 'WHY' ? 'Why Join' : 'Why Not'}" argument`}
         </h4>
-        <form action={handleSubmit} className="flex flex-col gap-3">
+        
+        <form action={handleSubmit} className="flex flex-col relative z-10">
           <input type="hidden" name="factionId" value={factionId} />
           <input type="hidden" name="type" value={type} />
           
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Core Argument (Summary)</label>
-            <input
-              type="text"
-              name="summary"
-              defaultValue={opinion?.summary || ''}
-              placeholder="E.g., It's the most logical choice because..."
-              className="w-full p-2 border rounded border-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
-              required
-              maxLength={100}
-            />
-          </div>
-          
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Detailed Explanation (Optional)</label>
-            <MentionTextarea
-              name="detail"
-              defaultValue={opinion?.detail || ''}
-              placeholder="Expand on your point... Use @ to cite others"
-              className="w-full p-2 border rounded border-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm min-h-[100px]"
-              onCitationAdd={(citation) => {
-                setMentionedCitations(prev => {
-                  if (prev.find(c => c.id === citation.id)) return prev
-                  return [...prev, citation]
-                })
-              }}
-            />
+          <div className="space-y-0">
+            {/* Summary Input (Title-like) */}
+            <div className="relative">
+              <input
+                ref={summaryRef}
+                type="text"
+                name="summary"
+                defaultValue={opinion?.summary || ''}
+                placeholder="Core Argument (Headline)..."
+                className="w-full p-0 border-0 bg-transparent text-xl font-bold text-gray-900 placeholder-gray-400 focus:ring-0 focus:outline-none py-2"
+                required
+                maxLength={100}
+                onKeyDown={handleSummaryKeyDown}
+                autoComplete="off"
+              />
+            </div>
+            
+            {/* Detail Input (Body-like) */}
+            <div className="relative min-h-[120px]">
+              <MentionTextarea
+                ref={detailRef}
+                name="detail"
+                defaultValue={opinion?.detail || ''}
+                placeholder="Elaborate on your point... (Press Enter in headline to jump here)"
+                className="w-full p-0 border-0 bg-transparent text-base text-gray-700 placeholder-gray-400 focus:ring-0 focus:outline-none resize-none leading-8 min-h-[120px]"
+                onCitationAdd={(citation) => {
+                  setMentionedCitations(prev => {
+                    if (prev.find(c => c.id === citation.id)) return prev
+                    return [...prev, citation]
+                  })
+                }}
+                onKeyDown={handleDetailKeyDown}
+              />
+            </div>
           </div>
 
           {!opinion && (
-            <div>
+            <div className="mt-4 pt-4 border-t border-yellow-200/50">
               {/* Hidden inputs for mentions */}
               {mentionedCitations.map(c => (
                 <input key={c.id} type="hidden" name="citationIds" value={JSON.stringify([c.id])} />
               ))}
               
-              <label className="block text-xs font-medium text-gray-500 mb-1">Citation (Optional Opinion ID)</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={citationId}
-                  onChange={(e) => setCitationId(e.target.value)}
-                  placeholder="Paste Opinion ID to cite..."
-                  className="w-full p-2 border rounded border-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm font-mono"
-                />
-                {citationId && <input type="hidden" name="citationIds" value={JSON.stringify([citationId])} />}
+              <div className="flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity">
+                <span className="text-xs font-medium text-yellow-700">Add Citation:</span>
+                <div className="flex-grow flex gap-2">
+                  <input
+                    type="text"
+                    value={citationId}
+                    onChange={(e) => setCitationId(e.target.value)}
+                    placeholder="Paste Opinion ID..."
+                    className="flex-grow bg-white/50 border-0 border-b border-yellow-300 focus:border-yellow-600 focus:ring-0 text-xs py-1 px-0 bg-transparent"
+                  />
+                  {citationId && <input type="hidden" name="citationIds" value={JSON.stringify([citationId])} />}
+                </div>
               </div>
-              <p className="text-[10px] text-gray-400 mt-1">
-                Tip: Copy the ID from another opinion or use @ to mention.
-              </p>
             </div>
           )}
           
-          <div className="flex gap-2 justify-end">
+          <div className="flex gap-3 justify-end mt-4">
             {opinion && (
               <button 
                 type="button" 
                 onClick={() => setIsEditing(false)}
-                className="px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded"
+                className="px-4 py-2 text-sm font-medium text-yellow-800 hover:bg-yellow-100/50 rounded-lg transition-colors"
                 disabled={loading}
               >
                 Cancel
@@ -186,10 +214,10 @@ export default function OpinionCard({ opinion, factionId, type, currentUser }: O
             )}
             <button 
               type="submit" 
-              className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              className="px-6 py-2 text-sm font-bold bg-yellow-400 text-yellow-900 rounded-lg hover:bg-yellow-500 shadow-sm hover:shadow transition-all disabled:opacity-50 disabled:shadow-none"
               disabled={loading}
             >
-              {loading ? 'Saving...' : 'Save Opinion'}
+              {loading ? 'Posting...' : 'Post Argument'}
             </button>
           </div>
         </form>
