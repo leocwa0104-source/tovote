@@ -86,12 +86,18 @@ export default function TopicNav({ topics, privateTopics = [], isAuthenticated }
                 key={topic.id}
                 href={`/topic/${topic.id}`}
                 className={`
-                  flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors
+                  relative overflow-hidden flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors
                   ${isActive 
                     ? 'bg-blue-50 text-blue-700 font-medium' 
                     : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'}
                 `}
               >
+                {(topic.seekBrainstorming || topic.seekRational) && (
+                  <div className="absolute left-0 top-0 bottom-0 w-1 flex flex-col">
+                    {topic.seekBrainstorming && <div className="flex-1 bg-orange-400" title="Brainstorming" />}
+                    {topic.seekRational && <div className="flex-1 bg-teal-400" title="Rational" />}
+                  </div>
+                )}
                 <div className="flex flex-col flex-grow min-w-0">
                   <span className="truncate">{topic.title}</span>
                   {topic.isPrivate && topic.creator && (
@@ -106,8 +112,6 @@ export default function TopicNav({ topics, privateTopics = [], isAuthenticated }
                       {topic.memberCount}👤
                     </span>
                   )}
-                  {topic.seekBrainstorming && <span title="Brainstorming">🧠</span>}
-                  {topic.seekRational && <span title="Rational">📊</span>}
                 </div>
                 {topic.isPrivate && <Lock className="w-3 h-3 flex-shrink-0 text-gray-400" />}
               </Link>
