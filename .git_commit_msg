@@ -1,1 +1,6 @@
-chore: remove topic description from faction list sidebar
+feat: allow duplicate topic titles for private topics and display creator
+
+- Remove unique constraint on Topic title in schema
+- Update createTopic action to only enforce uniqueness for public topics
+- Update getTopics to include creator username
+- Update TopicNav to display creator for private topics

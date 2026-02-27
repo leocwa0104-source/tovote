@@ -28,7 +28,8 @@ export default async function TopicSidebar() {
             title: t.title, 
             isPrivate: t.isPrivate,
             seekBrainstorming: t.seekBrainstorming,
-            seekRational: t.seekRational
+            seekRational: t.seekRational,
+            creator: t.creator
           }))} 
           isAuthenticated={!!user}
         />

@@ -54,12 +54,18 @@ export async function createTopic(prevState: unknown, formData: FormData) {
   if (!user) return { message: 'Unauthorized' }
 
   try {
-    const existingTopic = await prisma.topic.findUnique({
-      where: { title }
-    })
+    // Only check for uniqueness if the new topic is public (isPrivate: false)
+    if (!isPrivate) {
+      const existingPublicTopic = await prisma.topic.findFirst({
+        where: { 
+          title,
+          isPrivate: false
+        }
+      })
 
-    if (existingTopic) {
-      return { message: 'Topic with this title already exists. Please choose a different title.' }
+      if (existingPublicTopic) {
+        return { message: 'A public topic with this title already exists. Please choose a different title.' }
+      }
     }
 
     let hashedPassword = null
@@ -144,6 +150,9 @@ export async function getTopics() {
   return prisma.topic.findMany({
     orderBy: { createdAt: 'desc' },
     include: {
+      creator: {
+        select: { username: true }
+      },
       _count: {
         select: { factions: true, memberships: true }
       }

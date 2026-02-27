@@ -11,6 +11,7 @@ interface Topic {
   isPrivate: boolean
   seekBrainstorming?: boolean
   seekRational?: boolean
+  creator?: { username: string }
 }
 
 interface TopicNavProps {
@@ -59,8 +60,15 @@ export default function TopicNav({ topics, isAuthenticated }: TopicNavProps) {
                   : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'}
               `}
             >
-              <span className="truncate flex-grow">{topic.title}</span>
-              <div className="flex items-center gap-1 text-xs">
+              <div className="flex flex-col flex-grow min-w-0">
+                <span className="truncate">{topic.title}</span>
+                {topic.isPrivate && topic.creator && (
+                  <span className="text-xs text-gray-400 truncate">
+                    @{topic.creator.username}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1 text-xs flex-shrink-0">
                 {topic.seekBrainstorming && <span title="Brainstorming">🧠</span>}
                 {topic.seekRational && <span title="Rational">📊</span>}
               </div>
