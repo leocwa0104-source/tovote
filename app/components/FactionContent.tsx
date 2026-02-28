@@ -101,26 +101,26 @@ export default function FactionContent({
             </p>
           )}
 
-          {/* Tab Navigation */}
-          <div className="flex justify-center mt-2 mb-4 border-b border-transparent">
+          {/* Tab Navigation - Compact Toggle */}
+          <div className="flex justify-start mt-2 mb-4 border-b border-transparent">
             <div 
-              className="relative flex items-center bg-gray-100 rounded-full p-1 cursor-pointer w-64 h-10 select-none" 
+              className="relative flex items-center bg-gray-100 rounded-full p-1 cursor-pointer w-32 h-8 select-none shadow-inner" 
               onClick={() => setActiveTab(activeTab === 'WHY' ? 'WHY_NOT' : 'WHY')}
             >
-              {/* Sliding Background */}
+              {/* Circular Slider */}
               <div 
-                className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-full transition-all duration-300 ease-in-out shadow-sm ${
+                className={`absolute top-1 bottom-1 w-6 h-6 rounded-full transition-all duration-300 ease-in-out shadow-sm transform ${
                   activeTab === 'WHY' 
-                    ? 'left-1 bg-green-500' 
-                    : 'left-[calc(50%+2px)] bg-red-500'
+                    ? 'translate-x-0 bg-green-500' 
+                    : 'translate-x-24 bg-red-500'
                 }`}
               ></div>
 
               {/* Text Labels */}
-              <div className={`flex-1 text-center text-sm font-bold z-10 transition-colors duration-300 ${activeTab === 'WHY' ? 'text-white' : 'text-gray-500'}`}>
+              <div className={`flex-1 text-center text-xs font-bold z-10 transition-colors duration-300 ${activeTab === 'WHY' ? 'text-gray-900' : 'text-gray-400'}`}>
                 WHY
               </div>
-              <div className={`flex-1 text-center text-sm font-bold z-10 transition-colors duration-300 ${activeTab === 'WHY_NOT' ? 'text-white' : 'text-gray-500'}`}>
+              <div className={`flex-1 text-center text-xs font-bold z-10 transition-colors duration-300 ${activeTab === 'WHY_NOT' ? 'text-gray-900' : 'text-gray-400'}`}>
                 WHY NOT
               </div>
             </div>
