@@ -24,21 +24,6 @@ export default async function Home(props: { searchParams: Promise<{ [key: string
       </div>
 
       <div className="w-full max-w-md bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <div className="flex border-b border-gray-200 mb-6 text-sm">
-          <Link 
-            href="/"
-            className={`flex-1 pb-3 text-center font-medium transition-colors ${isPublic ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            Public Topic
-          </Link>
-          <Link 
-            href="/?action=private"
-            className={`flex-1 pb-3 text-center font-medium transition-colors ${isPrivate ? 'border-b-2 border-purple-600 text-purple-600' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            Private Topic
-          </Link>
-        </div>
-
         {isPublic && (
           <>
             <h2 className="text-xl font-semibold mb-4 text-gray-800">Create a Public Topic</h2>
