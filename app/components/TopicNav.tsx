@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useMemo, useState } from 'react'
-import { Lock } from './Icons'
+import { Lock, Unlock } from './Icons'
 
 interface Topic {
   id: string
@@ -130,7 +130,11 @@ export default function TopicNav({ topics, privateTopics = [], isAuthenticated }
                     </span>
                   )}
                 </div>
-                {topic.isPrivate && <Lock className="w-3 h-3 flex-shrink-0 text-gray-400" />}
+                {topic.isPrivate && (
+                  activeTab === 'private' 
+                    ? <Unlock className="w-3 h-3 flex-shrink-0 text-gray-400" /> 
+                    : <Lock className="w-3 h-3 flex-shrink-0 text-gray-400" />
+                )}
               </Link>
             )
           })}
