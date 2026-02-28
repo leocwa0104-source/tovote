@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { joinFaction, leaveFaction } from '@/app/actions'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 
@@ -18,6 +18,7 @@ interface FactionListProps {
   currentFactionId?: string | null
   selectedFactionId?: string | null
   isCreatingFaction?: boolean
+  user: { id: string } | null
 }
 
 export default function FactionList({ 
@@ -25,7 +26,8 @@ export default function FactionList({
   factions, 
   currentFactionId, 
   selectedFactionId,
-  isCreatingFaction
+  isCreatingFaction,
+  user
 }: FactionListProps) {
   const router = useRouter()
   const [query, setQuery] = useState('')
@@ -60,11 +62,11 @@ export default function FactionList({
         const isSelected = selectedFactionId === faction.id
         
         return (
-          <Link
+          <div
             key={faction.id}
-            href={`/topic/${topicId}?factionId=${faction.id}`}
+            onClick={() => router.push(`/topic/${topicId}?factionId=${faction.id}`)}
             className={`
-              group relative p-4 rounded-lg border transition-all duration-200 overflow-hidden
+              group relative p-4 rounded-lg border transition-all duration-200 overflow-hidden cursor-pointer
               ${isSelected 
                 ? 'bg-white border-gray-900 shadow-sm' 
                 : 'bg-white border-transparent hover:border-gray-200 hover:bg-gray-50'
@@ -77,7 +79,7 @@ export default function FactionList({
                 {faction.seekRational && <div className="w-1.5 h-3 bg-teal-400 rounded-b-sm shadow-sm" title="Rational" />}
               </div>
             )}
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <h4 className={`font-bold ${isSelected ? 'text-gray-900' : 'text-gray-600 group-hover:text-gray-900'}`}>
@@ -91,12 +93,35 @@ export default function FactionList({
               
               <div className="flex items-center justify-between text-xs text-gray-400">
                 <span>{faction._count.members} members</span>
-                {isSelected && (
-                  <span className="text-gray-900 font-medium">Selected</span>
-                )}
+                
+                <div onClick={(e) => e.stopPropagation()}>
+                  {!user ? (
+                    <button disabled className="py-1 px-2 bg-gray-50 text-gray-400 rounded border border-gray-200 font-medium cursor-not-allowed text-xs">
+                      Login
+                    </button>
+                  ) : isMember ? (
+                    <form action={leaveFaction.bind(null, topicId)}>
+                      <button className="py-1 px-2 bg-white text-red-500 rounded hover:bg-red-50 font-medium transition-colors border border-red-200 text-xs">
+                        Leave
+                      </button>
+                    </form>
+                  ) : (
+                    <form action={joinFaction.bind(null, topicId, faction.id)}>
+                      <button 
+                        className={`py-1 px-2 rounded font-medium transition-colors border text-xs ${
+                          currentFactionId 
+                            ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' 
+                            : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                        }`}
+                      >
+                        {currentFactionId ? 'Switch' : 'Join'}
+                      </button>
+                    </form>
+                  )}
+                </div>
               </div>
             </div>
-          </Link>
+          </div>
         )
       })}
 

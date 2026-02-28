@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import OpinionCard from './OpinionCard'
-import { joinFaction, leaveFaction } from '@/app/actions'
 
 interface CitationTarget {
   id: string
@@ -111,32 +110,6 @@ export default function FactionContent({
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex-shrink-0 w-full md:w-auto">
-              {!user ? (
-                 <button disabled className="w-full md:w-auto py-1.5 px-3 bg-gray-50 text-gray-400 rounded border border-gray-200 font-medium cursor-not-allowed text-sm">
-                   Login to Join
-                 </button>
-              ) : isMember ? (
-                <form action={leaveFaction.bind(null, topicId)}>
-                  <button className="w-full md:w-auto py-1.5 px-3 bg-white text-red-500 rounded hover:bg-red-50 font-medium transition-colors border border-red-200 text-sm">
-                    Leave
-                  </button>
-                </form>
-              ) : (
-                <form action={joinFaction.bind(null, topicId, faction.id)}>
-                  <button 
-                    className={`w-full md:w-auto py-1.5 px-3 rounded font-medium transition-colors border text-sm ${
-                      isOtherMember 
-                        ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' 
-                        : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
-                    }`}
-                  >
-                    {isOtherMember ? 'Switch' : 'Join'}
-                  </button>
-                </form>
-              )}
-            </div>
           </div>
 
           {faction.description && (
