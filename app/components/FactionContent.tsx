@@ -104,27 +104,27 @@ export default function FactionContent({
           {/* Tab Navigation - Compact Toggle */}
           <div className="flex justify-start mt-2 mb-4 border-b border-transparent">
             <div 
-              className={`relative flex items-center rounded-full p-1 cursor-pointer w-32 h-8 select-none transition-colors duration-300 ${
+              className={`relative flex items-center rounded-full p-0.5 cursor-pointer w-20 h-6 select-none transition-colors duration-300 ${
                 activeTab === 'WHY' ? 'bg-green-500' : 'bg-red-500'
               }`}
               onClick={() => setActiveTab(activeTab === 'WHY' ? 'WHY_NOT' : 'WHY')}
             >
               {/* Text Labels Layer */}
-              <div className="absolute inset-0 flex items-center justify-between px-3">
-                <span className={`text-xs font-bold text-white transition-opacity duration-300 ${activeTab === 'WHY_NOT' ? 'opacity-100' : 'opacity-0'}`}>
+              <div className="absolute inset-0 flex items-center justify-between px-2">
+                <span className={`text-[10px] font-bold text-white whitespace-nowrap transition-opacity duration-300 ${activeTab === 'WHY_NOT' ? 'opacity-100' : 'opacity-0'} leading-none`}>
                   WHY NOT
                 </span>
-                <span className={`text-xs font-bold text-white transition-opacity duration-300 ${activeTab === 'WHY' ? 'opacity-100' : 'opacity-0'}`}>
+                <span className={`text-[10px] font-bold text-white whitespace-nowrap transition-opacity duration-300 ${activeTab === 'WHY' ? 'opacity-100' : 'opacity-0'} leading-none`}>
                   WHY
                 </span>
               </div>
 
               {/* White Circular Slider */}
               <div 
-                className={`absolute top-1 bottom-1 w-6 h-6 rounded-full bg-white shadow-md transition-transform duration-300 ease-in-out transform ${
+                className={`absolute top-0.5 bottom-0.5 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-300 ease-in-out transform ${
                   activeTab === 'WHY' 
                     ? 'translate-x-0' 
-                    : 'translate-x-24'
+                    : 'translate-x-14'
                 }`}
               ></div>
             </div>
