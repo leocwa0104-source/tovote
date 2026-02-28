@@ -102,27 +102,28 @@ export default function FactionContent({
           )}
 
           {/* Tab Navigation */}
-          <div className="flex gap-6 mt-2 border-b border-transparent">
-            <button
-              onClick={() => setActiveTab('WHY')}
-              className={`pb-2 text-sm font-bold transition-all duration-200 focus:outline-none flex items-center gap-2 border-b-2 ${
-                activeTab === 'WHY' 
-                  ? 'border-gray-900 text-gray-900' 
-                  : 'border-transparent text-gray-400 hover:text-gray-600'
-              }`}
+          <div className="flex justify-center mt-2 mb-4 border-b border-transparent">
+            <div 
+              className="relative flex items-center bg-gray-100 rounded-full p-1 cursor-pointer w-64 h-10 select-none" 
+              onClick={() => setActiveTab(activeTab === 'WHY' ? 'WHY_NOT' : 'WHY')}
             >
-              <span>✅</span> Why Join?
-            </button>
-            <button
-              onClick={() => setActiveTab('WHY_NOT')}
-              className={`pb-2 text-sm font-bold transition-all duration-200 focus:outline-none flex items-center gap-2 border-b-2 ${
-                activeTab === 'WHY_NOT' 
-                  ? 'border-gray-900 text-gray-900' 
-                  : 'border-transparent text-gray-400 hover:text-gray-600'
-              }`}
-            >
-              <span>❌</span> Why Not?
-            </button>
+              {/* Sliding Background */}
+              <div 
+                className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-full transition-all duration-300 ease-in-out shadow-sm ${
+                  activeTab === 'WHY' 
+                    ? 'left-1 bg-green-500' 
+                    : 'left-[calc(50%+2px)] bg-red-500'
+                }`}
+              ></div>
+
+              {/* Text Labels */}
+              <div className={`flex-1 text-center text-sm font-bold z-10 transition-colors duration-300 ${activeTab === 'WHY' ? 'text-white' : 'text-gray-500'}`}>
+                WHY
+              </div>
+              <div className={`flex-1 text-center text-sm font-bold z-10 transition-colors duration-300 ${activeTab === 'WHY_NOT' ? 'text-white' : 'text-gray-500'}`}>
+                WHY NOT
+              </div>
+            </div>
           </div>
         </div>
       </div>
