@@ -73,7 +73,7 @@ export async function createTopic(prevState: unknown, formData: FormData) {
       hashedPassword = await bcrypt.hash(password, 10)
     }
 
-    await prisma.topic.create({
+    const newTopic = await prisma.topic.create({
       data: {
         title,
         description: description || null,
@@ -84,6 +84,15 @@ export async function createTopic(prevState: unknown, formData: FormData) {
         seekRational
       }
     })
+
+    if (isPrivate) {
+      await prisma.membership.create({
+        data: {
+          userId: user.id,
+          topicId: newTopic.id
+        }
+      })
+    }
     
     revalidatePath('/')
     return { message: 'success' }
