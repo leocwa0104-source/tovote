@@ -139,13 +139,13 @@ export default function TopicNav({ topics, privateTopics = [], isAuthenticated }
         )}
 
         {activeTab === 'private' && (
-          <div className="mt-4 px-2">
+          <div className="mt-4 px-2 space-y-2">
             <Link
-              href="/?action=join-private"
+              href="/?action=private"
               className="w-full py-2 px-3 bg-purple-50 text-purple-700 border border-purple-200 rounded-md text-sm font-medium hover:bg-purple-100 transition-colors flex items-center justify-center gap-2"
             >
-              <Lock className="w-3 h-3" />
-              Join Private Topic
+              <span>⚙️</span>
+              Manage Private Topics
             </Link>
           </div>
         )}

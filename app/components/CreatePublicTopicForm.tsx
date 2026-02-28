@@ -7,8 +7,7 @@ import Link from 'next/link'
 
 type User = { id: string; username: string }
 
-export default function CreateTopicForm({ user, initialTitle }: { user: User | null, initialTitle?: string }) {
-  const [isPrivate, setIsPrivate] = useState(false)
+export default function CreatePublicTopicForm({ user, initialTitle }: { user: User | null, initialTitle?: string }) {
   const [title, setTitle] = useState(initialTitle ?? '')
   const [seekBrainstorming, setSeekBrainstorming] = useState(false)
   const [seekRational, setSeekRational] = useState(false)
@@ -156,40 +155,11 @@ export default function CreateTopicForm({ user, initialTitle }: { user: User | n
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="isPrivate"
-          name="isPrivate"
-          checked={isPrivate}
-          onChange={(e) => setIsPrivate(e.target.checked)}
-          className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 border-gray-300"
-        />
-        <label htmlFor="isPrivate" className="text-sm text-gray-700 select-none cursor-pointer">
-          Private Topic (requires password)
-        </label>
-      </div>
-
-      {isPrivate && (
-        <div className="animate-in fade-in slide-in-from-top-2 duration-200">
-          <input
-            type="password"
-            name="password"
-            placeholder="Set a password..."
-            className="w-full p-2 border rounded border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required={isPrivate}
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            Users will need this password to view the topic.
-          </p>
-        </div>
-      )}
-
       <button
         type="submit"
         className="bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition-colors mt-2"
       >
-        Create Topic
+        Create Public Topic
       </button>
     </form>
   )
