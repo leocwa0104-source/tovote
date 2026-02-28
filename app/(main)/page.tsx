@@ -13,8 +13,9 @@ export default async function Home(props: { searchParams: Promise<{ [key: string
   const action = Array.isArray(searchParams?.action) ? searchParams?.action?.[0] : searchParams?.action
 
   // Default to public if no action or invalid action
-  const isPrivate = action === 'private'
-  const isPublic = !isPrivate
+  const isCreatePrivate = action === 'create-private'
+  const isJoinPrivate = action === 'join-private'
+  const isPublic = !isCreatePrivate && !isJoinPrivate
 
   return (
     <div className="flex h-full flex-col items-center justify-center p-8 bg-gray-50 text-gray-900">
@@ -31,17 +32,17 @@ export default async function Home(props: { searchParams: Promise<{ [key: string
           </>
         )}
 
-        {isPrivate && (
-          <div className="space-y-8">
-            <div>
-              <h2 className="text-xl font-semibold mb-4 text-gray-800">Create a Private Topic</h2>
-              <CreatePrivateTopicForm user={user} initialTitle={typeof initialTitle === 'string' ? initialTitle : undefined} />
-            </div>
-            
-            <div className="border-t border-gray-100 pt-6">
-              <h2 className="text-xl font-semibold mb-4 text-gray-800">Join a Private Topic</h2>
-              <JoinPrivateTopicForm />
-            </div>
+        {isCreatePrivate && (
+          <div>
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">Create a Private Topic</h2>
+            <CreatePrivateTopicForm user={user} initialTitle={typeof initialTitle === 'string' ? initialTitle : undefined} />
+          </div>
+        )}
+        
+        {isJoinPrivate && (
+          <div>
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">Join a Private Topic</h2>
+            <JoinPrivateTopicForm />
           </div>
         )}
       </div>

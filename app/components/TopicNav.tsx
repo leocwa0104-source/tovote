@@ -68,13 +68,30 @@ export default function TopicNav({ topics, privateTopics = [], isAuthenticated }
       )}
 
       <div className="px-2 mb-2">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={activeTab === 'public' ? 'Search public topics...' : 'Search my private topics...'}
-          className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          autoComplete="off"
-        />
+        {activeTab === 'public' ? (
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search public topics..."
+            className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            autoComplete="off"
+          />
+        ) : (
+          <div className="flex gap-2">
+            <Link
+              href="/?action=create-private"
+              className="flex-1 py-2 px-2 bg-purple-50 text-purple-700 border border-purple-200 rounded-md text-sm font-medium hover:bg-purple-100 transition-colors flex items-center justify-center gap-1"
+            >
+              <span>➕</span> Create
+            </Link>
+            <Link
+              href="/?action=join-private"
+              className="flex-1 py-2 px-2 bg-white text-gray-700 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-1"
+            >
+              <span>🔑</span> Join
+            </Link>
+          </div>
+        )}
       </div>
 
       <div className="flex-grow overflow-y-auto px-2 pb-2">
@@ -138,17 +155,7 @@ export default function TopicNav({ topics, privateTopics = [], isAuthenticated }
           </Link>
         )}
 
-        {activeTab === 'private' && (
-          <div className="mt-4 px-2 space-y-2">
-            <Link
-              href="/?action=private"
-              className="w-full py-2 px-3 bg-purple-50 text-purple-700 border border-purple-200 rounded-md text-sm font-medium hover:bg-purple-100 transition-colors flex items-center justify-center gap-2"
-            >
-              <span>⚙️</span>
-              Manage Private Topics
-            </Link>
-          </div>
-        )}
+
       </div>
     </nav>
   )
