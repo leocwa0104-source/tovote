@@ -91,27 +91,10 @@ export default function FactionContent({
   return (
     <div className="w-full bg-white h-full flex flex-col">
       {/* Unified Header Section */}
-      <div className="bg-white text-gray-900 p-6 md:p-8 relative flex-shrink-0 border-b border-gray-100">
+      <div className="bg-white text-gray-900 px-6 pt-4 pb-0 relative flex-shrink-0 border-b border-gray-100">
         
         <div className="relative z-10">
-          <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-6">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-bold mb-2 tracking-tight break-words">{faction.name}</h1>
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="text-gray-500 text-xs font-medium px-2 py-0.5 rounded bg-gray-100 border border-gray-200 whitespace-nowrap">
-                  {faction._count.members} Members
-                </span>
-                {isMember && (
-                  <span className="text-green-600 text-xs font-medium flex items-center gap-1 whitespace-nowrap">
-                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                    Member
-                  </span>
-                )}
-              </div>
-            </div>
-
-          </div>
-
+          
           {faction.description && (
             <p className="text-gray-600 text-sm leading-relaxed pl-3 border-l-2 border-gray-200 italic mb-6">
               {faction.description}
