@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
+import { useEffect, useRef, useState, useMemo, useCallback, forwardRef, useImperativeHandle } from 'react'
 import { computeTreemapLayout, TreemapNode } from '../utils/treemap'
 import OpinionBlock from './OpinionBlock'
 
@@ -14,6 +14,10 @@ interface MapOpinion {
   neighborId?: string | null
 }
 
+export interface OpinionMapRef {
+  focusNode: (id: string) => void
+}
+
 interface OpinionMapProps {
   opinions: MapOpinion[]
   selectedId?: string
@@ -21,7 +25,7 @@ interface OpinionMapProps {
   currentUser?: { id: string } | null
 }
 
-export default function OpinionMap({ opinions, selectedId, onSelect, currentUser }: OpinionMapProps) {
+const OpinionMap = forwardRef<OpinionMapRef, OpinionMapProps>(({ opinions, selectedId, onSelect, currentUser }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -34,12 +38,83 @@ export default function OpinionMap({ opinions, selectedId, onSelect, currentUser
   const dragStart = useRef<{ x: number, y: number } | null>(null)
   const mouseDownPos = useRef<{ x: number, y: number } | null>(null)
   const hasDragged = useRef(false)
+  const animationFrameRef = useRef<number>()
 
   // Layout Size
   const size = useMemo(() => {
     if (dimensions.width === 0 || dimensions.height === 0) return 0
     return Math.min(dimensions.width, dimensions.height)
   }, [dimensions])
+
+  const layout = useMemo(() => {
+    if (size === 0 || opinions.length === 0) return []
+    
+    // Transform opinions to TreemapItems
+    const items = opinions.map(o => ({
+      id: o.id,
+      value: 100, // Fixed value for uniform sizing
+      data: o,
+      neighborId: o.neighborId
+    }))
+    
+    return computeTreemapLayout(items, size, size)
+  }, [opinions, size])
+
+  // Expose focusNode method
+  useImperativeHandle(ref, () => ({
+    focusNode: (id: string) => {
+      const node = layout.find(n => n.data.id === id)
+      if (!node || !containerRef.current) return
+
+      // Cancel any ongoing animation
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
+
+      // Target Scale: Ensure node is clearly visible but not too huge
+      // Target around 1/3 of screen width?
+      const targetScale = Math.min(
+        (dimensions.width * 0.5) / node.w, 
+        (dimensions.height * 0.5) / node.h,
+        10 // Max zoom cap
+      )
+
+      // Target Position: Center the node
+      // Center of node in layout coords
+      const nodeCenterX = node.x + node.w / 2
+      const nodeCenterY = node.y + node.h / 2
+
+      // We want: transform.x + nodeCenterX * transform.scale = dimensions.width / 2
+      // So: transform.x = dimensions.width / 2 - nodeCenterX * targetScale
+      const targetX = dimensions.width / 2 - nodeCenterX * targetScale
+      const targetY = dimensions.height / 2 - nodeCenterY * targetScale
+
+      // Animation Loop
+      const startTransform = { ...transform }
+      const startTime = performance.now()
+      const duration = 800 // ms
+
+      const animate = (time: number) => {
+        const elapsed = time - startTime
+        const progress = Math.min(elapsed / duration, 1)
+        
+        // Ease Out Quart
+        const ease = 1 - Math.pow(1 - progress, 4)
+
+        const currentScale = startTransform.scale + (targetScale - startTransform.scale) * ease
+        const currentX = startTransform.x + (targetX - startTransform.x) * ease
+        const currentY = startTransform.y + (targetY - startTransform.y) * ease
+
+        setTransform({ x: currentX, y: currentY, scale: currentScale })
+
+        if (progress < 1) {
+          animationFrameRef.current = requestAnimationFrame(animate)
+        }
+      }
+
+      animationFrameRef.current = requestAnimationFrame(animate)
+    }
+  }), [layout, dimensions, transform])
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -61,20 +136,6 @@ export default function OpinionMap({ opinions, selectedId, onSelect, currentUser
     
     return () => ro.disconnect()
   }, [])
-
-  const layout = useMemo(() => {
-    if (size === 0 || opinions.length === 0) return []
-    
-    // Transform opinions to TreemapItems
-    const items = opinions.map(o => ({
-      id: o.id,
-      value: 100, // Fixed value for uniform sizing
-      data: o,
-      neighborId: o.neighborId
-    }))
-    
-    return computeTreemapLayout(items, size, size)
-  }, [opinions, size])
 
   // Draw to Canvas (LOD 0 / Background)
   useEffect(() => {
@@ -335,4 +396,6 @@ export default function OpinionMap({ opinions, selectedId, onSelect, currentUser
       </div>
     </div>
   )
-}
+})
+
+export default OpinionMap
