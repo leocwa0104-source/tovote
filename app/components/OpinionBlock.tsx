@@ -35,9 +35,9 @@ export default function OpinionBlock({ node, isActive, onSelect, scale }: Opinio
   const showFullContent = minDim > 200 // Threshold for full content mode
   
   // Dynamic font sizing
-  const headerFontSize = Math.max(9, Math.min(minDim / 20, 14))
-  const summaryFontSize = Math.max(10, Math.min(minDim / 10, 24))
-  const detailFontSize = Math.max(10, Math.min(minDim / 15, 16))
+  const headerFontSize = showFullContent ? 12 : Math.max(9, Math.min(minDim / 20, 14))
+  const summaryFontSize = showFullContent ? 16 : Math.max(10, Math.min(minDim / 10, 24))
+  const detailFontSize = showFullContent ? 14 : Math.max(10, Math.min(minDim / 15, 16))
 
   const handleCopyId = (e: React.MouseEvent) => {
     e.stopPropagation()
