@@ -107,8 +107,11 @@ export default function OpinionDetailView({ opinion, onClose, onCitationClick }:
                         {opinion.citations.map(c => (
                             <div 
                                 key={c.id} 
-                                className={`text-xs bg-gray-50 p-2 rounded text-gray-600 ${onCitationClick ? 'cursor-pointer hover:bg-gray-100' : ''}`}
-                                onClick={() => onCitationClick && onCitationClick(c.target)}
+                                className={`text-xs bg-gray-50 p-2 rounded text-gray-600 transition-colors ${onCitationClick ? 'cursor-pointer hover:bg-gray-100 hover:text-gray-900 border border-transparent hover:border-gray-200' : ''}`}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (onCitationClick) onCitationClick(c.target);
+                                }}
                             >
                                 <span className="font-bold">@{c.target.author.username}</span>: {c.target.summary}
                             </div>
