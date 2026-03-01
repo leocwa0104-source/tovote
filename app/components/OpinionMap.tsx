@@ -134,7 +134,9 @@ export default function OpinionMap({ opinions, selectedId, onSelect, currentUser
     // Calculate target scale to make the node fill about 60% of the screen
     // or at least be readable
     const nodeSize = Math.max(node.w, node.h)
-    const targetScale = Math.min(Math.max((Math.min(containerWidth, containerHeight) * 0.6) / nodeSize, 1), 8)
+    // Ensure minimum scale is > 3 to trigger full content mode (see OpinionBlock.tsx)
+    // If calculated scale is < 3.1, force it to 3.1
+    const targetScale = Math.min(Math.max((Math.min(containerWidth, containerHeight) * 0.6) / nodeSize, 3.1), 8)
     
     // Calculate target position to center the node
     // targetX = center - nodeX * scale - nodeW/2 * scale
