@@ -142,41 +142,126 @@ export default function TerritoryMap({
     setZoomLevel(parseFloat(e.target.value))
   }
 
-  // Calculate dynamic grid properties based on zoomLevel
-  const gridStyle = useMemo(() => {
-    // Base unit size varies linearly with zoom
-    // Zoom 0.5 -> 20px
-    // Zoom 1.0 -> 100px
-    // Zoom 3.0 -> 300px
-    const baseSize = Math.max(20, zoomLevel * 100)
+  // Calculate Spiral Layout
+  // Returns map of opinion.id -> { x, y, w, h }
+  const layout = useMemo(() => {
+    // 1. Sort opinions by createdAt descending (Newest first)
+    // Note: If updatedAt is available in the future, use it here.
+    const sortedOpinions = [...opinions].sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )
+
+    // 2. Spiral Grid Packing
+    // We use a virtual grid where 1 unit = 1x1 block
+    const occupied = new Set<string>() // format "x,y"
+    const itemPositions = new Map<string, { x: number, y: number, w: number, h: number }>()
     
-    // Aggressive Auto-Fit for Sparse Content
-    // If we have very few items (< 5) and zoom is high, force them to stretch
-    const isSparse = opinions.length > 0 && opinions.length < 5
-    const isHighZoom = zoomLevel > 1.5
-
-    return {
-      gridTemplateColumns: isSparse && isHighZoom
-        ? `repeat(auto-fit, minmax(${baseSize}px, 1fr))` // Force stretch to fill width
-        : `repeat(auto-fill, minmax(${baseSize}px, 1fr))`, // Standard grid behavior
-      gap: `${Math.max(2, zoomLevel * 4)}px`,
-      // Center grid when content is sparse
-      justifyContent: 'center',
-      alignContent: 'start',
-      width: '100%', // Ensure grid takes full width
-      maxWidth: isSparse && isHighZoom ? '100%' : 'fit-content', // Center the grid block itself
-      margin: '0 auto' // Center horizontally
+    // Check if a rectangle fits at (x, y)
+    const checkFit = (x: number, y: number, w: number, h: number) => {
+      for (let i = 0; i < w; i++) {
+        for (let j = 0; j < h; j++) {
+          if (occupied.has(`${x + i},${y + j}`)) return false
+        }
+      }
+      return true
     }
-  }, [zoomLevel, opinions.length])
 
-  const baseColor = type === 'WHY' ? 'bg-green-500' : 'bg-red-500'
-  const borderColor = type === 'WHY' ? 'border-green-100' : 'border-red-100'
-  const emptyPatternColor = type === 'WHY' ? '#f0fdf4' : '#fef2f2' // green-50 / red-50
+    // Mark rectangle as occupied
+    const markOccupied = (x: number, y: number, w: number, h: number) => {
+      for (let i = 0; i < w; i++) {
+        for (let j = 0; j < h; j++) {
+          occupied.add(`${x + i},${y + j}`)
+        }
+      }
+    }
+
+    // Spiral traversal generator
+    // Generates coordinates (x, y) spiraling out from (0, 0)
+    function* spiralGenerator() {
+      let x = 0
+      let y = 0
+      let dx = 0
+      let dy = -1
+      
+      // Start at 0,0
+      yield { x, y }
+
+      for (let i = 0; i < 10000; i++) { // Safety limit
+        // Logic for spiral steps
+        // -1 < x <= 1, -1 < y <= 1 -> Shell 1
+        if (-x === y || (x < 0 && x === -y) || (x > 0 && x === 1-y)) {
+          // Change direction
+          const temp = dx
+          dx = -dy
+          dy = temp
+        }
+        x += dx
+        y += dy
+        yield { x, y }
+      }
+    }
+
+    // Place each item
+    sortedOpinions.forEach(opinion => {
+      const span = getGridSpan(opinion.summary, opinion.detail)
+      const w = span.col
+      const h = span.row
+      
+      const spiral = spiralGenerator()
+      
+      // Find first available spot
+      for (let pos of spiral) {
+        // We try to place the top-left corner at pos.x, pos.y
+        // To make it more "centered", we might want to offset based on size, 
+        // but simple top-left spiral works well enough for packing.
+        if (checkFit(pos.x, pos.y, w, h)) {
+          markOccupied(pos.x, pos.y, w, h)
+          itemPositions.set(opinion.id, { x: pos.x, y: pos.y, w, h })
+          break
+        }
+      }
+    })
+
+    return itemPositions
+  }, [opinions])
+
+  // Pan State
+  const [pan, setPan] = useState({ x: 0, y: 0 })
+  const [isDragging, setIsDragging] = useState(false)
+  const lastMousePos = useRef({ x: 0, y: 0 })
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    // Only drag with left click and not on interactive elements if needed
+    setIsDragging(true)
+    lastMousePos.current = { x: e.clientX, y: e.clientY }
+  }
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return
+    e.preventDefault()
+    const dx = e.clientX - lastMousePos.current.x
+    const dy = e.clientY - lastMousePos.current.y
+    lastMousePos.current = { x: e.clientX, y: e.clientY }
+    setPan(prev => ({ x: prev.x + dx, y: prev.y + dy }))
+  }
+
+  const handleMouseUp = () => {
+    setIsDragging(false)
+  }
+  
+  const handleMouseLeave = () => {
+    setIsDragging(false)
+  }
+
+  // Recalculate grid styles for Absolute Positioning
+  const baseSize = Math.max(20, zoomLevel * 100)
+  const gap = Math.max(2, zoomLevel * 4)
+  const unitSize = baseSize + gap
 
   return (
-    <div className={`flex flex-col h-full relative group ${className}`}>
-      {/* Zoom Slider Control (Visible on hover) */}
-      <div className="absolute top-2 right-2 z-20 flex items-center gap-2 bg-white/90 backdrop-blur shadow-sm rounded-full border border-gray-200 px-3 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+    <div className={`flex flex-col h-full relative group overflow-hidden select-none cursor-grab active:cursor-grabbing ${className}`}>
+      {/* Zoom Slider Control */}
+      <div className="absolute top-2 right-2 z-50 flex items-center gap-2 bg-white/90 backdrop-blur shadow-sm rounded-full border border-gray-200 px-3 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
         <span className="text-[10px] text-gray-500 font-mono">Zoom</span>
         <input 
           type="range" 
@@ -187,59 +272,84 @@ export default function TerritoryMap({
           onChange={handleZoomChange}
           className="w-24 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-gray-600"
         />
+        <button 
+          onClick={() => setPan({x:0, y:0})} // Reset View
+          className="text-xs text-blue-500 hover:text-blue-700 ml-2"
+          title="Center Map"
+        >
+          ⌖
+        </button>
       </div>
 
-      {/* The Map Grid */}
+      {/* The Infinite Canvas */}
       <div 
         ref={containerRef}
-        className="flex-grow overflow-y-auto p-4 transition-all duration-300 ease-out scrollbar-thin scrollbar-thumb-gray-200"
+        className="w-full h-full relative"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
         style={{
-          // Background Texture for "Empty Territory" feel
+          backgroundColor: '#fff',
           backgroundImage: `
             linear-gradient(to right, ${emptyPatternColor} 1px, transparent 1px),
             linear-gradient(to bottom, ${emptyPatternColor} 1px, transparent 1px)
           `,
           backgroundSize: '40px 40px',
-          backgroundColor: '#fff' // Base white
         }}
       >
+        {/* Transform Layer */}
         <div 
-          className="grid grid-flow-dense auto-rows-min w-full max-w-full"
-          style={gridStyle}
+          className="absolute left-1/2 top-1/2 w-0 h-0"
+          style={{
+            transform: `translate(${pan.x}px, ${pan.y}px)`
+          }}
         >
           {opinions.map(opinion => {
-            const span = getGridSpan(opinion.summary, opinion.detail)
+            const pos = layout.get(opinion.id)
+            if (!pos) return null
+
             const ageOpacity = getOpacity(opinion.createdAt)
             const isUserOwn = currentUser && opinion.authorId === currentUser.id
             
-            // LOD Logic
-            // Level 0: Just Block (Zoom < 0.8)
-            // Level 1: Summary (Zoom 0.8 - 1.8)
-            // Level 2: Full Detail (Zoom > 1.8)
             const showSummary = zoomLevel >= 0.8
             const showDetail = zoomLevel >= 1.8
             
-            // Dynamic Font Size based on Zoom
             const fontSize = Math.max(10, zoomLevel * 8) + 'px'
+
+            // Calculate absolute position
+            // Center the coordinate system: x * unitSize
+            const left = pos.x * unitSize
+            const top = pos.y * unitSize
+            const width = pos.w * unitSize - gap
+            const height = pos.h * unitSize - gap
 
             return (
               <div 
                 key={opinion.id}
                 style={{
-                  gridColumn: `span ${span.col}`,
-                  gridRow: `span ${span.row}`,
-                  opacity: !showSummary ? ageOpacity : 1, // Fade block in macro view
+                  position: 'absolute',
+                  left: `${left}px`,
+                  top: `${top}px`,
+                  width: `${width}px`,
+                  height: `${height}px`,
+                  opacity: !showSummary ? ageOpacity : 1,
+                  // Transition for smooth zoom/pan? Maybe too heavy for pan. 
+                  // Only transition dimensions and opacity.
+                  transition: 'width 0.2s, height 0.2s, left 0.2s, top 0.2s, opacity 0.3s'
                 }}
                 className={`
-                  relative bg-white shadow-sm transition-all duration-300
-                  hover:z-10 hover:scale-[1.02] hover:shadow-md hover:opacity-100
+                  bg-white shadow-sm overflow-hidden
+                  hover:z-10 hover:shadow-md hover:opacity-100
                   ${!showSummary ? 'rounded-[1px]' : 'rounded-sm'}
                   ${isUserOwn ? 'ring-2 ring-blue-500/50 z-10' : `border ${borderColor}`}
                   ${!showSummary ? baseColor : ''}
-                  ${showDetail ? 'overflow-y-auto scrollbar-thin scrollbar-thumb-gray-100' : 'overflow-hidden'}
+                  ${showDetail ? 'overflow-y-auto scrollbar-thin scrollbar-thumb-gray-100' : ''}
                 `}
+                // Prevent drag propagation when interacting with card content
+                onMouseDown={e => e.stopPropagation()} 
               >
-                {/* Visual Aging Overlay */}
+                {/* Content Rendering (Same as before) */}
                 {showSummary && (
                   <div 
                     className="absolute inset-0 pointer-events-none bg-white mix-blend-hard-light"
@@ -247,14 +357,12 @@ export default function TerritoryMap({
                   />
                 )}
 
-                {/* Level 0: Macro Block */}
                 {!showSummary && (
                    <div title={`${opinion.summary} (${new Date(opinion.createdAt).toLocaleDateString()})`} className="w-full h-full" />
                 )}
 
-                {/* Level 1: Summary Card */}
                 {showSummary && !showDetail && (
-                  <div className="h-full flex flex-col p-2">
+                  <div className="h-full flex flex-col p-2 pointer-events-none"> {/* Disable pointer events for smooth drag */}
                     <div className="flex items-center gap-1 mb-1 opacity-60">
                       <div className="w-1.5 h-1.5 rounded-full bg-gray-300 flex-shrink-0" />
                       <span className="font-mono truncate text-gray-500" style={{ fontSize: '0.7em' }}>
@@ -270,7 +378,6 @@ export default function TerritoryMap({
                   </div>
                 )}
 
-                {/* Level 2: Full Detail (OpinionCard) */}
                 {showDetail && (
                   <div className="h-full w-full">
                     <OpinionCard
@@ -287,8 +394,8 @@ export default function TerritoryMap({
           })}
           
           {opinions.length === 0 && (
-            <div className="col-span-full h-64 flex flex-col items-center justify-center text-gray-300 italic">
-              <span className="text-4xl mb-4 opacity-20">{type === 'WHY' ? '🌱' : '🛡️'}</span>
+            <div className="absolute transform -translate-x-1/2 -translate-y-1/2 w-64 text-center text-gray-300 italic">
+              <span className="text-4xl mb-4 block opacity-20">{type === 'WHY' ? '🌱' : '🛡️'}</span>
               <span>Unclaimed Territory</span>
             </div>
           )}
