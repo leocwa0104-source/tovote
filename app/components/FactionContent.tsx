@@ -77,6 +77,9 @@ export default function FactionContent({
 }: FactionContentProps) {
   const currentOpinions = faction.opinions
   
+  const [selectedOpinionId, setSelectedOpinionId] = useState<string | null>(null)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  
   const userOpinion = user ? currentOpinions.find((o: Opinion) => o.authorId === user.id) : undefined
 
   // Auto-select user's opinion initially if exists, but only once
