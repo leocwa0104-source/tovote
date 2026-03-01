@@ -13,6 +13,12 @@ interface OpinionDetailViewProps {
       username: string
     }
     neighborId?: string | null
+    faction?: {
+      name: string
+      topic?: {
+        title: string
+      }
+    }
     citations?: {
         id: string
         target: {
@@ -21,6 +27,12 @@ interface OpinionDetailViewProps {
             detail: string | null
             type: 'WHY' | 'WHY_NOT'
             author: { username: string }
+            faction?: {
+              name: string
+              topic?: {
+                title: string
+              }
+            }
         }
     }[]
   }
@@ -124,6 +136,12 @@ export default function OpinionDetailView({ opinion, onClose, onCitationClick }:
                     <span className="text-[10px] text-gray-400 font-mono uppercase">
                         Territory ID: {opinion.id.substring(0, 8)}...
                     </span>
+                    {(opinion.faction?.name || opinion.faction?.topic?.title) && (
+                        <span className="text-[10px] text-gray-500 font-mono mt-0.5 truncate max-w-[200px]" title={`${opinion.faction?.topic?.title || ''} / ${opinion.faction?.name || ''}`}>
+                            {opinion.faction?.topic?.title ? `${opinion.faction.topic.title} / ` : ''}
+                            {opinion.faction?.name || ''}
+                        </span>
+                    )}
                 </div>
             </div>
             

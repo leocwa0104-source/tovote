@@ -46,6 +46,12 @@ interface Opinion {
     }
   }[]
   factionId: string
+  faction?: {
+    name: string
+    topic?: {
+      title: string
+    }
+  }
 }
 
 interface FactionWithOpinions {
@@ -118,7 +124,13 @@ export default function FactionContent({
     // Check if target is in currentOpinions
     const existing = currentOpinions.find(o => o.id === target.id)
     if (existing) {
-        setModalStack(prev => [...prev, existing])
+        // Enhance existing opinion with faction/topic info from the citation target
+        // This ensures even local citations show their context
+        const existingWithContext = {
+            ...existing,
+            faction: target.faction
+        }
+        setModalStack(prev => [...prev, existingWithContext])
     } else {
         // Construct a partial opinion object for display
         // We need to cast it to Opinion or make OpinionDetailView accept a union
@@ -130,6 +142,7 @@ export default function FactionContent({
             citations: [],
             citedBy: [],
             factionId: '', // placeholder
+            faction: target.faction // Explicitly include faction context
         } as unknown as Opinion // Force cast for now
         setModalStack(prev => [...prev, partialOpinion])
     }
