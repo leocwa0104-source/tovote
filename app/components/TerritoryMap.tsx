@@ -55,45 +55,53 @@ interface TerritoryMapProps {
 }
 
 // Helper to calculate grid span based on content length (Linear)
-// Each 1x1 unit represents a fixed capacity of characters
-// We calculate total units needed and form a roughly square shape.
+// We use a high-resolution micro-grid to allow precise area fitting
 const getGridSpan = (summary: string, detail: string | null) => {
   const totalLength = summary.length + (detail?.length || 0)
   
-  // Capacity per 1x1 unit - Aggressively tight!
-  // Assuming 12px font, roughly 10-15 chars per line in a small box.
-  // Let's set it to 60 chars per unit to force density.
-  const CHARS_PER_UNIT = 60 
+  // Micro-grid capacity: extremely small to allow fine-grained sizing
+  // If baseSize is 20px (at zoom 1), 20x20 area fits about 4 chars?
+  // Let's say 1 unit = 2 chars capacity.
+  const CHARS_PER_UNIT = 2 
   
   // Minimum 1 unit
-  const unitsNeeded = Math.max(1, Math.ceil(totalLength / CHARS_PER_UNIT))
+  const unitsNeeded = Math.max(4, Math.ceil(totalLength / CHARS_PER_UNIT))
   
   // Calculate dimensions to minimize waste
-  // We want w * h >= unitsNeeded, minimizing (w*h - unitsNeeded)
-  // And keeping aspect ratio somewhat balanced (1:1 to 1:2)
+  // We prefer rects with aspect ratio between 1:1 and 3:1 (landscape or portrait)
   
   let bestW = Math.ceil(Math.sqrt(unitsNeeded))
   let bestH = Math.ceil(unitsNeeded / bestW)
   let minWaste = (bestW * bestH) - unitsNeeded
+  let bestRatioDiff = Math.abs((bestW / bestH) - 1.5) // Prefer 3:2 landscape slightly
 
-  // Try a few other widths to see if we can get less waste
-  for (let w = 1; w <= unitsNeeded; w++) {
+  // Search range: narrow range around square root to keep it efficient
+  // But wide enough to find good rectangular fits
+  const sqrt = Math.sqrt(unitsNeeded)
+  const minSide = Math.floor(sqrt * 0.5)
+  const maxSide = Math.ceil(sqrt * 2.0)
+
+  for (let w = minSide; w <= maxSide; w++) {
+    if (w < 1) continue
     const h = Math.ceil(unitsNeeded / w)
     const waste = (w * h) - unitsNeeded
-    const ratio = Math.max(w/h, h/w)
+    const ratio = w / h
     
-    // We prefer square-ish, but if waste is 0, we take it (unless ratio is too extreme > 3)
-    if (waste < minWaste && ratio < 3) {
+    // Skip extreme ratios (> 4:1 or < 1:4)
+    if (ratio > 4 || ratio < 0.25) continue
+
+    // Priority: 1. Minimize Waste, 2. Optimized Aspect Ratio
+    if (waste < minWaste) {
       minWaste = waste
       bestW = w
       bestH = h
-    }
-    // If waste is same, prefer square-ish
-    if (waste === minWaste) {
-      const currentRatio = Math.max(bestW/bestH, bestH/bestW)
-      if (ratio < currentRatio) {
+      bestRatioDiff = Math.abs(ratio - 1.5)
+    } else if (waste === minWaste) {
+      const currentRatioDiff = Math.abs(ratio - 1.5)
+      if (currentRatioDiff < bestRatioDiff) {
         bestW = w
         bestH = h
+        bestRatioDiff = currentRatioDiff
       }
     }
   }
@@ -285,9 +293,16 @@ export default function TerritoryMap({
   }
 
   // Recalculate grid styles for Absolute Positioning
-  const baseSize = Math.max(20, zoomLevel * 100)
-  const gap = Math.max(2, zoomLevel * 4)
-  const unitSize = baseSize + gap
+  // Micro-grid settings:
+  // We reduce baseSize significantly because each "unit" is now tiny (2 chars).
+  // At zoom 1.0, 1 unit = 10px?
+  const baseSize = Math.max(2, zoomLevel * 10) // 10px at zoom 1.0
+  const gap = 0 // No gap in micro-grid to allow seamless merging visually? Or tiny gap.
+  // Actually we need tiny gap for visual separation if we want blocks.
+  // But user said "no large white space".
+  // Let's keep a tiny 1px gap but scaled.
+  const visualGap = Math.max(0.5, zoomLevel * 1) 
+  const unitSize = baseSize + visualGap
 
   const baseColor = type === 'WHY' ? 'bg-green-500' : 'bg-red-500'
   const borderColor = type === 'WHY' ? 'border-green-100' : 'border-red-100'
@@ -330,12 +345,8 @@ export default function TerritoryMap({
         onMouseLeave={handleMouseLeave}
         style={{
           backgroundColor: '#fff',
-          backgroundImage: `
-            linear-gradient(to right, ${emptyPatternColor} 1px, transparent 1px),
-            linear-gradient(to bottom, ${emptyPatternColor} 1px, transparent 1px)
-          `,
-          backgroundSize: `${unitSize}px ${unitSize}px`,
-          backgroundPosition: `${pan.x + window.innerWidth/2}px ${pan.y + window.innerHeight/2}px`, // Center origin visually
+          // Micro-grid is too small to show grid lines, just white background
+          backgroundImage: 'none',
           cursor: isDragging ? 'grabbing' : 'grab'
         }}
       >
@@ -354,34 +365,44 @@ export default function TerritoryMap({
             return (
               <div
                 key={id}
-                className={`absolute flex flex-col p-[1px] transition-all duration-300 ease-out border shadow-sm hover:shadow-md hover:z-10 ${baseColor} ${borderColor}`}
+                className={`absolute flex flex-col transition-all duration-300 ease-out border shadow-sm hover:shadow-md hover:z-10 ${baseColor} ${borderColor}`}
                 style={{
                   left: pos.x * unitSize,
                   top: pos.y * unitSize,
-                  width: pos.w * unitSize - gap,
-                  height: pos.h * unitSize - gap,
+                  width: pos.w * unitSize - visualGap,
+                  height: pos.h * unitSize - visualGap,
                   opacity: Math.max(0.2, opacity), // Minimum visibility
-                  borderRadius: '0px' // Sharp edges for map feel
+                  borderRadius: '0px', // Sharp edges for map feel
+                  // No padding to maximize text area
+                  padding: '1px' 
                 }}
               >
                 {/* Content rendering based on LOD */}
-                <div className="flex-1 overflow-hidden">
+                <div className="flex-1 overflow-hidden w-full h-full">
                   {zoomLevel < 0.8 ? (
                      // LOD 1: Blocks only (color intensity already set by opacity)
                      null
                   ) : (
-                    <div className="h-full flex flex-col">
+                    <div className="w-full h-full flex flex-col">
                       <div 
-                        className="font-bold leading-[1.1] text-gray-800 break-words whitespace-pre-wrap tracking-tighter"
-                        style={{ fontSize: `${fontSize}px` }}
+                        className="font-bold text-gray-800 break-words whitespace-pre-wrap tracking-tighter w-full"
+                        style={{ 
+                          fontSize: `${fontSize}px`,
+                          lineHeight: '1.05', // Extremely tight line height
+                          wordBreak: 'break-all' // Force break anywhere to fill space
+                        }}
                       >
                         {opinion.summary}
                       </div>
                       
                       {zoomLevel > 1.2 && opinion.detail && (
                         <div 
-                          className="mt-0.5 text-gray-600 break-words whitespace-pre-wrap tracking-tighter"
-                          style={{ fontSize: `${Math.max(8, fontSize * 0.9)}px`, lineHeight: '1.1' }}
+                          className="mt-0.5 text-gray-600 break-words whitespace-pre-wrap tracking-tighter w-full"
+                          style={{ 
+                            fontSize: `${Math.max(8, fontSize * 0.9)}px`, 
+                            lineHeight: '1.05',
+                            wordBreak: 'break-all'
+                          }}
                         >
                           {opinion.detail}
                         </div>
@@ -389,8 +410,8 @@ export default function TerritoryMap({
                       
                       {/* Meta info only at high zoom */}
                       {zoomLevel > 1.8 && (
-                        <div className="mt-auto pt-0.5 flex items-center justify-between text-[6px] text-gray-400 border-t border-black/5">
-                          <span>@{opinion.author.username}</span>
+                        <div className="mt-auto pt-0.5 flex items-center justify-between text-[6px] text-gray-400 border-t border-black/5 w-full">
+                          <span className="truncate">@{opinion.author.username}</span>
                         </div>
                       )}
                     </div>
