@@ -89,12 +89,18 @@ function worst(row: { value: number }[], sideLength: number): number {
   const s = sum(row);
   if (s === 0) return 0;
   
+  // Protect against division by zero if sideLength is effectively zero
+  if (sideLength < 0.000001) return Infinity;
+
   let maxRatio = 0;
   const s2 = s * s;
   const w2 = sideLength * sideLength;
   
   for (const node of row) {
     const r = node.value;
+    // Protect against division by zero
+    if (r === 0) continue;
+    
     const ratio = Math.max((w2 * r) / s2, s2 / (w2 * r));
     if (ratio > maxRatio) maxRatio = ratio;
   }
@@ -117,6 +123,9 @@ export function computeTreemapLayout(
   
   // Calculate scale factor (Value -> Area)
   const totalArea = containerWidth * containerHeight;
+  // If container is too small, return empty
+  if (totalArea <= 0) return [];
+  
   const scale = totalArea / totalValue;
 
   // Prepare top-level items for layout
@@ -137,7 +146,8 @@ export function computeTreemapLayout(
         ...group,
         value: group.value * scale,
         isGroup: false,
-        children: undefined
+        children: undefined,
+        data: group.data
       };
     }
   }).sort((a, b) => b.value - a.value);
@@ -145,10 +155,6 @@ export function computeTreemapLayout(
   const result: TreemapNode[] = [];
 
   // Recursive squarify function
-  // We need a robust implementation that handles the layout logic
-  // Since the original implementation was partial in the snippet, 
-  // I'll implement a complete standard squarified treemap function here.
-  
   function layoutRects(
     nodes: typeof topLevelItems, 
     x: number, 
@@ -157,6 +163,13 @@ export function computeTreemapLayout(
     h: number
   ) {
     if (nodes.length === 0) return;
+    
+    // Safety check for dimensions
+    if (w <= 0.001 || h <= 0.001) {
+       // Space exhausted, but nodes remain. 
+       // We can't layout remaining nodes visibly.
+       return;
+    }
 
     let currentRow: typeof nodes = [];
     let remaining = nodes;
@@ -166,6 +179,9 @@ export function computeTreemapLayout(
 
     while (remaining.length > 0) {
       const sideLength = Math.min(rw, rh);
+      // If sideLength is too small, break to avoid infinite loops or bad math
+      if (sideLength < 0.000001) break;
+
       const nextNode = remaining[0];
       
       // Try adding to current row
@@ -188,38 +204,16 @@ export function computeTreemapLayout(
         
         // Update remaining rectangle
         const rowArea = sum(currentRow);
-        const rowBreadth = rowArea / sideLength; // width or height of the row
+        const rowBreadth = rowArea / sideLength; 
         
-        if (rw < rh) { // Vertical split (row is horizontal stack) -> No, wait.
-          // If rw < rh, the "short side" is width. We stack items along width?
-          // Standard Squarified: "layout along the shorter side".
-          // If width is shorter, we form a row (strip) that spans the width, and has height = rowArea / width.
-          // Wait, if width is shorter, we cut a horizontal strip?
-          // Let's stick to the logic: sideLength = min(w, h).
-          // Row area = sum(nodes). 
-          // Breadth of row = RowArea / sideLength.
-          
-          if (rw < rh) {
-             // Split horizontally: The row takes full width (rw), and some height (breadth)
-             // Items in row are arranged side-by-side (changing x)? No.
-             // If row takes full width, items must be arranged along that width?
-             // Actually, if we slice a horizontal strip (full width), items are typically arranged *inside* it.
-             // If the strip is horizontal (width=rw, height=breadth), items are usually vertical columns inside it?
-             // Let's look at `layoutRow`.
-             
-             // My implementation of layoutRow needs to align with how we cut.
-             // Let's assume layoutRow handles the internal division.
-             // We just need to know how to update rx, ry, rw, rh.
-             
+        if (rw < rh) { // Vertical split (row is horizontal stack)
              ry += rowBreadth;
              rh -= rowBreadth;
-          } else {
-             // Split vertically: The row takes full height (rh), and some width (breadth)
+        } else {
              rx += rowBreadth;
              rw -= rowBreadth;
-          }
-          currentRow = [];
         }
+        currentRow = [];
       }
     }
     
@@ -232,36 +226,7 @@ export function computeTreemapLayout(
     const rowArea = sum(row);
     if (rowArea === 0) return;
     
-    // We determine orientation based on the containing rect logic in the main loop.
-    // However, the main loop logic (rw < rh) determines the *strip* orientation.
-    // If w < h, we created a horizontal strip (full width w, height = area/w).
-    // Inside this horizontal strip, we stack items horizontally (side-by-side) to fill it?
-    // Yes.
-    
-    // Re-eval the orientation logic locally to be safe or pass it down?
-    // Standard approach: The row is filled along the *longer* dimension of the row-rect?
-    // Actually, the row rect is fixed by (w, h) passed here? 
-    // Wait, in the main loop we pass (rw, rh) which is the *remaining* area.
-    // But layoutRow needs to know the *strip* dimensions.
-    
-    // Let's refine the main loop to calculate strip dimensions and pass THAT to layoutRow.
-    // But to avoid complex refactoring, let's infer:
-    // The "row" is supposed to fill the `sideLength` dimension fully.
-    // The other dimension is `rowArea / sideLength`.
-    // But we passed the *remaining* w and h. 
-    // We need to know which side was the short side used for optimization.
-    
-    // Actually, simpler:
-    // If w < h, we slice a horizontal strip. Height = area/w.
-    // Inside this strip, items have height = strip_height. Width = item_area / strip_height.
-    
-    const vertical = w < h; // True if we are slicing horizontally (strip spans full width)
-    // Wait, if w < h, sideLength = w. We cut a strip of size W x (Area/W). 
-    // This is a horizontal strip.
-    // Items inside are arranged horizontally? 
-    // Item 1: Area1. Height = (Area/W). Width = Area1 / Height.
-    // Yes.
-    
+    const vertical = w < h; 
     const breadth = rowArea / (vertical ? w : h);
     
     let curX = x;
@@ -294,25 +259,8 @@ export function computeTreemapLayout(
   function handleNode(node: typeof topLevelItems[0], x: number, y: number, w: number, h: number) {
     if (node.isGroup && node.children) {
       // Recursively layout the group's children within this node's rect
-      // We don't add the group itself to results, only its children
-      // But we need to convert children to the format expected by layoutRects?
-      // Or just call computeTreemapLayout recursively?
-      // Calling computeTreemapLayout is safer but we need to match the signature.
-      // Actually, we can just recurse layoutRects logic or better:
-      // Since we already have the scaled values, we can just use a local squarify.
       
-      // However, we need to pass "unscaled" items to computeTreemapLayout usually?
-      // No, here `node.children` already have values scaled to the GLOBAL area.
-      // But for the recursive call, they need to fill (w, h).
-      // The sum of node.children.value IS node.value.
-      // And node.value is (approximately) w * h.
-      // So the scale is already correct (1:1).
-      
-      // We can just call layoutRects on children with the new bounds.
-      // But layoutRects expects types compatible with topLevelItems.
-      // children are compatible (isGroup: false).
-      
-      // Cast children to correct type (add isGroup: false if missing)
+      // Cast children to correct type
       const childrenNodes = node.children.map(c => ({
         ...c,
         isGroup: false,

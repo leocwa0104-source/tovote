@@ -169,14 +169,12 @@ export default function FactionContent({
       </div>
 
       {/* Map Area - Takes available space */}
-      <div className="flex-grow relative bg-gray-50 overflow-y-auto flex flex-col">
-        <div className="min-h-full w-full flex items-center justify-center p-4">
-           <OpinionMap 
-             opinions={currentOpinions}
-             selectedId={selectedOpinionId || undefined}
-             onSelect={setSelectedOpinionId}
-           />
-        </div>
+      <div className="flex-grow relative bg-gray-50 overflow-hidden flex flex-col">
+         <OpinionMap 
+           opinions={currentOpinions}
+           selectedId={selectedOpinionId || undefined}
+           onSelect={setSelectedOpinionId}
+         />
       </div>
 
       {/* Create/Edit Modal */}
