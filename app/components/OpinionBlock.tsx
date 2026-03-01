@@ -11,12 +11,12 @@ interface OpinionBlockProps {
 
 export default function OpinionBlock({ node, isActive, onSelect, scale }: OpinionBlockProps) {
   const opinion = node.data
-  const isWhy = opinion.type === 'WHY'
   
-  // Color logic
-  const baseColor = isWhy ? 'bg-green-500' : 'bg-red-500'
-  const activeColor = isWhy ? 'bg-green-600' : 'bg-red-600'
-  const hoverColor = isWhy ? 'hover:bg-green-400' : 'hover:bg-red-400'
+  // Minimalist black/white style logic
+  // Consistent base style for all opinions within a faction
+  const baseColor = 'bg-white'
+  const activeColor = 'bg-gray-50'
+  const hoverColor = 'hover:bg-gray-50'
   
   // Adjusted text size calculation based on block size AND zoom scale
   // We want text to become visible as we zoom in
@@ -35,8 +35,8 @@ export default function OpinionBlock({ node, isActive, onSelect, scale }: Opinio
 
   return (
     <div
-      className={`absolute cursor-pointer border border-white/10 overflow-hidden flex flex-col p-1 transition-colors duration-200 ${
-        isActive ? `z-10 ring-2 ring-white shadow-lg ${activeColor}` : `${baseColor} ${hoverColor}`
+      className={`absolute cursor-pointer border overflow-hidden flex flex-col p-1 transition-colors duration-200 ${
+        isActive ? `z-10 ring-2 ring-black shadow-lg ${activeColor} border-black` : `${baseColor} ${hoverColor} border-gray-200`
       }`}
       style={{
         left: node.x,
@@ -51,11 +51,11 @@ export default function OpinionBlock({ node, isActive, onSelect, scale }: Opinio
       title={`${opinion.author.username}: ${opinion.summary}`}
     >
       {/* Content Container - No centering, top-left alignment for map feel */}
-      <div className="text-white w-full h-full overflow-hidden select-none pointer-events-none flex flex-col gap-0.5">
+      <div className="text-black w-full h-full overflow-hidden select-none pointer-events-none flex flex-col gap-0.5">
         
         {/* Header: Avatar + Username */}
         {showAvatar && (
-          <div className="flex items-center gap-1 opacity-80 min-h-[12px] flex-shrink-0" style={{ fontSize: headerFontSize }}>
+          <div className="flex items-center gap-1 opacity-60 min-h-[12px] flex-shrink-0" style={{ fontSize: headerFontSize }}>
             <span className="font-mono truncate leading-none">
               @{opinion.author.username}
             </span>
