@@ -55,25 +55,50 @@ interface TerritoryMapProps {
 }
 
 // Helper to calculate grid span based on content length (Linear)
-// Each 1x1 unit represents a fixed capacity of characters (e.g. 25 chars)
+// Each 1x1 unit represents a fixed capacity of characters
 // We calculate total units needed and form a roughly square shape.
 const getGridSpan = (summary: string, detail: string | null) => {
   const totalLength = summary.length + (detail?.length || 0)
   
-  // Capacity per 1x1 unit
-  const CHARS_PER_UNIT = 25 
+  // Capacity per 1x1 unit - Aggressively tight!
+  // Assuming 12px font, roughly 10-15 chars per line in a small box.
+  // Let's set it to 60 chars per unit to force density.
+  const CHARS_PER_UNIT = 60 
   
   // Minimum 1 unit
   const unitsNeeded = Math.max(1, Math.ceil(totalLength / CHARS_PER_UNIT))
   
-  // Calculate dimensions to approximate a square
-  // width * height >= unitsNeeded
-  // height / width approx 1 (square)
+  // Calculate dimensions to minimize waste
+  // We want w * h >= unitsNeeded, minimizing (w*h - unitsNeeded)
+  // And keeping aspect ratio somewhat balanced (1:1 to 1:2)
   
-  const w = Math.ceil(Math.sqrt(unitsNeeded))
-  const h = Math.ceil(unitsNeeded / w)
+  let bestW = Math.ceil(Math.sqrt(unitsNeeded))
+  let bestH = Math.ceil(unitsNeeded / bestW)
+  let minWaste = (bestW * bestH) - unitsNeeded
+
+  // Try a few other widths to see if we can get less waste
+  for (let w = 1; w <= unitsNeeded; w++) {
+    const h = Math.ceil(unitsNeeded / w)
+    const waste = (w * h) - unitsNeeded
+    const ratio = Math.max(w/h, h/w)
+    
+    // We prefer square-ish, but if waste is 0, we take it (unless ratio is too extreme > 3)
+    if (waste < minWaste && ratio < 3) {
+      minWaste = waste
+      bestW = w
+      bestH = h
+    }
+    // If waste is same, prefer square-ish
+    if (waste === minWaste) {
+      const currentRatio = Math.max(bestW/bestH, bestH/bestW)
+      if (ratio < currentRatio) {
+        bestW = w
+        bestH = h
+      }
+    }
+  }
   
-  return { row: h, col: w }
+  return { row: bestH, col: bestW }
 }
 
 // Helper to calculate opacity based on time (Linear)
@@ -329,14 +354,14 @@ export default function TerritoryMap({
             return (
               <div
                 key={id}
-                className={`absolute flex flex-col p-0.5 transition-all duration-300 ease-out border shadow-sm hover:shadow-md hover:z-10 ${baseColor} ${borderColor}`}
+                className={`absolute flex flex-col p-[1px] transition-all duration-300 ease-out border shadow-sm hover:shadow-md hover:z-10 ${baseColor} ${borderColor}`}
                 style={{
                   left: pos.x * unitSize,
                   top: pos.y * unitSize,
                   width: pos.w * unitSize - gap,
                   height: pos.h * unitSize - gap,
                   opacity: Math.max(0.2, opacity), // Minimum visibility
-                  borderRadius: '1px' // Sharp edges for map feel
+                  borderRadius: '0px' // Sharp edges for map feel
                 }}
               >
                 {/* Content rendering based on LOD */}
@@ -345,18 +370,18 @@ export default function TerritoryMap({
                      // LOD 1: Blocks only (color intensity already set by opacity)
                      null
                   ) : (
-                    <div className="h-full flex flex-col p-0.5">
+                    <div className="h-full flex flex-col">
                       <div 
-                        className="font-bold leading-tight text-gray-800 break-words whitespace-pre-wrap"
-                        style={{ fontSize: `${fontSize}px`, lineHeight: '1.2' }}
+                        className="font-bold leading-[1.1] text-gray-800 break-words whitespace-pre-wrap tracking-tighter"
+                        style={{ fontSize: `${fontSize}px` }}
                       >
                         {opinion.summary}
                       </div>
                       
                       {zoomLevel > 1.2 && opinion.detail && (
                         <div 
-                          className="mt-1 text-gray-600 break-words whitespace-pre-wrap"
-                          style={{ fontSize: `${Math.max(8, fontSize * 0.9)}px`, lineHeight: '1.2' }}
+                          className="mt-0.5 text-gray-600 break-words whitespace-pre-wrap tracking-tighter"
+                          style={{ fontSize: `${Math.max(8, fontSize * 0.9)}px`, lineHeight: '1.1' }}
                         >
                           {opinion.detail}
                         </div>
@@ -364,7 +389,7 @@ export default function TerritoryMap({
                       
                       {/* Meta info only at high zoom */}
                       {zoomLevel > 1.8 && (
-                        <div className="mt-auto pt-0.5 flex items-center justify-between text-[8px] text-gray-400 border-t border-black/5">
+                        <div className="mt-auto pt-0.5 flex items-center justify-between text-[6px] text-gray-400 border-t border-black/5">
                           <span>@{opinion.author.username}</span>
                         </div>
                       )}
