@@ -237,13 +237,11 @@ export default function OpinionCard({
             </div>
           </div>
 
-          {!opinion && (
-            <>
-              {mentionedCitations.map(c => (
-                <input key={c.id} type="hidden" name="citationIds" value={JSON.stringify([c.id])} />
-              ))}
-            </>
-          )}
+          <input 
+            type="hidden" 
+            name="citationIds" 
+            value={JSON.stringify(mentionedCitations.map(c => c.id))} 
+          />
           
           <div className="flex gap-3 justify-end items-center pt-2">
             {/* Neighbor Selector */}

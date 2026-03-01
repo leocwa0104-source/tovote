@@ -61,10 +61,24 @@ export default function OpinionDetailView({ opinion, onClose, onCitationClick }:
         : summarySnippet;
 
       // Find corresponding citation
-      const citation = citations.find(c => 
+      let citation = citations.find(c => 
         c.target.author.username === username && 
         (c.target.summary.includes(cleanSnippet) || c.target.summary.startsWith(cleanSnippet))
       );
+
+      // Fallback: If strict match fails, try to find by username only
+      // This handles cases where summary might be formatted differently or truncated differently
+      if (!citation) {
+        const byAuthor = citations.filter(c => c.target.author.username === username);
+        if (byAuthor.length === 1) {
+            citation = byAuthor[0];
+        } else if (byAuthor.length > 1) {
+            // If multiple citations from same author, try to match the first few characters
+            citation = byAuthor.find(c => c.target.summary.substring(0, 10) === cleanSnippet.substring(0, 10));
+            // If still no match, just take the first one as best guess
+            if (!citation) citation = byAuthor[0];
+        }
+      }
 
       if (citation && onCitationClick) {
         parts.push(
