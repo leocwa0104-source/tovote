@@ -40,8 +40,9 @@ export default function OpinionBlock({ node, isActive, onSelect, scale }: Opinio
   const showSummary = isMediumZoom || minDim > 30
   const showDetail = isHighZoom || minDim > 60 
   // Trigger full content mode based on zoom level OR size
-  // If scale is high enough (e.g. > 6), treat all blocks as full content candidates when clicked/active
-  const showFullContent = isActive && (scale > 3 || minDim > 200)
+  // If scale is high enough (e.g. > 3) and this block is active, force full content mode
+  // The threshold scale > 3 is chosen because at that level, even small blocks are zoomed in enough
+  const showFullContent = isActive && scale > 3
   
   // Dynamic font sizing
   const headerFontSize = showFullContent ? 12 : Math.max(9, Math.min(minDim / 20, 14))
