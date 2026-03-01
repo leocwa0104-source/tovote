@@ -19,10 +19,9 @@ interface OpinionMapProps {
   selectedId?: string
   onSelect: (id: string) => void
   currentUser?: { id: string } | null
-  isSelectionMode?: boolean
 }
 
-export default function OpinionMap({ opinions, selectedId, onSelect, currentUser, isSelectionMode = false }: OpinionMapProps) {
+export default function OpinionMap({ opinions, selectedId, onSelect, currentUser }: OpinionMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -265,7 +264,7 @@ export default function OpinionMap({ opinions, selectedId, onSelect, currentUser
   return (
     <div 
       ref={containerRef}
-      className={`w-full h-full relative overflow-hidden bg-gray-100 select-none cursor-grab active:cursor-grabbing ${isSelectionMode ? 'cursor-crosshair ring-4 ring-inset ring-blue-500/20' : ''}`}
+      className="w-full h-full relative overflow-hidden bg-gray-100 select-none cursor-grab active:cursor-grabbing"
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { createOpinion, deleteOpinion } from '@/app/actions'
 import OpinionDetailModal from './OpinionDetailModal'
 import MentionTextarea from './MentionTextarea'
@@ -57,8 +57,7 @@ interface OpinionCardProps {
   onSuccess?: () => void
   initialIsEditing?: boolean
   availableNeighbors?: { id: string, summary: string, author: { username: string } }[]
-  onRequestNeighborSelection?: () => void
-  selectedNeighborId?: string | null
+  initialNeighborId?: string | null
 }
 
 export default function OpinionCard({ 
@@ -70,42 +69,16 @@ export default function OpinionCard({
   onSuccess,
   initialIsEditing = false,
   availableNeighbors = [],
-  onRequestNeighborSelection,
-  selectedNeighborId: externalSelectedNeighborId
+  initialNeighborId = null
 }: OpinionCardProps) {
   const [isEditing, setIsEditing] = useState(initialIsEditing)
   const [isExpanded, setIsExpanded] = useState(false)
   const [loading, setLoading] = useState(false)
   const [selectedCitation, setSelectedCitation] = useState<CitationTarget | null>(null)
   const [mentionedCitations, setMentionedCitations] = useState<CitationTarget[]>([])
-  const [internalSelectedNeighborId, setInternalSelectedNeighborId] = useState<string | null>(opinion?.neighborId || null)
-
-  // Sync with external selection if provided
-  useEffect(() => {
-      if (externalSelectedNeighborId !== undefined) {
-          setInternalSelectedNeighborId(externalSelectedNeighborId)
-      }
-  }, [externalSelectedNeighborId])
-  
-  const selectedNeighborId = internalSelectedNeighborId
+  const [selectedNeighborId, setSelectedNeighborId] = useState<string | null>(opinion?.neighborId || initialNeighborId || null)
 
   const isOwner = currentUser && opinion?.authorId === currentUser.id
-
-  // Expose neighbor selection via parent if needed
-  useEffect(() => {
-    // If we have an external way to set neighbor (passed via props later if needed), we could sync here
-    // For now, we'll just rely on the prop 'initialSelectedNeighborId' if we add it
-  }, [])
-  
-  // Handlers for "Select on Map"
-  const handleSelectOnMap = () => {
-    // Dispatch a custom event or callback to parent to enter "Map Selection Mode"
-    // Since we don't have a direct prop for this yet, we'll emit an event or use a prop if we add one.
-    // Let's add a prop 'onRequestNeighborSelection' to the interface first.
-    if (onRequestNeighborSelection) {
-        onRequestNeighborSelection();
-    }
-  }
 
   const handleSubmit = async (formData: FormData) => {
     setLoading(true)
@@ -276,35 +249,20 @@ export default function OpinionCard({
             {/* Neighbor Selector */}
             <div className="flex-grow flex items-center gap-2">
                <span className="text-xs text-gray-400 uppercase tracking-wide">Neighbor:</span>
-               <div className="flex items-center gap-1">
-                   <select 
-                     value={selectedNeighborId || ''}
-                     onChange={(e) => setInternalSelectedNeighborId(e.target.value || null)}
-                     className="bg-gray-50 border-b border-gray-200 text-xs text-gray-700 py-1 focus:outline-none focus:border-gray-800 max-w-[150px]"
-                   >
-                     <option value="">None (Auto)</option>
-                     {availableNeighbors
-                       .filter(n => n.id !== opinion?.id) // Can't neighbor self
-                       .map(n => (
-                       <option key={n.id} value={n.id}>
-                         {n.author.username}: {n.summary.substring(0, 20)}{n.summary.length > 20 ? '...' : ''}
-                       </option>
-                     ))}
-                   </select>
-                   <button
-                    type="button"
-                    onClick={handleSelectOnMap}
-                    className="p-1 text-gray-400 hover:text-gray-900 transition-colors"
-                    title="Select on Map"
-                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="2" y1="12" x2="22" y2="12"></line>
-                        <line x1="12" y1="2" x2="12" y2="22"></line>
-                        <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                   </button>
-               </div>
+               <select 
+                 value={selectedNeighborId || ''}
+                 onChange={(e) => setSelectedNeighborId(e.target.value || null)}
+                 className="bg-gray-50 border-b border-gray-200 text-xs text-gray-700 py-1 focus:outline-none focus:border-gray-800 max-w-[150px]"
+               >
+                 <option value="">None (Auto)</option>
+                 {availableNeighbors
+                   .filter(n => n.id !== opinion?.id) // Can't neighbor self
+                   .map(n => (
+                   <option key={n.id} value={n.id}>
+                     {n.author.username}: {n.summary.substring(0, 20)}{n.summary.length > 20 ? '...' : ''}
+                   </option>
+                 ))}
+               </select>
             </div>
 
             {opinion && (

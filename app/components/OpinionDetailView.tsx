@@ -38,9 +38,19 @@ interface OpinionDetailViewProps {
   }
   onClose: () => void
   onCitationClick?: (target: any) => void
+  canSetNeighbor?: boolean
+  hasUserPosted?: boolean
+  onSetNeighbor?: (id: string) => void
 }
 
-export default function OpinionDetailView({ opinion, onClose, onCitationClick }: OpinionDetailViewProps) {
+export default function OpinionDetailView({ 
+  opinion, 
+  onClose, 
+  onCitationClick,
+  canSetNeighbor,
+  hasUserPosted,
+  onSetNeighbor
+}: OpinionDetailViewProps) {
   const [copied, setCopied] = useState(false)
 
   const handleCopyId = () => {
@@ -188,7 +198,19 @@ export default function OpinionDetailView({ opinion, onClose, onCitationClick }:
         </div>
 
         {/* Footer / Actions */}
-        <div className="mt-6 pt-4 border-t border-gray-100 flex justify-end flex-shrink-0">
+        <div className="mt-6 pt-4 border-t border-gray-100 flex justify-between flex-shrink-0 items-center">
+             <div>
+               {canSetNeighbor && onSetNeighbor && (
+                 <button
+                   onClick={() => onSetNeighbor(opinion.id)}
+                   className="px-3 py-1.5 text-xs font-mono font-bold border border-gray-900 text-gray-900 hover:bg-gray-50 transition-colors uppercase tracking-wide rounded mr-3"
+                   title={hasUserPosted ? "Move your territory next to this one" : "Claim your territory next to this one"}
+                 >
+                   {hasUserPosted ? "Move Here" : "Claim Next to This"}
+                 </button>
+               )}
+             </div>
+             
              <button 
                onClick={onClose}
                className="px-4 py-2 text-xs font-mono font-bold bg-gray-900 text-white hover:bg-black transition-colors uppercase tracking-wide rounded"

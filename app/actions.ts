@@ -678,6 +678,33 @@ export async function deleteOpinion(opinionId: string) {
   }
 }
 
+export async function setOpinionNeighbor(opinionId: string, neighborId: string | null) {
+  const user = await getCurrentUser()
+  if (!user) throw new Error("Unauthorized")
+
+  const opinion = await prisma.opinion.findUnique({ where: { id: opinionId } })
+  if (!opinion) throw new Error("Opinion not found")
+  if (opinion.authorId !== user.id) throw new Error("Forbidden")
+
+  if (neighborId === opinionId) throw new Error("Cannot be neighbor to self")
+
+  if (neighborId) {
+      const neighbor = await prisma.opinion.findUnique({ where: { id: neighborId } })
+      if (!neighbor) throw new Error("Neighbor not found")
+      if (neighbor.factionId !== opinion.factionId) throw new Error("Neighbor must be in the same faction")
+  }
+
+  await prisma.opinion.update({
+    where: { id: opinionId },
+    data: { neighborId }
+  })
+
+  const faction = await prisma.faction.findUnique({ where: { id: opinion.factionId } })
+  if (faction) {
+      revalidatePath(`/topic/${faction.topicId}`)
+  }
+}
+
 // --- Dashboard ---
 
 export async function getUserDashboardData() {

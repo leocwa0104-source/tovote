@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { setOpinionNeighbor } from '@/app/actions'
 import OpinionCard from './OpinionCard'
 import OpinionMap from './OpinionMap'
 import OpinionDetailView from './OpinionDetailView'
@@ -87,38 +88,18 @@ export default function FactionContent({
   const [selectedOpinionId, setSelectedOpinionId] = useState<string | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [modalStack, setModalStack] = useState<Opinion[]>([])
+  const [initialNeighborId, setInitialNeighborId] = useState<string | null>(null)
   
-  // Neighbor Selection Mode
-  const [isSelectingNeighbor, setIsSelectingNeighbor] = useState(false)
-  const [pendingNeighborId, setPendingNeighborId] = useState<string | null>(null)
-
   const userOpinion = user ? currentOpinions.find((o: Opinion) => o.authorId === user.id) : undefined
 
-  // Handle map selection
-  const handleMapSelect = (id: string) => {
-    if (isSelectingNeighbor) {
-      // In selection mode: confirm selection and exit mode
-      setPendingNeighborId(id)
-      setIsSelectingNeighbor(false)
-      setShowCreateModal(true) // Re-open modal
-    } else {
-      // Normal mode: select opinion
-      setSelectedOpinionId(id)
-    }
-  }
-
-  // Handle entering selection mode
-  const handleRequestNeighborSelection = () => {
-    setIsSelectingNeighbor(true)
-    setShowCreateModal(false) // Temporarily hide modal
-    // Optional: Show a toast or banner indicating "Select a neighbor on the map"
-  }
-
-  // Handle cancelling selection mode (e.g. via ESC or button)
-  const cancelSelection = () => {
-    setIsSelectingNeighbor(false)
-    setShowCreateModal(true)
-  }
+  // Auto-select removed to avoid popup on load
+  // useEffect(() => {
+  //   if (userOpinion) {
+  //     setSelectedOpinionId(prev => prev === null ? userOpinion.id : prev)
+  //   }
+  // }, [userOpinion?.id]) 
+  
+  // Sync selectedOpinionId with modalStack
   useEffect(() => {
     if (selectedOpinionId) {
         // If the selectedOpinionId is already in the stack (e.g. at index 0), do nothing
@@ -166,6 +147,29 @@ export default function FactionContent({
             faction: target.faction // Explicitly include faction context
         } as unknown as Opinion // Force cast for now
         setModalStack(prev => [...prev, partialOpinion])
+    }
+  }
+
+  const handleSetNeighbor = async (targetId: string) => {
+    if (!user) return
+
+    if (userOpinion) {
+        if (confirm("Are you sure you want to move your territory here?")) {
+             try {
+                 await setOpinionNeighbor(userOpinion.id, targetId)
+                 alert("Territory moved!")
+                 // Close all modals to see the map update? Or just stay?
+                 // Let's close modals to let user see the new position
+                 setModalStack([])
+                 setSelectedOpinionId(null)
+             } catch (e) {
+                 console.error(e)
+                 alert("Failed to move territory")
+             }
+        }
+    } else {
+        setInitialNeighborId(targetId)
+        setShowCreateModal(true)
     }
   }
 
@@ -221,23 +225,11 @@ export default function FactionContent({
 
       {/* Map Area - Takes available space */}
       <div className="flex-grow relative bg-gray-50 overflow-hidden flex flex-col">
-         {isSelectingNeighbor && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-gray-900 text-white px-4 py-2 rounded-full shadow-lg text-sm font-bold flex items-center gap-3 animate-in fade-in slide-in-from-top-4">
-                <span>Select a neighbor on the map</span>
-                <button 
-                    onClick={cancelSelection}
-                    className="bg-gray-700 hover:bg-gray-600 rounded-full w-5 h-5 flex items-center justify-center text-xs"
-                >
-                    ✕
-                </button>
-            </div>
-         )}
          <OpinionMap 
            opinions={currentOpinions}
            selectedId={selectedOpinionId || undefined}
-           onSelect={handleMapSelect}
+           onSelect={setSelectedOpinionId}
            currentUser={user}
-           isSelectionMode={isSelectingNeighbor}
          />
       </div>
 
@@ -255,6 +247,9 @@ export default function FactionContent({
                  opinion={opinion} 
                  onClose={closeTopModal}
                  onCitationClick={(target: any) => handleCitationClick(target)}
+                 canSetNeighbor={!!user && opinion.authorId !== user.id} // Can set if logged in and not own opinion
+                 hasUserPosted={!!userOpinion}
+                 onSetNeighbor={handleSetNeighbor}
                />
              </div>
           </div>
@@ -285,11 +280,13 @@ export default function FactionContent({
                   type="WHY" 
                   currentUser={user}
                   isPrivateTopic={isPrivateTopic}
-                  onSuccess={() => setShowCreateModal(false)}
+                  onSuccess={() => {
+                    setShowCreateModal(false)
+                    setInitialNeighborId(null) // Reset
+                  }}
                   initialIsEditing={!!userOpinion}
                   availableNeighbors={currentOpinions}
-                  onRequestNeighborSelection={handleRequestNeighborSelection}
-                  selectedNeighborId={pendingNeighborId}
+                  initialNeighborId={initialNeighborId}
                 />
              </div>
           </div>
