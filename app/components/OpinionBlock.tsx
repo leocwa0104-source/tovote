@@ -21,6 +21,8 @@ export default function OpinionBlock({ node, isActive, onSelect, scale }: Opinio
   
   // Adjusted text size calculation based on block size AND zoom scale
   // We want text to become visible as we zoom in
+  // Use scale as the primary driver for feature visibility, less dependent on block size
+  // This ensures consistency across different block sizes at the same zoom level
   const minDim = Math.min(node.w, node.h) * scale
   
   // Semantic Zoom Thresholds
@@ -29,10 +31,17 @@ export default function OpinionBlock({ node, isActive, onSelect, scale }: Opinio
   // Level 3: Medium blocks -> Author + Summary
   // Level 4: Large blocks/Zoomed -> Author + Summary + Full Detail
   
-  const showAvatar = minDim > 20
-  const showSummary = minDim > 30
-  const showDetail = minDim > 60 // Show detail preview sooner
-  const showFullContent = minDim > 200 // Threshold for full content mode
+  // Use scale-based thresholds primarily, with minDim as a fallback safeguard
+  // This ensures that at high zoom (e.g. scale > 4), all blocks show features regardless of size
+  const isHighZoom = scale > 4
+  const isMediumZoom = scale > 2
+
+  const showAvatar = isMediumZoom || minDim > 20
+  const showSummary = isMediumZoom || minDim > 30
+  const showDetail = isHighZoom || minDim > 60 
+  // Trigger full content mode based on zoom level OR size
+  // If scale is high enough (e.g. > 6), treat all blocks as full content candidates when clicked/active
+  const showFullContent = isActive && (scale > 3 || minDim > 200)
   
   // Dynamic font sizing
   const headerFontSize = showFullContent ? 12 : Math.max(9, Math.min(minDim / 20, 14))
