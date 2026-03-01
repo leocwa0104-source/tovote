@@ -218,11 +218,12 @@ export default function TerritoryMap({
                 opacity: zoomLevel === 0 ? ageOpacity : 1 // In macro, fade the block. In detailed, keep it readable but maybe style borders.
               }}
               className={`
-                relative bg-white shadow-sm transition-all duration-300 overflow-hidden
+                relative bg-white shadow-sm transition-all duration-300
                 hover:z-10 hover:scale-[1.02] hover:shadow-md hover:opacity-100
                 ${zoomLevel === 0 ? 'rounded-[1px]' : 'rounded-sm'}
                 ${isUserOwn ? 'ring-2 ring-blue-500/50 z-10' : `border ${borderColor}`}
                 ${zoomLevel === 0 ? baseColor : ''}
+                ${zoomLevel === 2 ? 'overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200' : 'overflow-hidden'}
               `}
             >
               {/* Visual Aging Overlay for Zoom Level 1 & 2 */}
