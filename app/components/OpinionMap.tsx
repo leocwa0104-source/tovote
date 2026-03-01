@@ -18,9 +18,10 @@ interface OpinionMapProps {
   opinions: MapOpinion[]
   selectedId?: string
   onSelect: (id: string) => void
+  currentUser?: { id: string } | null
 }
 
-export default function OpinionMap({ opinions, selectedId, onSelect }: OpinionMapProps) {
+export default function OpinionMap({ opinions, selectedId, onSelect, currentUser }: OpinionMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
@@ -82,58 +83,92 @@ export default function OpinionMap({ opinions, selectedId, onSelect }: OpinionMa
   // Helper to clamp values
   const clamp = (val: number, min: number, max: number) => Math.min(Math.max(val, min), max)
 
-  // Fix: Prevent default browser zooming/scrolling when interacting with the map
+  const handleWheel = (e: WheelEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    const zoomSensitivity = 0.001
+    const newScale = Math.min(Math.max(transform.scale - e.deltaY * zoomSensitivity, 1), 8) // Increased max zoom for focus mode
+
+    if (newScale === transform.scale) return
+
+    // Calculate zoom origin relative to content
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (!rect) return
+
+    const mouseX = e.clientX - rect.left
+    const mouseY = e.clientY - rect.top
+
+    // Calculate new position to keep mouse point stable
+    // newX = mouseX - (mouseX - oldX) * (newScale / oldScale)
+    const newX = mouseX - (mouseX - transform.x) * (newScale / transform.scale)
+    const newY = mouseY - (mouseY - transform.y) * (newScale / transform.scale)
+
+    setTransform({
+      scale: newScale,
+      x: newX,
+      y: newY
+    })
+  }
+
+  // Bind wheel event directly to container for better control
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
 
-    const preventDefault = (e: WheelEvent) => {
-      e.preventDefault()
-    }
-
-    // Passive: false is crucial for preventing wheel default behavior in some browsers
-    container.addEventListener('wheel', preventDefault, { passive: false })
+    // Use passive: false to allow preventDefault
+    container.addEventListener('wheel', handleWheel, { passive: false })
 
     return () => {
-      container.removeEventListener('wheel', preventDefault)
+      container.removeEventListener('wheel', handleWheel)
     }
-  }, [])
+  }, [transform]) // Re-bind when transform changes to capture latest state
 
-  const handleWheel = (e: React.WheelEvent) => {
-    // Event is already prevented by the native listener above, 
-    // but we keep this for React's synthetic event system consistency if needed
-    // or just rely on the logic here.
-    // We need to stop propagation to prevent parent scrolling if any.
-    e.stopPropagation()
+  // Focus on a specific node (Zoom-to-Focus)
+  const focusNode = (node: TreemapNode) => {
+    if (!containerRef.current) return
 
-    const zoomSensitivity = 0.001
-    const newScale = clamp(transform.scale - e.deltaY * zoomSensitivity, 1, 5) // Min 1x, Max 5x
-
-    if (newScale === transform.scale) return
-
-    // Calculate mouse position relative to content center to zoom towards mouse
-    // Simplified: Zoom towards center for now to avoid complexity with clamping
-    // Or better: Zoom towards mouse pointer
+    const containerWidth = containerRef.current.offsetWidth
+    const containerHeight = containerRef.current.offsetHeight
     
-    const rect = containerRef.current?.getBoundingClientRect()
-    if (!rect) return
+    // Calculate target scale to make the node fill about 60% of the screen
+    // or at least be readable
+    const nodeSize = Math.max(node.w, node.h)
+    const targetScale = Math.min(Math.max((Math.min(containerWidth, containerHeight) * 0.6) / nodeSize, 1), 8)
+    
+    // Calculate target position to center the node
+    // targetX = center - nodeX * scale - nodeW/2 * scale
+    const targetX = (containerWidth / 2) - (node.x + node.w / 2) * targetScale
+    const targetY = (containerHeight / 2) - (node.y + node.h / 2) * targetScale
 
-    // For now, let's keep it simple: center zoom or just update scale and then clamp position
-    // We'll update scale then re-clamp position in a separate effect or right here
-    
-    // Let's implement center zoom for stability first, then refine if needed
-    // Actually standard map zoom is usually towards pointer.
-    
-    setTransform(prev => {
-      // Calculate new position to keep content within bounds
-      // Bounds: 
-      // Left edge (x) cannot be > 0 (unless content < container)
-      // Right edge (x + width*scale) cannot be < containerWidth
-      
-      // Let's just update scale here, and let the clamping logic handle x/y
-      return { ...prev, scale: newScale }
+    setTransform({
+      x: targetX,
+      y: targetY,
+      scale: targetScale
     })
+    
+    // Update expanded state for high-detail rendering
+    setExpandedId(node.data.id)
+    onSelect(node.data.id)
   }
+
+  // Handle click on map background to reset view
+  const handleBackgroundClick = () => {
+    // Reset to initial view
+    // Calculate center for scale 1
+    const size = Math.min(dimensions.width, dimensions.height)
+    const newX = (dimensions.width - size) / 2
+    const newY = (dimensions.height - size) / 2
+    
+    setTransform({
+      x: newX,
+      y: newY,
+      scale: 1
+    })
+    setExpandedId(null)
+    onSelect('')
+  }
+
 
   // Clamping logic applied whenever transform changes or dimensions change
   useEffect(() => {
@@ -179,6 +214,8 @@ export default function OpinionMap({ opinions, selectedId, onSelect }: OpinionMa
 
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    // Only start dragging if left click and not on a child element that might need interaction
+    if (e.button !== 0) return
     setIsDragging(true)
     dragStart.current = { x: e.clientX - transform.x, y: e.clientY - transform.y }
   }
@@ -198,122 +235,59 @@ export default function OpinionMap({ opinions, selectedId, onSelect }: OpinionMa
     dragStart.current = null
   }
 
-  const handleMouseLeave = () => {
-    setIsDragging(false)
-    dragStart.current = null
-  }
-
-  const handleBlockSelect = (id: string) => {
-    setExpandedId(id)
-    onSelect(id)
-  }
-
-  const expandedNode = useMemo(() => {
-    if (!expandedId) return null
-    return layout.find(n => n.id === expandedId)
-  }, [expandedId, layout])
-
   return (
     <div 
-      ref={containerRef} 
-      className="relative w-full h-full bg-gray-50 overflow-hidden cursor-grab active:cursor-grabbing select-none"
-      onWheel={handleWheel}
+      ref={containerRef}
+      className="w-full h-full relative overflow-hidden bg-gray-50 select-none"
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseLeave}
+      onMouseLeave={handleMouseUp}
+      onClick={handleBackgroundClick}
     >
-      {opinions.length === 0 ? (
-        <div className="absolute inset-0 flex items-center justify-center text-gray-400 italic">
-          No opinions yet. Be the first to map your territory!
-        </div>
-      ) : (
-        <div
-          ref={contentRef}
-          className="absolute origin-top-left shadow-sm bg-white"
-          style={{
-            width: Math.min(dimensions.width, dimensions.height),
-            height: Math.min(dimensions.width, dimensions.height),
-            transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
-            transition: isDragging ? 'none' : 'transform 0.1s ease-out'
-          }}
-        >
-          {layout.map((node) => (
-            <OpinionBlock
-              key={node.id}
-              node={node}
-              isActive={selectedId === node.id}
-              onSelect={handleBlockSelect}
-              scale={transform.scale}
-            />
-          ))}
-        </div>
-      )}
-      
-      {/* HUD / Controls */}
-      <div className="absolute bottom-4 right-4 flex flex-col gap-2 pointer-events-none z-10">
-         <div className="bg-black/70 text-white text-[10px] px-2 py-1 rounded backdrop-blur-sm">
-           {Math.round(transform.scale * 100)}%
-         </div>
+      <div 
+        ref={contentRef}
+        className="absolute origin-top-left transition-transform duration-300 ease-out"
+        style={{
+          transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
+          width: Math.min(dimensions.width, dimensions.height),
+          height: Math.min(dimensions.width, dimensions.height)
+        }}
+        onClick={(e) => e.stopPropagation()} 
+      >
+        {layout.map((node) => (
+          <OpinionBlock
+            key={node.data.id}
+            node={node}
+            isActive={node.data.id === selectedId}
+            onSelect={() => focusNode(node)}
+            scale={transform.scale}
+          />
+        ))}
       </div>
 
-      {/* Expanded Overlay */}
-      {expandedNode && (
-        <div 
-          className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[1px] cursor-default p-4"
-          onClick={(e) => {
-            e.stopPropagation()
-            setExpandedId(null)
-            onSelect('') // Clear selection
-          }}
-        >
-          <div 
-            className="relative w-full max-w-lg bg-white shadow-2xl overflow-hidden flex flex-col max-h-[90%] border-l-4 border-black"
-            onClick={(e) => e.stopPropagation()}
-          >
-             {/* Header */}
-             <div className="flex justify-between items-start p-6 pb-2">
-                <div className="flex items-center gap-2">
-                   <div className="w-2 h-2 rounded-full bg-black" />
-                   <span className="font-mono text-sm text-gray-500">@{expandedNode.data.author.username}</span>
-                </div>
-                <button 
-                  onClick={() => {
-                    setExpandedId(null)
-                    onSelect('')
-                  }}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-             </div>
-
-             {/* Content */}
-             <div className="p-6 pt-2 overflow-y-auto">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 leading-snug">
-                  {expandedNode.data.summary}
-                </h3>
-                {expandedNode.data.detail ? (
-                  <div className="prose prose-sm text-gray-600 whitespace-pre-wrap">
-                    {expandedNode.data.detail.replace(/@\[[^:]+: (.*?)\]/g, '@$1')}
-                  </div>
-                ) : (
-                  <p className="text-gray-400 italic text-sm">No additional details provided.</p>
-                )}
-             </div>
-             
-             {/* Footer */}
-             <div className="bg-gray-50 p-3 text-xs text-gray-400 border-t border-gray-100 flex justify-between items-center">
-                <span>ID: {expandedNode.id.slice(0, 8)}</span>
-                <span className="uppercase tracking-wider font-bold opacity-50">
-                  Territory
-                </span>
-             </div>
-          </div>
+      {/* Zoom Controls/Indicators */}
+      <div className="absolute bottom-4 right-4 flex flex-col gap-2 pointer-events-none">
+        <div className="bg-black/80 text-white text-xs px-2 py-1 rounded font-mono">
+           {Math.round(transform.scale * 100)}%
         </div>
-      )}
+        
+        {/* Reset Zoom Button - Visible when zoomed in */}
+        {transform.scale > 1.1 && (
+          <button 
+            className="pointer-events-auto bg-white shadow-md border border-gray-200 text-gray-700 p-2 rounded hover:bg-gray-50 transition-colors"
+            onClick={(e) => {
+              e.stopPropagation()
+              handleBackgroundClick()
+            }}
+            title="Reset View"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+            </svg>
+          </button>
+        )}
+      </div>
     </div>
   )
 }

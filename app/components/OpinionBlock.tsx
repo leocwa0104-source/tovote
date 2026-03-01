@@ -22,16 +22,21 @@ export default function OpinionBlock({ node, isActive, onSelect, scale }: Opinio
   // We want text to become visible as we zoom in
   const minDim = Math.min(node.w, node.h) * scale
   
-  // Show more details if enough space
-  // Relaxed constraints to show more content by default as requested
+  // Semantic Zoom Thresholds
+  // Level 1: Tiny blocks -> Empty or just color
+  // Level 2: Small blocks -> Avatar/Author
+  // Level 3: Medium blocks -> Author + Summary
+  // Level 4: Large blocks/Zoomed -> Author + Summary + Full Detail
+  
   const showAvatar = minDim > 20
   const showSummary = minDim > 30
   const showDetail = minDim > 60 // Show detail preview sooner
-
+  const showFullContent = minDim > 200 // Threshold for full content mode
+  
   // Dynamic font sizing
   const headerFontSize = Math.max(9, Math.min(minDim / 20, 14))
   const summaryFontSize = Math.max(10, Math.min(minDim / 10, 24))
-  const detailFontSize = Math.max(8, Math.min(minDim / 15, 12))
+  const detailFontSize = Math.max(10, Math.min(minDim / 15, 16))
 
   return (
     <div
@@ -51,7 +56,7 @@ export default function OpinionBlock({ node, isActive, onSelect, scale }: Opinio
       title={`${opinion.author.username}: ${opinion.summary}`}
     >
       {/* Content Container - No centering, top-left alignment for map feel */}
-      <div className="text-black w-full h-full overflow-hidden select-none pointer-events-none flex flex-col gap-0.5">
+      <div className="text-black w-full h-full overflow-hidden select-none pointer-events-none flex flex-col gap-1">
         
         {/* Header: Avatar + Username */}
         {showAvatar && (
@@ -65,21 +70,25 @@ export default function OpinionBlock({ node, isActive, onSelect, scale }: Opinio
         {/* Summary (Headline) */}
         {showSummary && (
           <div 
-            className="font-bold leading-tight break-words line-clamp-3 flex-shrink-0"
-            style={{ fontSize: summaryFontSize, lineHeight: 1.1 }}
+            className={`font-bold leading-tight break-words flex-shrink-0 ${showFullContent ? '' : 'line-clamp-3'}`}
+            style={{ fontSize: summaryFontSize, lineHeight: 1.2 }}
           >
             {opinion.summary}
           </div>
         )}
 
-        {/* Detail Preview (First 20 chars) */}
+        {/* Detail Content (Semantic Zoom) */}
         {showDetail && opinion.detail && (
           <div 
-            className="opacity-70 leading-tight mt-0.5 break-words overflow-hidden line-clamp-3"
+            className={`opacity-70 leading-relaxed mt-0.5 break-words overflow-hidden ${showFullContent ? '' : 'line-clamp-3'}`}
             style={{ fontSize: detailFontSize }}
           >
-            {opinion.detail.slice(0, 20)}
-            {opinion.detail.length > 20 && '...'}
+            {showFullContent ? opinion.detail : (
+              <>
+                {opinion.detail.slice(0, 50)}
+                {opinion.detail.length > 50 && '...'}
+              </>
+            )}
           </div>
         )}
       </div>

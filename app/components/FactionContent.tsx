@@ -137,6 +137,7 @@ export default function FactionContent({
            opinions={currentOpinions}
            selectedId={selectedOpinionId || undefined}
            onSelect={setSelectedOpinionId}
+           currentUser={user}
          />
       </div>
 
