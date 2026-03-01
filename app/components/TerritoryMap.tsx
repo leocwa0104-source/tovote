@@ -3,7 +3,22 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import OpinionCard from './OpinionCard'
 
-// Define the Opinion interface based on usage
+interface CitationTarget {
+  id: string
+  summary: string
+  detail: string | null
+  type: 'WHY' | 'WHY_NOT'
+  author: {
+    username: string
+  }
+  faction: {
+    name: string
+    topic: {
+      title: string
+    }
+  }
+}
+
 interface Opinion {
   id: string
   summary: string
@@ -13,12 +28,20 @@ interface Opinion {
   author: {
     username: string
   }
-  createdAt: Date | string
+  createdAt: Date
   citations: {
     id: string
-    target: any
+    target: CitationTarget
   }[]
-  citedBy: any[]
+  citedBy: {
+    id: string
+    source: {
+      id: string
+      summary: string
+      type: 'WHY' | 'WHY_NOT'
+      author: { username: string }
+    }
+  }[]
   factionId: string
 }
 
