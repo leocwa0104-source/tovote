@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { getTopic, getUserMembership, getCurrentUser, checkTopicAccess } from '@/app/actions'
+import { getTopic, getUserMembership, getCurrentUser, checkTopicAccess, ensureTopicMembership } from '@/app/actions'
 import TopicGate from '@/app/components/TopicGate'
 import ShareButton from '@/app/components/ShareButton'
 import CreateFactionForm from '@/app/components/CreateFactionForm'
@@ -49,6 +49,12 @@ export default async function TopicPage(props: {
   }
 
   const user = await getCurrentUser()
+
+  // Ensure membership for private topics (fixes issue where unlocked topics disappear from list)
+  if (user && topic.isPrivate) {
+    await ensureTopicMembership(params.id)
+  }
+
   const userMembership = await getUserMembership(params.id)
   const currentFactionId = userMembership?.factionId
   

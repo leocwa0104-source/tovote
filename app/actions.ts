@@ -399,12 +399,15 @@ export async function leaveFaction(topicId: string, _formData?: FormData) {
   if (!user) throw new Error("Unauthorized")
   
   try {
-    await prisma.membership.delete({
+    await prisma.membership.update({
       where: {
         userId_topicId: {
           userId: user.id,
           topicId
         }
+      },
+      data: {
+        factionId: null
       }
     })
   } catch (e) {
@@ -485,6 +488,23 @@ async function getOrCreateNeutralFaction(topicId: string) {
   const existing = await prisma.faction.findFirst({ where: { topicId, name } })
   if (existing) return existing
   return prisma.faction.create({ data: { name, topicId } })
+}
+
+export async function ensureTopicMembership(topicId: string) {
+  const user = await getCurrentUser()
+  if (!user) return
+
+  const existing = await prisma.membership.findUnique({
+    where: { userId_topicId: { userId: user.id, topicId } }
+  })
+  
+  if (!existing) {
+    await prisma.membership.create({
+      data: { userId: user.id, topicId }
+    })
+    revalidatePath(`/topic/${topicId}`)
+    revalidatePath('/')
+  }
 }
 
 export async function joinTopic(topicId: string) {
