@@ -119,6 +119,57 @@ export default function TerritoryMap({
     setZoomLevel(initialZoom)
   }, [initialZoom])
 
+  // State Ref to access current values in Event Listeners without re-binding
+  const stateRef = useRef({ zoom: zoomLevel, pan, bounds })
+  useEffect(() => {
+    stateRef.current = { zoom: zoomLevel, pan, bounds }
+  }, [zoomLevel, pan, bounds])
+
+  // Helper for Unit Size (Linear Scaling)
+  // 1 Unit = 14px at Zoom 1.0 (Increased from 12px for better text fit)
+  const getUnitSize = (zoom: number) => zoom * 14
+
+  // Helper to Clamp Pan
+  const clampPan = (currentPan: {x: number, y: number}, currentZoom: number, currentBounds: {minX: number, maxX: number, minY: number, maxY: number}) => {
+    const containerW = containerRef.current?.clientWidth || window.innerWidth
+    const containerH = containerRef.current?.clientHeight || window.innerHeight
+    
+    const unitSize = getUnitSize(currentZoom)
+    const contentW = (currentBounds.maxX - currentBounds.minX) * unitSize
+    const contentH = (currentBounds.maxY - currentBounds.minY) * unitSize
+    
+    // Center Offset Correction
+    const centerX = (currentBounds.minX + currentBounds.maxX) / 2 * unitSize
+    const centerY = (currentBounds.minY + currentBounds.maxY) / 2 * unitSize
+    
+    const effectiveX = currentPan.x + centerX
+    const effectiveY = currentPan.y + centerY
+    
+    let nextX = currentPan.x
+    let nextY = currentPan.y
+
+    // X Axis Clamping
+    if (contentW > containerW) {
+      const limitX = (contentW - containerW) / 2
+      if (effectiveX > limitX) nextX = limitX - centerX
+      if (effectiveX < -limitX) nextX = -limitX - centerX
+    } else {
+      // Lock to center if smaller
+      nextX = -centerX
+    }
+    
+    // Y Axis Clamping
+    if (contentH > containerH) {
+      const limitY = (contentH - containerH) / 2
+      if (effectiveY > limitY) nextY = limitY - centerY
+      if (effectiveY < -limitY) nextY = -limitY - centerY
+    } else {
+      nextY = -centerY
+    }
+
+    return { x: nextX, y: nextY }
+  }
+
   // Handle wheel zoom with Ctrl key (Continuous)
   useEffect(() => {
     const container = containerRef.current
@@ -127,11 +178,24 @@ export default function TerritoryMap({
     const handleWheel = (e: WheelEvent) => {
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault()
+        const { zoom: currentZoom, pan: currentPan, bounds: currentBounds } = stateRef.current
+        
         const delta = e.deltaY * -0.002 // Sensitivity
-        setZoomLevel(prev => {
-          const next = prev + delta
-          return Math.min(Math.max(next, 0.5), 3.0)
-        })
+        const nextZoom = Math.min(Math.max(currentZoom + delta, 0.1), 3.0)
+        
+        // Scale Pan to maintain center focus
+        // newPan = oldPan * (newZoom / oldZoom)
+        const scaleRatio = nextZoom / currentZoom
+        const scaledPan = {
+          x: currentPan.x * scaleRatio,
+          y: currentPan.y * scaleRatio
+        }
+
+        // Apply Clamping to the new scaled pan
+        const finalPan = clampPan(scaledPan, nextZoom, currentBounds)
+
+        setZoomLevel(nextZoom)
+        setPan(finalPan)
       }
     }
 
@@ -140,7 +204,19 @@ export default function TerritoryMap({
   }, [])
 
   const handleZoomChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setZoomLevel(parseFloat(e.target.value))
+    const nextZoom = parseFloat(e.target.value)
+    const { zoom: currentZoom, pan: currentPan, bounds: currentBounds } = stateRef.current
+    
+    const scaleRatio = nextZoom / currentZoom
+    const scaledPan = {
+      x: currentPan.x * scaleRatio,
+      y: currentPan.y * scaleRatio
+    }
+    
+    const finalPan = clampPan(scaledPan, nextZoom, currentBounds)
+    
+    setZoomLevel(nextZoom)
+    setPan(finalPan)
   }
 
   // Calculate Spiral Layout
@@ -240,49 +316,36 @@ export default function TerritoryMap({
     if (layout.size === 0) return
 
     // Calculate content dimensions in Grid Units
-    const contentWidth = bounds.maxX - bounds.minX
-    const contentHeight = bounds.maxY - bounds.minY
+    const contentWidthUnits = bounds.maxX - bounds.minX
+    const contentHeightUnits = bounds.maxY - bounds.minY
     
-    // Get container dimensions (approximate if not mounted, or use window)
+    // Get container dimensions
     const containerW = containerRef.current?.clientWidth || window.innerWidth
     const containerH = containerRef.current?.clientHeight || window.innerHeight
 
     // Target: Fit content within 80% of container
-    // We need to solve for zoomLevel:
-    // (contentWidth * unitSize) < containerW * 0.8
-    // unitSize = baseSize + visualGap
-    // baseSize = zoomLevel * 10
-    // visualGap = zoomLevel * 1
-    // unitSize = zoomLevel * 11
+    // contentPx = contentUnits * (zoom * 12)
+    // zoom = (container * 0.8) / (contentUnits * 12)
     
-    // So: contentWidth * zoomLevel * 11 = containerW * 0.8
-    // zoomLevel = (containerW * 0.8) / (contentWidth * 11)
-    
-    // Calculate required zoom for width and height
-    const zoomW = (containerW * 0.8) / (Math.max(contentWidth, 1) * 11)
-    const zoomH = (containerH * 0.8) / (Math.max(contentHeight, 1) * 11)
+    const zoomW = (containerW * 0.8) / (Math.max(contentWidthUnits, 1) * 12)
+    const zoomH = (containerH * 0.8) / (Math.max(contentHeightUnits, 1) * 12)
     
     // Use the smaller zoom to fit both dimensions
-    // Clamp between 0.5 and 3.0
-    const bestZoom = Math.min(Math.max(Math.min(zoomW, zoomH), 0.5), 3.0)
+    // Clamp min zoom to 0.1 to prevent microscopic bugs, max 3.0
+    const bestZoom = Math.min(Math.max(Math.min(zoomW, zoomH), 0.1), 3.0)
     
     setZoomLevel(bestZoom)
 
     // Center the content
-    // The origin (0,0) is at screen center + pan.x, pan.y
-    // We want the center of the bounding box to be at screen center.
     // Center of BB in grid units:
-    const centerX = (bounds.minX + bounds.maxX) / 2
-    const centerY = (bounds.minY + bounds.maxY) / 2
+    const centerXUnits = (bounds.minX + bounds.maxX) / 2
+    const centerYUnits = (bounds.minY + bounds.maxY) / 2
     
     // Center of BB in pixels (relative to origin):
-    const unitSize = bestZoom * 11 // baseSize(10*z) + gap(1*z)
-    const centerPxX = centerX * unitSize
-    const centerPxY = centerY * unitSize
+    const unitSize = getUnitSize(bestZoom)
+    const centerPxX = centerXUnits * unitSize
+    const centerPxY = centerYUnits * unitSize
     
-    // If pan is 0,0 -> Origin is at Screen Center.
-    // Content Center is at (centerPxX, centerPxY) from Origin.
-    // To move Content Center to Screen Center, we need to shift Origin by (-centerPxX, -centerPxY)
     setPan({ x: -centerPxX, y: -centerPxY })
 
   }, [layout, bounds])
@@ -302,60 +365,16 @@ export default function TerritoryMap({
     const dy = e.clientY - lastMousePos.current.y
     lastMousePos.current = { x: e.clientX, y: e.clientY }
     
-    // Apply Pan with Clamping logic
-    // We want to prevent dragging the map "out of view" (showing gray void), 
-    // unless the map is smaller than the view (then we keep it centered).
+    // Calculate new pan without clamping
+    const nextPan = {
+      x: pan.x + dx,
+      y: pan.y + dy
+    }
     
-    const containerW = containerRef.current?.clientWidth || window.innerWidth
-    const containerH = containerRef.current?.clientHeight || window.innerHeight
+    // Apply clamping using shared helper
+    const finalPan = clampPan(nextPan, zoomLevel, bounds)
     
-    // Content dimensions in pixels
-    const unitSize = Math.max(2, zoomLevel * 10) + Math.max(0.5, zoomLevel * 1) // Base + Gap
-    const contentW = (bounds.maxX - bounds.minX) * unitSize
-    const contentH = (bounds.maxY - bounds.minY) * unitSize
-    
-    setPan(prev => {
-      let nextX = prev.x + dx
-      let nextY = prev.y + dy
-      
-      // Calculate Limits based on "Map Bounds = Canvas Bounds"
-      // If Content > View, we allow panning up to the edge.
-      // Limit = (Content - View) / 2
-      
-      // Center Offset Correction: 
-      // Our content is not centered at (0,0) of the layout grid, it's at (minX..maxX).
-      // The visual center of content is at ((minX+maxX)/2 * unitSize, (minY+maxY)/2 * unitSize).
-      // Let's call this contentCenterOffset.
-      const centerX = (bounds.minX + bounds.maxX) / 2 * unitSize
-      const centerY = (bounds.minY + bounds.maxY) / 2 * unitSize
-      
-      // The effective pan position relative to content center is (nextX + centerX).
-      // We want to clamp (nextX + centerX).
-      const effectiveX = nextX + centerX
-      const effectiveY = nextY + centerY
-      
-      // X Axis Clamping
-      if (contentW > containerW) {
-        const limitX = (contentW - containerW) / 2
-        // Clamp effectiveX between -limitX and limitX
-        if (effectiveX > limitX) nextX = limitX - centerX
-        if (effectiveX < -limitX) nextX = -limitX - centerX
-      } else {
-        // Lock to center if smaller
-        nextX = -centerX
-      }
-      
-      // Y Axis Clamping
-      if (contentH > containerH) {
-        const limitY = (contentH - containerH) / 2
-        if (effectiveY > limitY) nextY = limitY - centerY
-        if (effectiveY < -limitY) nextY = -limitY - centerY
-      } else {
-        nextY = -centerY
-      }
-      
-      return { x: nextX, y: nextY }
-    })
+    setPan(finalPan)
   }
 
   const handleMouseUp = () => {
@@ -367,17 +386,16 @@ export default function TerritoryMap({
   }
 
   // Recalculate grid styles for Absolute Positioning
-  // Micro-grid settings:
-  const baseSize = Math.max(2, zoomLevel * 10) // 10px at zoom 1.0
-  const visualGap = Math.max(0.5, zoomLevel * 1) 
-  const unitSize = baseSize + visualGap
+  const unitSize = getUnitSize(zoomLevel)
+  // Visual Gap is now part of the padding inside the block, not grid spacing
+  // We keep grid tight (gap=0 in layout logic) but use padding for separation.
+  const visualGap = 1 // Fixed 1px gap for sharpness
 
   const baseColor = type === 'WHY' ? 'bg-green-500' : 'bg-red-500'
   const borderColor = type === 'WHY' ? 'border-green-100' : 'border-red-100'
 
-  // Fixed font size scaling only with zoom
-  // Base 12px at zoom 1.0
-  const fontSize = Math.max(8, 12 * zoomLevel)
+  // Font size: slightly smaller than unit size to fit
+  const fontSize = Math.max(4, zoomLevel * 9) // 9px font on 14px grid unit (fit better)
 
   return (
     <div className={`flex flex-col h-full relative group overflow-hidden select-none cursor-grab active:cursor-grabbing ${className}`}>
@@ -386,7 +404,7 @@ export default function TerritoryMap({
         <span className="text-[10px] text-gray-500 font-mono">Zoom</span>
         <input 
           type="range" 
-          min="0.5" 
+          min="0.1" 
           max="3.0" 
           step="0.1" 
           value={zoomLevel} 
@@ -395,9 +413,7 @@ export default function TerritoryMap({
         />
         <button 
           onClick={() => {
-            // Reset to Auto-Fit
-            // Triggering a re-calc by temporarily clearing layout? No, just replicate auto-fit logic or simple center.
-            // Simple center for now
+            const unitSize = getUnitSize(zoomLevel)
             const centerX = (bounds.minX + bounds.maxX) / 2 * unitSize
             const centerY = (bounds.minY + bounds.maxY) / 2 * unitSize
             setPan({ x: -centerX, y: -centerY })
@@ -425,13 +441,8 @@ export default function TerritoryMap({
           className="absolute top-1/2 left-1/2 will-change-transform bg-white shadow-2xl" // White background for "Map"
           style={{
             transform: `translate(${pan.x}px, ${pan.y}px)`, 
-            // Explicitly size the content wrapper to match layout bounds
-            // We need to offset the "origin" because pan is relative to (0,0)
-            // But our layout starts at minX. 
-            // Actually, we can just use the map rendering logic below, 
-            // but adding a visual background requires knowing the exact rect.
-            left: 0, top: 0, // Reset these, rely on transform
-            width: 0, height: 0, // Wrapper is just an anchor
+            left: 0, top: 0, 
+            width: 0, height: 0, 
             overflow: 'visible'
           }}
         >
@@ -473,7 +484,7 @@ export default function TerritoryMap({
                   {/* Username Header */}
                   <div 
                     className="text-gray-500 font-mono truncate mb-0.5"
-                    style={{ fontSize: `${Math.max(6, fontSize * 0.6)}px` }}
+                    style={{ fontSize: `${Math.max(4, fontSize * 0.6)}px` }}
                   >
                     @{opinion.author.username}
                   </div>
@@ -483,8 +494,6 @@ export default function TerritoryMap({
                     className="font-bold text-gray-800 break-words whitespace-pre-wrap leading-tight"
                     style={{ 
                       fontSize: `${fontSize}px`,
-                      // Limit lines if box is small? Or just let it overflow hidden?
-                      // Let's let overflow hide naturally.
                     }}
                   >
                     {opinion.summary}
@@ -495,7 +504,7 @@ export default function TerritoryMap({
                     <div 
                       className="mt-0.5 text-gray-600 break-words whitespace-pre-wrap leading-tight"
                       style={{ 
-                        fontSize: `${Math.max(8, fontSize * 0.9)}px`
+                        fontSize: `${Math.max(4, fontSize * 0.9)}px`
                       }}
                     >
                       {detailPreview}
