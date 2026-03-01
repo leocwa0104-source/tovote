@@ -37,10 +37,63 @@ export default function OpinionDetailView({ opinion, onClose, onCitationClick }:
     setTimeout(() => setCopied(false), 2000)
   }
 
-  // Helper to render text with @mentions (simplified for read-only view)
-  // Note: For a robust implementation, we might want to reuse the logic from OpinionCard,
-  // but for now we'll just render text. If the user wants clickable citations in the modal,
-  // we can enhance this later.
+  const renderDetailWithCitations = (text: string, citations: { id: string, target: any }[] = []) => {
+    if (!text) return null;
+    
+    // Regex to match @[username: summary...]
+    const regex = /@\[([^:]+): (.*?)\]/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(text)) !== null) {
+      // Add text before the match
+      if (match.index > lastIndex) {
+        parts.push(text.substring(lastIndex, match.index));
+      }
+
+      const fullMatch = match[0];
+      const username = match[1];
+      const summarySnippet = match[2]; 
+      
+      const cleanSnippet = summarySnippet.endsWith('...') 
+        ? summarySnippet.slice(0, -3) 
+        : summarySnippet;
+
+      // Find corresponding citation
+      const citation = citations.find(c => 
+        c.target.author.username === username && 
+        (c.target.summary.includes(cleanSnippet) || c.target.summary.startsWith(cleanSnippet))
+      );
+
+      if (citation && onCitationClick) {
+        parts.push(
+          <button
+            key={match.index}
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onCitationClick(citation.target);
+            }}
+            className="bg-gray-100 hover:bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded text-xs font-mono inline-flex items-center gap-1 mx-1 transition-colors cursor-pointer border border-transparent hover:border-gray-300"
+          >
+            <span className="opacity-50">@</span>{citation.target.summary}
+          </button>
+        );
+      } else {
+        parts.push(<span key={match.index} className="text-gray-400 font-mono text-xs bg-gray-50 px-1 rounded">{fullMatch}</span>);
+      }
+
+      lastIndex = regex.lastIndex;
+    }
+
+    // Add remaining text
+    if (lastIndex < text.length) {
+      parts.push(text.substring(lastIndex));
+    }
+
+    return parts.length > 0 ? parts : text;
+  };
   
   return (
     <div className="flex flex-col h-full bg-white relative">
@@ -91,7 +144,7 @@ export default function OpinionDetailView({ opinion, onClose, onCitationClick }:
             
             {opinion.detail ? (
                 <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed font-serif text-base">
-                    {opinion.detail}
+                    {renderDetailWithCitations(opinion.detail, opinion.citations)}
                 </div>
             ) : (
                 <p className="text-sm text-gray-400 italic">
