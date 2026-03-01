@@ -23,10 +23,12 @@ export default function OpinionBlock({ node, isActive, onSelect, scale }: Opinio
   // Simplified Visibility Thresholds
   const showAvatar = minDim > 20
   const showSummary = minDim > 30
+  const showDetail = minDim > 60
 
   // Dynamic font sizing (simplified)
   const headerFontSize = Math.max(9, Math.min(minDim / 20, 12))
   const summaryFontSize = Math.max(10, Math.min(minDim / 10, 16))
+  const detailFontSize = Math.max(9, Math.min(minDim / 15, 14))
 
   return (
     <div
@@ -60,10 +62,20 @@ export default function OpinionBlock({ node, isActive, onSelect, scale }: Opinio
         {/* Summary (Headline) */}
         {showSummary && (
           <div 
-            className="font-bold leading-tight break-words flex-shrink-0 line-clamp-3"
+            className="font-bold leading-tight break-words flex-shrink-0 line-clamp-2"
             style={{ fontSize: summaryFontSize, lineHeight: 1.2 }}
           >
             {opinion.summary}
+          </div>
+        )}
+
+        {/* Detail (Content) - First 3 lines */}
+        {showDetail && opinion.detail && (
+          <div 
+            className="font-serif opacity-80 leading-tight break-words line-clamp-3 mt-0.5"
+            style={{ fontSize: detailFontSize, lineHeight: 1.3 }}
+          >
+            {opinion.detail}
           </div>
         )}
       </div>
