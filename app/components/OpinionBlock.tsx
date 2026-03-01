@@ -46,6 +46,77 @@ export default function OpinionBlock({ node, isActive, onSelect, scale }: Opinio
     setTimeout(() => setCopied(false), 2000)
   }
 
+  // Render Full Content Mode (Inverse Scaled)
+  if (showFullContent) {
+    return (
+      <div
+        className={`absolute cursor-pointer border overflow-hidden transition-colors duration-200 ${
+          isActive ? `z-10 ring-2 ring-black shadow-lg ${activeColor} border-black` : `${baseColor} ${hoverColor} border-gray-200`
+        }`}
+        style={{
+          left: node.x,
+          top: node.y,
+          width: node.w,
+          height: node.h,
+        }}
+        onClick={(e) => {
+          e.stopPropagation()
+          onSelect(opinion.id)
+        }}
+        title={`${opinion.author.username}: ${opinion.summary}`}
+      >
+        <div
+          className="text-black flex flex-col gap-2 p-4 overflow-y-auto pointer-events-auto bg-white/95"
+          style={{
+            width: `${node.w * scale}px`,
+            height: `${node.h * scale}px`,
+            transform: `scale(${1 / scale})`,
+            transformOrigin: '0 0',
+          }}
+          onWheel={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between gap-2 flex-shrink-0">
+            <span className="font-mono text-xs opacity-60">@{opinion.author.username}</span>
+            <button 
+              className={`transition-all duration-300 rounded-full p-1 flex items-center justify-center
+                ${copied 
+                  ? 'bg-green-100 text-green-600 opacity-100 scale-110' 
+                  : 'opacity-40 hover:opacity-100 bg-black/5 hover:bg-black/10 text-gray-600'
+                }`}
+              onClick={handleCopyId}
+              title="Copy ID"
+              style={{ width: '20px', height: '20px' }}
+            >
+              {copied ? (
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+              )}
+            </button>
+          </div>
+
+          {/* Summary */}
+          <div className="font-bold leading-tight break-words text-base">
+            {opinion.summary}
+          </div>
+
+          {/* Detail */}
+          {opinion.detail && (
+            <div className="opacity-80 leading-relaxed break-words text-sm pb-4">
+              {opinion.detail}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // Render Preview Mode (Normal Scaled)
   return (
     <div
       className={`absolute cursor-pointer border overflow-hidden flex flex-col p-1 transition-colors duration-200 ${
