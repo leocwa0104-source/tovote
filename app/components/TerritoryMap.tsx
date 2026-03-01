@@ -258,6 +258,10 @@ export default function TerritoryMap({
   const gap = Math.max(2, zoomLevel * 4)
   const unitSize = baseSize + gap
 
+  const baseColor = type === 'WHY' ? 'bg-green-500' : 'bg-red-500'
+  const borderColor = type === 'WHY' ? 'border-green-100' : 'border-red-100'
+  const emptyPatternColor = type === 'WHY' ? '#f0fdf4' : '#fef2f2' // green-50 / red-50
+
   return (
     <div className={`flex flex-col h-full relative group overflow-hidden select-none cursor-grab active:cursor-grabbing ${className}`}>
       {/* Zoom Slider Control */}
