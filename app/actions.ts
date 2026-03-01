@@ -202,7 +202,14 @@ export async function getJoinedPrivateTopics() {
             select: { username: true }
           },
           _count: {
-            select: { factions: true, memberships: true }
+            select: { 
+              factions: true, 
+              memberships: {
+                where: {
+                  factionId: { not: null }
+                }
+              }
+            }
           }
         }
       }
