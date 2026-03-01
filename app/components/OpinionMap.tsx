@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import { computeTreemapLayout, TreemapNode } from '../utils/treemap'
 import OpinionBlock from './OpinionBlock'
 
@@ -24,25 +24,22 @@ interface OpinionMapProps {
 export default function OpinionMap({ opinions, selectedId, onSelect, currentUser }: OpinionMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 })
   const [isDragging, setIsDragging] = useState(false)
-  const [expandedId, setExpandedId] = useState<string | null>(null)
+  // expandedId removed as per previous refactor to modal interaction, keeping clean state
+  
   const dragStart = useRef<{ x: number, y: number } | null>(null)
   const mouseDownPos = useRef<{ x: number, y: number } | null>(null)
   const hasDragged = useRef(false)
 
-  useEffect(() => {
-    if (selectedId && selectedId !== expandedId) {
-       // If selectedId is controlled from outside (e.g. initial load), sync it
-       // But we prioritize internal interaction
-    }
-  }, [selectedId])
-
-  // Reset expanded state when opinions change significantly (e.g. tab switch)
-  useEffect(() => {
-    setExpandedId(null)
-  }, [opinions])
+  // Layout Size
+  const size = useMemo(() => {
+    if (dimensions.width === 0 || dimensions.height === 0) return 0
+    return Math.min(dimensions.width, dimensions.height)
+  }, [dimensions])
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -66,22 +63,86 @@ export default function OpinionMap({ opinions, selectedId, onSelect, currentUser
   }, [])
 
   const layout = useMemo(() => {
-    if (dimensions.width === 0 || dimensions.height === 0 || opinions.length === 0) return []
-    
-    // Use the smaller dimension to create a square layout area that fits
-    const size = Math.min(dimensions.width, dimensions.height)
+    if (size === 0 || opinions.length === 0) return []
     
     // Transform opinions to TreemapItems
     const items = opinions.map(o => ({
       id: o.id,
-      // Fixed value for uniform sizing (modified by structure/nesting)
-      value: 100, 
+      value: 100, // Fixed value for uniform sizing
       data: o,
       neighborId: o.neighborId
     }))
     
     return computeTreemapLayout(items, size, size)
-  }, [opinions, dimensions])
+  }, [opinions, size])
+
+  // Draw to Canvas (LOD 0 / Background)
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas || layout.length === 0 || size === 0) return
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    
+    // Scale for high DPI
+    const dpr = window.devicePixelRatio || 1
+    // We actually set width/height attributes to size * dpr, so we don't need ctx.scale if we map 1:1
+    // But our layout coords are 0..size.
+    // So we need to scale context to match dpr.
+    ctx.save()
+    ctx.scale(dpr, dpr)
+
+    // Draw all nodes
+    layout.forEach(node => {
+        // Draw background
+        ctx.fillStyle = '#ffffff' // bg-white
+        ctx.fillRect(node.x, node.y, node.w, node.h)
+        
+        // Draw border
+        ctx.strokeStyle = '#e5e7eb' // border-gray-200
+        ctx.lineWidth = 1
+        ctx.strokeRect(node.x, node.y, node.w, node.h)
+
+        // Optional: Draw simple text if node is large enough even at 1x scale?
+        // Probably not needed, DOM handles text. Canvas is just structural background.
+    })
+
+    ctx.restore()
+  }, [layout, size])
+
+
+  // Calculate Visible Nodes (Virtualization + LOD)
+  const visibleNodes = useMemo(() => {
+    if (layout.length === 0) return []
+
+    // Viewport in content coordinates
+    const viewportX = -transform.x / transform.scale
+    const viewportY = -transform.y / transform.scale
+    const viewportW = dimensions.width / transform.scale
+    const viewportH = dimensions.height / transform.scale
+
+    return layout.filter(node => {
+        // 1. Check Intersection
+        const inViewport = (
+            node.x < viewportX + viewportW &&
+            node.x + node.w > viewportX &&
+            node.y < viewportY + viewportH &&
+            node.y + node.h > viewportY
+        )
+        if (!inViewport) return false
+
+        // 2. Check Min Size (LOD)
+        // If node width on screen is less than 20px, don't render DOM
+        const screenWidth = node.w * transform.scale
+        const screenHeight = node.h * transform.scale
+        if (screenWidth < 20 || screenHeight < 20) return false
+
+        return true
+    })
+  }, [layout, transform, dimensions])
 
   // Helper to clamp values
   const clamp = (val: number, min: number, max: number) => Math.min(Math.max(val, min), max)
@@ -91,19 +152,16 @@ export default function OpinionMap({ opinions, selectedId, onSelect, currentUser
     e.stopPropagation()
 
     const zoomSensitivity = 0.001
-    const newScale = Math.min(Math.max(transform.scale - e.deltaY * zoomSensitivity, 1), 8) // Increased max zoom for focus mode
+    const newScale = Math.min(Math.max(transform.scale - e.deltaY * zoomSensitivity, 1), 8)
 
     if (newScale === transform.scale) return
 
-    // Calculate zoom origin relative to content
     const rect = containerRef.current?.getBoundingClientRect()
     if (!rect) return
 
     const mouseX = e.clientX - rect.left
     const mouseY = e.clientY - rect.top
 
-    // Calculate new position to keep mouse point stable
-    // newX = mouseX - (mouseX - oldX) * (newScale / oldScale)
     const newX = mouseX - (mouseX - transform.x) * (newScale / transform.scale)
     const newY = mouseY - (mouseY - transform.y) * (newScale / transform.scale)
 
@@ -114,34 +172,65 @@ export default function OpinionMap({ opinions, selectedId, onSelect, currentUser
     })
   }
 
-  // Bind wheel event directly to container for better control
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
-
-    // Use passive: false to allow preventDefault
     container.addEventListener('wheel', handleWheel, { passive: false })
+    return () => container.removeEventListener('wheel', handleWheel)
+  }, [transform])
 
-    return () => {
-      container.removeEventListener('wheel', handleWheel)
+  const handleBlockSelect = useCallback((id: string) => {
+      if (hasDragged.current) return
+      onSelect(id)
+  }, [onSelect])
+
+  // Handle click on map content (including canvas areas where DOM is culled)
+  const handleContentClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (hasDragged.current) return
+
+    // Calculate click position in content coordinates
+    const rect = contentRef.current?.getBoundingClientRect()
+    if (!rect) return
+
+    // If we clicked a DOM node, event propagation would be stopped by OpinionBlock
+    // So if we are here, we clicked the background/canvas
+    
+    // Reverse transform to find x,y in content space
+    // But e.clientX is screen space.
+    // Easier: getBoundingClientRect gives transformed rect.
+    // e.clientX - rect.left is x in transformed element? No.
+    // rect is the bounding box of the transformed element.
+    // The transformed element has origin top-left.
+    
+    // Let's use logic relative to container, which is simpler
+    const containerRect = containerRef.current?.getBoundingClientRect()
+    if (!containerRect) return
+
+    const clickX = e.clientX - containerRect.left
+    const clickY = e.clientY - containerRect.top
+    
+    const contentX = (clickX - transform.x) / transform.scale
+    const contentY = (clickY - transform.y) / transform.scale
+
+    // Find node at this position
+    // Since layout is flat and nodes don't overlap, find first match
+    const clickedNode = layout.find(node => 
+        contentX >= node.x && contentX < node.x + node.w &&
+        contentY >= node.y && contentY < node.y + node.h
+    )
+
+    if (clickedNode) {
+        onSelect(clickedNode.data.id)
+    } else {
+        // Clicked outside any node (shouldn't happen in treemap unless gaps)
+        // Or handleBackgroundClick logic
     }
-  }, [transform]) // Re-bind when transform changes to capture latest state
+  }
 
-  // Focus on a specific node (Zoom-to-Focus) removed
-    // const focusNode = ... 
-
-    // Handle node click to select
-    const handleNodeClick = (node: TreemapNode) => {
-        if (hasDragged.current) return
-        onSelect(node.data.id)
-    }
-
-  // Handle click on map background to reset view
   const handleBackgroundClick = () => {
     if (hasDragged.current) return
-    // Reset to initial view
-    // Calculate center for scale 1
-    const size = Math.min(dimensions.width, dimensions.height)
+    // Reset View
     const newX = (dimensions.width - size) / 2
     const newY = (dimensions.height - size) / 2
     
@@ -150,40 +239,26 @@ export default function OpinionMap({ opinions, selectedId, onSelect, currentUser
       y: newY,
       scale: 1
     })
-    setExpandedId(null)
     onSelect('')
   }
 
-
-  // Clamping logic applied whenever transform changes or dimensions change
   useEffect(() => {
     if (dimensions.width === 0 || dimensions.height === 0) return
 
-    const size = Math.min(dimensions.width, dimensions.height)
     const contentW = size * transform.scale
     const contentH = size * transform.scale
-
-    // Available slack
-    // If content < container, center it.
-    // If content > container, allow panning but clamp to edges.
     
     let newX = transform.x
     let newY = transform.y
 
-    // Horizontal clamping
     if (contentW <= dimensions.width) {
       newX = (dimensions.width - contentW) / 2
     } else {
-      // Content is wider than container
-      // Min X: dimensions.width - contentW (Right edge aligns with right container edge)
-      // Max X: 0 (Left edge aligns with left container edge)
-      // Note: x is usually negative when panned left
       const minX = dimensions.width - contentW
       const maxX = 0
       newX = clamp(newX, minX, maxX)
     }
 
-    // Vertical clamping
     if (contentH <= dimensions.height) {
       newY = (dimensions.height - contentH) / 2
     } else {
@@ -195,11 +270,10 @@ export default function OpinionMap({ opinions, selectedId, onSelect, currentUser
     if (newX !== transform.x || newY !== transform.y) {
       setTransform(t => ({ ...t, x: newX, y: newY }))
     }
-  }, [transform.scale, transform.x, transform.y, dimensions])
+  }, [transform.scale, transform.x, transform.y, dimensions, size])
 
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    // Only start dragging if left click and not on a child element that might need interaction
     if (e.button !== 0) return
     setIsDragging(true)
     dragStart.current = { x: e.clientX - transform.x, y: e.clientY - transform.y }
@@ -211,11 +285,10 @@ export default function OpinionMap({ opinions, selectedId, onSelect, currentUser
     if (!isDragging || !dragStart.current) return
     e.preventDefault()
     
-    // Check if user has dragged significantly
     if (mouseDownPos.current && !hasDragged.current) {
         const dx = e.clientX - mouseDownPos.current.x
         const dy = e.clientY - mouseDownPos.current.y
-        if (dx * dx + dy * dy > 25) { // 5px threshold
+        if (dx * dx + dy * dy > 25) {
             hasDragged.current = true
         }
     }
@@ -231,6 +304,8 @@ export default function OpinionMap({ opinions, selectedId, onSelect, currentUser
     dragStart.current = null
   }
 
+  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1
+
   return (
     <div 
       ref={containerRef}
@@ -243,32 +318,47 @@ export default function OpinionMap({ opinions, selectedId, onSelect, currentUser
     >
       <div 
         ref={contentRef}
-        className="absolute origin-top-left transition-transform duration-300 ease-out"
+        className="absolute origin-top-left" // Removed transition for smoother performance with many nodes
         style={{
           transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
-          width: Math.min(dimensions.width, dimensions.height),
-          height: Math.min(dimensions.width, dimensions.height)
+          width: size,
+          height: size
         }}
-        onClick={(e) => e.stopPropagation()} 
+        onClick={handleContentClick} 
       >
-        {layout.map((node) => (
+        {/* Canvas Layer for LOD 0 / Background */}
+        <canvas
+            ref={canvasRef}
+            width={size * dpr}
+            height={size * dpr}
+            style={{ 
+                width: size, 
+                height: size, 
+                position: 'absolute', 
+                top: 0, 
+                left: 0,
+                pointerEvents: 'none' // Canvas is purely visual, clicks pass to parent div
+            }}
+        />
+
+        {/* DOM Layer for Interactive Nodes */}
+        {visibleNodes.map((node) => (
           <OpinionBlock
             key={node.data.id}
             node={node}
             isActive={node.data.id === selectedId}
-            onSelect={() => handleNodeClick(node)}
+            onSelect={handleBlockSelect}
             scale={transform.scale}
           />
         ))}
       </div>
 
-      {/* Zoom Controls/Indicators */}
+      {/* Zoom Controls */}
       <div className="absolute bottom-4 right-4 flex flex-col gap-2 pointer-events-none">
         <div className="bg-black/80 text-white text-xs px-2 py-1 rounded font-mono">
            {Math.round(transform.scale * 100)}%
         </div>
         
-        {/* Reset Zoom Button - Visible when zoomed in */}
         {transform.scale > 1.1 && (
           <button 
             className="pointer-events-auto bg-white shadow-md border border-gray-200 text-gray-700 p-2 rounded hover:bg-gray-50 transition-colors"

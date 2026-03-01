@@ -1,5 +1,5 @@
 
-import { useMemo } from 'react'
+import { useMemo, memo } from 'react'
 import { TreemapNode } from '../utils/treemap'
 
 interface OpinionBlockProps {
@@ -9,7 +9,7 @@ interface OpinionBlockProps {
   scale: number
 }
 
-export default function OpinionBlock({ node, isActive, onSelect, scale }: OpinionBlockProps) {
+function OpinionBlock({ node, isActive, onSelect, scale }: OpinionBlockProps) {
   const opinion = node.data
   
   // Minimalist black/white style logic
@@ -82,3 +82,5 @@ export default function OpinionBlock({ node, isActive, onSelect, scale }: Opinio
     </div>
   )
 }
+
+export default memo(OpinionBlock)
