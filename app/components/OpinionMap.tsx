@@ -11,6 +11,7 @@ interface MapOpinion {
   detail: string | null
   type: 'WHY' | 'WHY_NOT'
   author: { username: string }
+  neighborId?: string | null
 }
 
 interface OpinionMapProps {
@@ -71,7 +72,8 @@ export default function OpinionMap({ opinions, selectedId, onSelect }: OpinionMa
     const items = opinions.map(o => ({
       id: o.id,
       value: Math.max(20, o.summary.length + (o.detail?.length || 0) * 0.5), 
-      data: o
+      data: o,
+      neighborId: o.neighborId
     }))
     
     return computeTreemapLayout(items, size, size)

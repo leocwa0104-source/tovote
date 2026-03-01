@@ -205,6 +205,7 @@ export default function FactionContent({
                   isPrivateTopic={isPrivateTopic}
                   onSuccess={() => setShowCreateModal(false)}
                   initialIsEditing={!!userOpinion}
+                  availableNeighbors={currentOpinions}
                 />
              </div>
           </div>

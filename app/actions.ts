@@ -569,6 +569,7 @@ export async function createOpinion(formData: FormData) {
   const summary = formData.get('summary') as string
   const detail = formData.get('detail') as string
   const citationIds = formData.get('citationIds') as string // JSON array string
+  const neighborId = formData.get('neighborId') as string | null
   
   const user = await getCurrentUser()
   if (!user) throw new Error("Unauthorized")
@@ -590,6 +591,8 @@ export async function createOpinion(formData: FormData) {
     update: {
       summary,
       detail,
+      // Only update neighbor if explicitly provided, otherwise keep existing
+      ...(neighborId ? { neighborId } : {}),
       updatedAt: new Date()
     },
     create: {
@@ -597,7 +600,8 @@ export async function createOpinion(formData: FormData) {
       detail,
       type,
       authorId: user.id,
-      factionId
+      factionId,
+      neighborId: neighborId || null
     }
   })
 

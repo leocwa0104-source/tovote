@@ -45,6 +45,7 @@ interface Opinion {
     }
   }[]
   factionId: string
+  neighborId?: string | null
 }
 
 interface OpinionCardProps {
@@ -55,6 +56,7 @@ interface OpinionCardProps {
   isPrivateTopic?: boolean
   onSuccess?: () => void
   initialIsEditing?: boolean
+  availableNeighbors?: { id: string, summary: string, author: { username: string } }[]
 }
 
 export default function OpinionCard({ 
@@ -64,19 +66,25 @@ export default function OpinionCard({
   currentUser, 
   isPrivateTopic,
   onSuccess,
-  initialIsEditing = false
+  initialIsEditing = false,
+  availableNeighbors = []
 }: OpinionCardProps) {
   const [isEditing, setIsEditing] = useState(initialIsEditing)
   const [isExpanded, setIsExpanded] = useState(false)
   const [loading, setLoading] = useState(false)
   const [selectedCitation, setSelectedCitation] = useState<CitationTarget | null>(null)
   const [mentionedCitations, setMentionedCitations] = useState<CitationTarget[]>([])
+  const [selectedNeighborId, setSelectedNeighborId] = useState<string | null>(opinion?.neighborId || null)
 
   const isOwner = currentUser && opinion?.authorId === currentUser.id
 
   const handleSubmit = async (formData: FormData) => {
     setLoading(true)
     try {
+      if (selectedNeighborId) {
+        formData.append('neighborId', selectedNeighborId)
+      }
+      
       await createOpinion(formData)
       setIsEditing(false)
       onSuccess?.()
@@ -238,6 +246,25 @@ export default function OpinionCard({
           )}
           
           <div className="flex gap-3 justify-end items-center pt-2">
+            {/* Neighbor Selector */}
+            <div className="flex-grow flex items-center gap-2">
+               <span className="text-xs text-gray-400 uppercase tracking-wide">Neighbor:</span>
+               <select 
+                 value={selectedNeighborId || ''}
+                 onChange={(e) => setSelectedNeighborId(e.target.value || null)}
+                 className="bg-gray-50 border-b border-gray-200 text-xs text-gray-700 py-1 focus:outline-none focus:border-gray-800 max-w-[150px]"
+               >
+                 <option value="">None (Auto)</option>
+                 {availableNeighbors
+                   .filter(n => n.id !== opinion?.id) // Can't neighbor self
+                   .map(n => (
+                   <option key={n.id} value={n.id}>
+                     {n.author.username}: {n.summary.substring(0, 20)}{n.summary.length > 20 ? '...' : ''}
+                   </option>
+                 ))}
+               </select>
+            </div>
+
             {opinion && (
               <button 
                 type="button" 

@@ -83,6 +83,11 @@ model Opinion {
   // Citations
   citedBy   Citation[] @relation("TargetOpinion")
   citations Citation[] @relation("SourceOpinion")
+  
+  // Layout Logic: Neighbor preference (Physics only, not semantic hierarchy)
+  neighborId String?
+  neighbor   Opinion?   @relation("OpinionNeighbors", fields: [neighborId], references: [id])
+  neighbors  Opinion[]  @relation("OpinionNeighbors")
 
   @@unique([authorId, factionId, type]) // Ensures one opinion per type per faction for a user
 }
