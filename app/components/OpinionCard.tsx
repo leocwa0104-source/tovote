@@ -267,7 +267,10 @@ export default function OpinionCard({
             {opinion && (
               <button 
                 type="button" 
-                onClick={() => setIsEditing(false)}
+                onClick={() => {
+                    setIsEditing(false)
+                    if (onSuccess) onSuccess()
+                }}
                 className="px-3 py-1.5 text-xs font-mono text-gray-500 hover:text-gray-900 transition-colors uppercase"
                 disabled={loading}
               >
