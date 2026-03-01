@@ -29,6 +29,8 @@ export default function OpinionMap({ opinions, selectedId, onSelect, currentUser
   const [isDragging, setIsDragging] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const dragStart = useRef<{ x: number, y: number } | null>(null)
+  const mouseDownPos = useRef<{ x: number, y: number } | null>(null)
+  const hasDragged = useRef(false)
 
   useEffect(() => {
     if (selectedId && selectedId !== expandedId) {
@@ -130,11 +132,13 @@ export default function OpinionMap({ opinions, selectedId, onSelect, currentUser
 
     // Handle node click to select
     const handleNodeClick = (node: TreemapNode) => {
+        if (hasDragged.current) return
         onSelect(node.data.id)
     }
 
   // Handle click on map background to reset view
   const handleBackgroundClick = () => {
+    if (hasDragged.current) return
     // Reset to initial view
     // Calculate center for scale 1
     const size = Math.min(dimensions.width, dimensions.height)
@@ -199,12 +203,23 @@ export default function OpinionMap({ opinions, selectedId, onSelect, currentUser
     if (e.button !== 0) return
     setIsDragging(true)
     dragStart.current = { x: e.clientX - transform.x, y: e.clientY - transform.y }
+    mouseDownPos.current = { x: e.clientX, y: e.clientY }
+    hasDragged.current = false
   }
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging || !dragStart.current) return
     e.preventDefault()
     
+    // Check if user has dragged significantly
+    if (mouseDownPos.current && !hasDragged.current) {
+        const dx = e.clientX - mouseDownPos.current.x
+        const dy = e.clientY - mouseDownPos.current.y
+        if (dx * dx + dy * dy > 25) { // 5px threshold
+            hasDragged.current = true
+        }
+    }
+
     const newX = e.clientX - dragStart.current.x
     const newY = e.clientY - dragStart.current.y
     
