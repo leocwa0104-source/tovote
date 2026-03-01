@@ -119,6 +119,98 @@ export default function TerritoryMap({
     setZoomLevel(initialZoom)
   }, [initialZoom])
 
+  // Calculate Spiral Layout
+  // Returns map of opinion.id -> { x, y, w, h }
+  // And the bounding box of the entire layout { minX, maxX, minY, maxY }
+  const { layout, bounds } = useMemo(() => {
+    // 1. Sort opinions by createdAt descending (Newest first)
+    const sortedOpinions = [...opinions].sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )
+
+    // 2. Spiral Grid Packing
+    // We use a virtual grid where 1 unit = 1x1 block
+    const occupied = new Set<string>() // format "x,y"
+    const itemPositions = new Map<string, { x: number, y: number, w: number, h: number }>()
+    
+    let minX = 0, maxX = 0, minY = 0, maxY = 0
+
+    // Check if a rectangle fits at (x, y)
+    const checkFit = (x: number, y: number, w: number, h: number) => {
+      for (let i = 0; i < w; i++) {
+        for (let j = 0; j < h; j++) {
+          if (occupied.has(`${x + i},${y + j}`)) return false
+        }
+      }
+      return true
+    }
+
+    // Mark rectangle as occupied
+    const markOccupied = (x: number, y: number, w: number, h: number) => {
+      for (let i = 0; i < w; i++) {
+        for (let j = 0; j < h; j++) {
+          occupied.add(`${x + i},${y + j}`)
+        }
+      }
+      // Update bounds
+      minX = Math.min(minX, x)
+      maxX = Math.max(maxX, x + w)
+      minY = Math.min(minY, y)
+      maxY = Math.max(maxY, y + h)
+    }
+
+    // Spiral traversal generator
+    // Generates coordinates (x, y) spiraling out from (0, 0)
+    function* spiralGenerator() {
+      let x = 0
+      let y = 0
+      let dx = 0
+      let dy = -1
+      
+      // Start at 0,0
+      yield { x, y }
+
+      for (let i = 0; i < 50000; i++) { // Safety limit increased for micro-grid
+        // Logic for spiral steps
+        // -1 < x <= 1, -1 < y <= 1 -> Shell 1
+        if (-x === y || (x < 0 && x === -y) || (x > 0 && x === 1-y)) {
+          // Change direction
+          const temp = dx
+          dx = -dy
+          dy = temp
+        }
+        x += dx
+        y += dy
+        yield { x, y }
+      }
+    }
+
+    // Place each item
+    sortedOpinions.forEach(opinion => {
+      const span = getGridSpan(opinion.summary, opinion.detail)
+      const w = span.col
+      const h = span.row
+      
+      const spiral = spiralGenerator()
+      
+      // Find first available spot
+      for (let pos of spiral) {
+        if (checkFit(pos.x, pos.y, w, h)) {
+          markOccupied(pos.x, pos.y, w, h)
+          itemPositions.set(opinion.id, { x: pos.x, y: pos.y, w, h })
+          break
+        }
+      }
+    })
+
+    return { layout: itemPositions, bounds: { minX, maxX, minY, maxY } }
+  }, [opinions])
+
+  // Pan State
+  const [pan, setPan] = useState({ x: 0, y: 0 })
+  const [isDragging, setIsDragging] = useState(false)
+  const lastMousePos = useRef({ x: 0, y: 0 })
+
   // State Ref to access current values in Event Listeners without re-binding
   const stateRef = useRef({ zoom: zoomLevel, pan, bounds })
   useEffect(() => {
@@ -218,98 +310,6 @@ export default function TerritoryMap({
     setZoomLevel(nextZoom)
     setPan(finalPan)
   }
-
-  // Calculate Spiral Layout
-  // Returns map of opinion.id -> { x, y, w, h }
-  // And the bounding box of the entire layout { minX, maxX, minY, maxY }
-  const { layout, bounds } = useMemo(() => {
-    // 1. Sort opinions by createdAt descending (Newest first)
-    const sortedOpinions = [...opinions].sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    )
-
-    // 2. Spiral Grid Packing
-    // We use a virtual grid where 1 unit = 1x1 block
-    const occupied = new Set<string>() // format "x,y"
-    const itemPositions = new Map<string, { x: number, y: number, w: number, h: number }>()
-    
-    let minX = 0, maxX = 0, minY = 0, maxY = 0
-
-    // Check if a rectangle fits at (x, y)
-    const checkFit = (x: number, y: number, w: number, h: number) => {
-      for (let i = 0; i < w; i++) {
-        for (let j = 0; j < h; j++) {
-          if (occupied.has(`${x + i},${y + j}`)) return false
-        }
-      }
-      return true
-    }
-
-    // Mark rectangle as occupied
-    const markOccupied = (x: number, y: number, w: number, h: number) => {
-      for (let i = 0; i < w; i++) {
-        for (let j = 0; j < h; j++) {
-          occupied.add(`${x + i},${y + j}`)
-        }
-      }
-      // Update bounds
-      minX = Math.min(minX, x)
-      maxX = Math.max(maxX, x + w)
-      minY = Math.min(minY, y)
-      maxY = Math.max(maxY, y + h)
-    }
-
-    // Spiral traversal generator
-    // Generates coordinates (x, y) spiraling out from (0, 0)
-    function* spiralGenerator() {
-      let x = 0
-      let y = 0
-      let dx = 0
-      let dy = -1
-      
-      // Start at 0,0
-      yield { x, y }
-
-      for (let i = 0; i < 50000; i++) { // Safety limit increased for micro-grid
-        // Logic for spiral steps
-        // -1 < x <= 1, -1 < y <= 1 -> Shell 1
-        if (-x === y || (x < 0 && x === -y) || (x > 0 && x === 1-y)) {
-          // Change direction
-          const temp = dx
-          dx = -dy
-          dy = temp
-        }
-        x += dx
-        y += dy
-        yield { x, y }
-      }
-    }
-
-    // Place each item
-    sortedOpinions.forEach(opinion => {
-      const span = getGridSpan(opinion.summary, opinion.detail)
-      const w = span.col
-      const h = span.row
-      
-      const spiral = spiralGenerator()
-      
-      // Find first available spot
-      for (let pos of spiral) {
-        if (checkFit(pos.x, pos.y, w, h)) {
-          markOccupied(pos.x, pos.y, w, h)
-          itemPositions.set(opinion.id, { x: pos.x, y: pos.y, w, h })
-          break
-        }
-      }
-    })
-
-    return { layout: itemPositions, bounds: { minX, maxX, minY, maxY } }
-  }, [opinions])
-
-  // Pan State
-  const [pan, setPan] = useState({ x: 0, y: 0 })
-  const [isDragging, setIsDragging] = useState(false)
-  const lastMousePos = useRef({ x: 0, y: 0 })
 
   // Auto-fit Logic: Calculate initial Zoom and Pan to center content
   useEffect(() => {
