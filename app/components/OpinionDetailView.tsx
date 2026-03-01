@@ -166,26 +166,7 @@ export default function OpinionDetailView({ opinion, onClose, onCitationClick }:
                 </p>
             )}
 
-            {/* Citations / References Section if needed */}
-            {opinion.citations && opinion.citations.length > 0 && (
-                <div className="mt-8 pt-4 border-t border-gray-100">
-                    <h4 className="text-xs font-mono font-bold text-gray-400 uppercase tracking-wide mb-2">References</h4>
-                    <div className="flex flex-col gap-2">
-                        {opinion.citations.map(c => (
-                            <div 
-                                key={c.id} 
-                                className={`text-xs bg-gray-50 p-2 rounded text-gray-600 transition-colors ${onCitationClick ? 'cursor-pointer hover:bg-gray-100 hover:text-gray-900 border border-transparent hover:border-gray-200' : ''}`}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (onCitationClick) onCitationClick(c.target);
-                                }}
-                            >
-                                <span className="font-bold">@{c.target.author.username}</span>: {c.target.summary}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
+
         </div>
 
         {/* Footer / Actions */}
