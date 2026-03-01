@@ -242,7 +242,7 @@ export default function FactionContent({
                  opinion={opinion} 
                  onClose={closeTopModal}
                  onCitationClick={(target: any) => handleCitationClick(target)}
-                 canSetNeighbor={!!user && opinion.authorId !== user.id} // Can set if logged in and not own opinion
+                 canSetNeighbor={index === 0 && !!user && opinion.authorId !== user.id} // Can set if logged in, not own opinion, and is the primary view (not a citation popup)
                  hasUserPosted={!!userOpinion}
                  onSetNeighbor={handleSetNeighbor}
                />
