@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { createOpinion, deleteOpinion } from '@/app/actions'
 import OpinionDetailModal from './OpinionDetailModal'
 import MentionTextarea from './MentionTextarea'
