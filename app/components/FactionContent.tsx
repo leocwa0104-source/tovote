@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import OpinionCard from './OpinionCard'
-import OpinionMap, { OpinionMapRef } from './OpinionMap'
+import OpinionMap from './OpinionMap'
 import OpinionDetailView from './OpinionDetailView'
 
 interface CitationTarget {
@@ -87,7 +87,6 @@ export default function FactionContent({
   const [selectedOpinionId, setSelectedOpinionId] = useState<string | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [modalStack, setModalStack] = useState<Opinion[]>([])
-  const mapRef = useRef<OpinionMapRef>(null)
   
   const userOpinion = user ? currentOpinions.find((o: Opinion) => o.authorId === user.id) : undefined
 
@@ -202,7 +201,6 @@ export default function FactionContent({
       {/* Map Area - Takes available space */}
       <div className="flex-grow relative bg-gray-50 overflow-hidden flex flex-col">
          <OpinionMap 
-           ref={mapRef}
            opinions={currentOpinions}
            selectedId={selectedOpinionId || undefined}
            onSelect={setSelectedOpinionId}
@@ -257,11 +255,6 @@ export default function FactionContent({
                   onSuccess={() => setShowCreateModal(false)}
                   initialIsEditing={!!userOpinion}
                   availableNeighbors={currentOpinions}
-                  onNeighborSelect={(id) => {
-                    if (id && mapRef.current) {
-                      mapRef.current.focusNode(id)
-                    }
-                  }}
                 />
              </div>
           </div>

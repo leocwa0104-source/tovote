@@ -57,7 +57,6 @@ interface OpinionCardProps {
   onSuccess?: () => void
   initialIsEditing?: boolean
   availableNeighbors?: { id: string, summary: string, author: { username: string } }[]
-  onNeighborSelect?: (id: string | null) => void
 }
 
 export default function OpinionCard({ 
@@ -68,8 +67,7 @@ export default function OpinionCard({
   isPrivateTopic,
   onSuccess,
   initialIsEditing = false,
-  availableNeighbors = [],
-  onNeighborSelect
+  availableNeighbors = []
 }: OpinionCardProps) {
   const [isEditing, setIsEditing] = useState(initialIsEditing)
   const [isExpanded, setIsExpanded] = useState(false)
@@ -251,11 +249,7 @@ export default function OpinionCard({
                <span className="text-xs text-gray-400 uppercase tracking-wide">Neighbor:</span>
                <select 
                  value={selectedNeighborId || ''}
-                 onChange={(e) => {
-                   const val = e.target.value || null
-                   setSelectedNeighborId(val)
-                   onNeighborSelect?.(val)
-                 }}
+                 onChange={(e) => setSelectedNeighborId(e.target.value || null)}
                  className="bg-gray-50 border-b border-gray-200 text-xs text-gray-700 py-1 focus:outline-none focus:border-gray-800 max-w-[150px]"
                >
                  <option value="">None (Auto)</option>

@@ -16,58 +16,72 @@ export interface TreemapNode {
   h: number
 }
 
-// Helper to group items by neighbor chains
+// Helper to group items by neighbor chains (Directed: Child -> Parent)
+// We want the group to be anchored at the "Parent" (Neighbor Target) position.
 function groupItems(items: TreemapItem[]): (TreemapItem | TreemapItem[])[] {
   const itemMap = new Map(items.map(i => [i.id, i]));
   const groups: (TreemapItem | TreemapItem[])[] = [];
   const processed = new Set<string>();
 
-  // Find root items (those that are not neighbors of anyone in this set, or their neighbor is missing)
-  // Actually, we need to find connected components.
-  // Simple approach: 
-  // 1. If an item has a neighborId that exists in the current set, they should be grouped together.
-  // 2. We can treat this as a graph problem where neighborId creates an edge.
-  // 3. Since the requirement is "neighbor", we can treat it as an undirected edge for grouping purposes,
-  //    or strictly directed. The user said "choose a neighbor", implying adjacency.
-  //    Let's try to group A and B if A.neighborId == B.id.
+  // Build Parent -> Children map
+  const childrenMap = new Map<string, string[]>();
   
-  // Revised approach:
-  // We want to keep the "neighbor" physically close.
-  // We can create a "GroupItem" which is a virtual item containing the sum of values of its members.
-  // Then we layout the groups.
-  // Finally, we layout the members within the group's rectangle.
-  
-  const adj = new Map<string, string[]>();
   items.forEach(item => {
     if (item.neighborId && itemMap.has(item.neighborId)) {
-      if (!adj.has(item.id)) adj.set(item.id, []);
-      if (!adj.has(item.neighborId)) adj.set(item.neighborId, []);
-      
-      adj.get(item.id)!.push(item.neighborId);
-      adj.get(item.neighborId)!.push(item.id);
+      const parentId = item.neighborId;
+      if (!childrenMap.has(parentId)) childrenMap.set(parentId, []);
+      childrenMap.get(parentId)!.push(item.id);
     }
   });
 
-  items.forEach(item => {
-    if (processed.has(item.id)) return;
-    
-    const queue = [item.id];
-    const component: TreemapItem[] = [];
-    processed.add(item.id);
-    
-    while (queue.length > 0) {
-      const currId = queue.shift()!;
-      const currItem = itemMap.get(currId);
-      if (currItem) component.push(currItem);
-      
-      const neighbors = adj.get(currId) || [];
-      for (const nid of neighbors) {
-        if (!processed.has(nid)) {
-          processed.add(nid);
-          queue.push(nid);
+  // Helper to collect all descendants
+  function collectDescendants(rootId: string, component: TreemapItem[]) {
+    const children = childrenMap.get(rootId);
+    if (children) {
+      for (const childId of children) {
+        if (!processed.has(childId)) {
+          processed.add(childId);
+          const child = itemMap.get(childId);
+          if (child) {
+             component.push(child);
+             collectDescendants(childId, component);
+          }
         }
       }
     }
+  }
+
+  // Pass 1: Process Roots (items that are not a child of anyone in the current set)
+  items.forEach(item => {
+    if (processed.has(item.id)) return;
+
+    // Check if this item is a child of someone in the set
+    const hasParent = item.neighborId && itemMap.has(item.neighborId);
+    
+    if (!hasParent) {
+      // It's a root (or independent)
+      processed.add(item.id);
+      const component = [item];
+      
+      // Collect all descendants
+      collectDescendants(item.id, component);
+      
+      if (component.length > 1) {
+        groups.push(component);
+      } else {
+        groups.push(component[0]);
+      }
+    }
+  });
+
+  // Pass 2: Process Cycles (items that were skipped because they had parents, but parents were never processed - e.g. A->B->A)
+  items.forEach(item => {
+    if (processed.has(item.id)) return;
+    
+    // This is part of a cycle or broken chain. Treat as root.
+    processed.add(item.id);
+    const component = [item];
+    collectDescendants(item.id, component);
     
     if (component.length > 1) {
       groups.push(component);
@@ -150,7 +164,7 @@ export function computeTreemapLayout(
         data: group.data
       };
     }
-  }).sort((a, b) => b.value - a.value);
+  }).filter(item => item.value > 0); // Remove sort to preserve stability based on input order
 
   const result: TreemapNode[] = [];
 
