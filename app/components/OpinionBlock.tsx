@@ -76,11 +76,24 @@ export default function OpinionBlock({ node, isActive, onSelect, scale }: Opinio
             {/* Copy ID Button - Only visible in full content mode */}
             {showFullContent && (
               <button 
-                className="pointer-events-auto opacity-40 hover:opacity-100 transition-opacity bg-black/5 hover:bg-black/10 rounded px-1.5 py-0.5 text-[0.8em] font-mono border border-transparent hover:border-black/10"
+                className={`pointer-events-auto transition-all duration-300 rounded-full p-1 flex items-center justify-center
+                  ${copied 
+                    ? 'bg-green-100 text-green-600 opacity-100 scale-110' 
+                    : 'opacity-40 hover:opacity-100 bg-black/5 hover:bg-black/10 text-gray-600'
+                  }`}
                 onClick={handleCopyId}
                 title="Copy ID"
+                style={{ width: '20px', height: '20px' }}
               >
-                {copied ? 'Copied!' : `#${opinion.id.slice(0, 4)}`}
+                {copied ? (
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
+                )}
               </button>
             )}
           </div>
