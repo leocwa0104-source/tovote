@@ -6,9 +6,10 @@ interface OpinionBlockProps {
   node: TreemapNode
   isActive: boolean
   onSelect: (id: string) => void
+  scale: number
 }
 
-export default function OpinionBlock({ node, isActive, onSelect }: OpinionBlockProps) {
+export default function OpinionBlock({ node, isActive, onSelect, scale }: OpinionBlockProps) {
   const opinion = node.data
   const isWhy = opinion.type === 'WHY'
   
@@ -17,14 +18,19 @@ export default function OpinionBlock({ node, isActive, onSelect }: OpinionBlockP
   const activeColor = isWhy ? 'bg-green-600' : 'bg-red-600'
   const hoverColor = isWhy ? 'hover:bg-green-400' : 'hover:bg-red-400'
   
-  // Text size calculation based on block size
-  const minDim = Math.min(node.w, node.h)
-  const showText = minDim > 40
+  // Adjusted text size calculation based on block size AND zoom scale
+  // We want text to become visible as we zoom in
+  const minDim = Math.min(node.w, node.h) * scale
+  
+  // Show more details if enough space
+  // Relaxed constraints to show more content by default as requested
   const showAvatar = minDim > 20
+  const showSummary = minDim > 30
+  const showDetail = minDim > 60 // Show detail preview sooner
 
   return (
     <div
-      className={`absolute cursor-pointer border border-white/20 overflow-hidden flex flex-col items-center justify-center p-1 transition-all duration-300 ease-in-out ${
+      className={`absolute cursor-pointer border border-white/10 overflow-hidden flex flex-col p-1 transition-colors duration-200 ${
         isActive ? `z-10 ring-2 ring-white shadow-lg ${activeColor}` : `${baseColor} ${hoverColor}`
       }`}
       style={{
@@ -33,20 +39,36 @@ export default function OpinionBlock({ node, isActive, onSelect }: OpinionBlockP
         width: node.w,
         height: node.h,
       }}
-      onClick={() => onSelect(opinion.id)}
+      onClick={(e) => {
+        e.stopPropagation() // Prevent map drag/click interference
+        onSelect(opinion.id)
+      }}
       title={`${opinion.author.username}: ${opinion.summary}`}
     >
-      {/* Content */}
-      <div className="text-white text-center w-full overflow-hidden select-none pointer-events-none">
+      {/* Content Container - No centering, top-left alignment for map feel */}
+      <div className="text-white w-full h-full overflow-hidden select-none pointer-events-none flex flex-col gap-0.5">
+        
+        {/* Header: Avatar + Username */}
         {showAvatar && (
-          <div className="font-mono text-[10px] opacity-70 mb-0.5 truncate w-full">
-            {opinion.author.username}
+          <div className="flex items-center gap-1 opacity-80 min-h-[12px] flex-shrink-0">
+            <span className="font-mono text-[9px] truncate leading-none">
+              @{opinion.author.username}
+            </span>
           </div>
         )}
         
-        {showText && (
-          <div className="font-bold text-xs leading-tight line-clamp-3 break-words w-full px-1">
+        {/* Summary (Headline) */}
+        {showSummary && (
+          <div className="font-bold text-[10px] leading-tight break-words line-clamp-2 flex-shrink-0">
             {opinion.summary}
+          </div>
+        )}
+
+        {/* Detail Preview (First 20 chars) */}
+        {showDetail && opinion.detail && (
+          <div className="text-[8px] opacity-70 leading-tight mt-0.5 break-words overflow-hidden line-clamp-3">
+            {opinion.detail.slice(0, 20)}
+            {opinion.detail.length > 20 && '...'}
           </div>
         )}
       </div>
