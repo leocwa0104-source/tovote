@@ -64,7 +64,15 @@ export default function OpinionBlock({ node, isActive, onSelect, scale }: Opinio
       title={`${opinion.author.username}: ${opinion.summary}`}
     >
       {/* Content Container - No centering, top-left alignment for map feel */}
-      <div className="text-black w-full h-full overflow-hidden select-none pointer-events-none flex flex-col gap-1">
+      <div 
+        className={`text-black w-full h-full flex flex-col gap-1 
+          ${showFullContent ? 'overflow-y-auto pointer-events-auto' : 'overflow-hidden select-none pointer-events-none'}`}
+        onWheel={(e) => {
+          if (showFullContent) {
+            e.stopPropagation()
+          }
+        }}
+      >
         
         {/* Header: Avatar + Username */}
         {showAvatar && (
