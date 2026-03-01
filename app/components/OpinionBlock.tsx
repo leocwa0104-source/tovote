@@ -17,18 +17,27 @@ function OpinionBlock({ node, isActive, onSelect, scale }: OpinionBlockProps) {
   const activeColor = 'bg-gray-50'
   const hoverColor = 'hover:bg-gray-50'
   
-  // Adjusted text size calculation based on block size AND zoom scale
-  const minDim = Math.min(node.w, node.h) * scale
+  // Adjusted text size calculation based on block size (NOT zoom scale)
+  // This ensures text layout is fixed relative to the block, behaving like an image
+  const minDim = Math.min(node.w, node.h)
   
-  // Simplified Visibility Thresholds
-  const showAvatar = minDim > 20
-  const showSummary = minDim > 30
-  const showDetail = minDim > 60
+  // Simplified Visibility Thresholds (still need to check against visual size for culling if we wanted to be fancy inside block,
+  // but visibility is controlled by parent. Here we just decide what to RENDER based on physical size)
+  // Actually, we want to show more details as we zoom in?
+  // User said: "make it look like a photo".
+  // In a photo, small details are there, just tiny.
+  // But for performance, we might still want to hide things if they are too small visually.
+  // However, if we change DOM content based on zoom, we might get layout shifts if CSS changes.
+  // Let's stick to fixed layout based on node dimensions.
+  
+  const showAvatar = minDim > 40
+  const showSummary = minDim > 60
+  const showDetail = minDim > 120
 
-  // Dynamic font sizing (simplified)
-  const headerFontSize = Math.max(9, Math.min(minDim / 20, 12))
-  const summaryFontSize = Math.max(10, Math.min(minDim / 10, 16))
-  const detailFontSize = Math.max(9, Math.min(minDim / 15, 14))
+  // Fixed font sizing based on node dimensions
+  const headerFontSize = Math.max(9, Math.min(minDim / 10, 14))
+  const summaryFontSize = Math.max(10, Math.min(minDim / 8, 24))
+  const detailFontSize = Math.max(9, Math.min(minDim / 12, 16))
 
   return (
     <div
