@@ -296,10 +296,66 @@ export default function TerritoryMap({
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return
     e.preventDefault()
+    
+    // Calculate deltas
     const dx = e.clientX - lastMousePos.current.x
     const dy = e.clientY - lastMousePos.current.y
     lastMousePos.current = { x: e.clientX, y: e.clientY }
-    setPan(prev => ({ x: prev.x + dx, y: prev.y + dy }))
+    
+    // Apply Pan with Clamping logic
+    // We want to prevent dragging the map "out of view" (showing gray void), 
+    // unless the map is smaller than the view (then we keep it centered).
+    
+    const containerW = containerRef.current?.clientWidth || window.innerWidth
+    const containerH = containerRef.current?.clientHeight || window.innerHeight
+    
+    // Content dimensions in pixels
+    const unitSize = Math.max(2, zoomLevel * 10) + Math.max(0.5, zoomLevel * 1) // Base + Gap
+    const contentW = (bounds.maxX - bounds.minX) * unitSize
+    const contentH = (bounds.maxY - bounds.minY) * unitSize
+    
+    setPan(prev => {
+      let nextX = prev.x + dx
+      let nextY = prev.y + dy
+      
+      // Calculate Limits based on "Map Bounds = Canvas Bounds"
+      // If Content > View, we allow panning up to the edge.
+      // Limit = (Content - View) / 2
+      
+      // Center Offset Correction: 
+      // Our content is not centered at (0,0) of the layout grid, it's at (minX..maxX).
+      // The visual center of content is at ((minX+maxX)/2 * unitSize, (minY+maxY)/2 * unitSize).
+      // Let's call this contentCenterOffset.
+      const centerX = (bounds.minX + bounds.maxX) / 2 * unitSize
+      const centerY = (bounds.minY + bounds.maxY) / 2 * unitSize
+      
+      // The effective pan position relative to content center is (nextX + centerX).
+      // We want to clamp (nextX + centerX).
+      const effectiveX = nextX + centerX
+      const effectiveY = nextY + centerY
+      
+      // X Axis Clamping
+      if (contentW > containerW) {
+        const limitX = (contentW - containerW) / 2
+        // Clamp effectiveX between -limitX and limitX
+        if (effectiveX > limitX) nextX = limitX - centerX
+        if (effectiveX < -limitX) nextX = -limitX - centerX
+      } else {
+        // Lock to center if smaller
+        nextX = -centerX
+      }
+      
+      // Y Axis Clamping
+      if (contentH > containerH) {
+        const limitY = (contentH - containerH) / 2
+        if (effectiveY > limitY) nextY = limitY - centerY
+        if (effectiveY < -limitY) nextY = -limitY - centerY
+      } else {
+        nextY = -centerY
+      }
+      
+      return { x: nextX, y: nextY }
+    })
   }
 
   const handleMouseUp = () => {
@@ -312,19 +368,12 @@ export default function TerritoryMap({
 
   // Recalculate grid styles for Absolute Positioning
   // Micro-grid settings:
-  // We reduce baseSize significantly because each "unit" is now tiny (2 chars).
-  // At zoom 1.0, 1 unit = 10px?
   const baseSize = Math.max(2, zoomLevel * 10) // 10px at zoom 1.0
-  const gap = 0 // No gap in micro-grid to allow seamless merging visually? Or tiny gap.
-  // Actually we need tiny gap for visual separation if we want blocks.
-  // But user said "no large white space".
-  // Let's keep a tiny 1px gap but scaled.
   const visualGap = Math.max(0.5, zoomLevel * 1) 
   const unitSize = baseSize + visualGap
 
   const baseColor = type === 'WHY' ? 'bg-green-500' : 'bg-red-500'
   const borderColor = type === 'WHY' ? 'border-green-100' : 'border-red-100'
-  const emptyPatternColor = type === 'WHY' ? '#f0fdf4' : '#fef2f2' // green-50 / red-50
 
   // Fixed font size scaling only with zoom
   // Base 12px at zoom 1.0
@@ -345,7 +394,14 @@ export default function TerritoryMap({
           className="w-24 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-gray-600"
         />
         <button 
-          onClick={() => setPan({x:0, y:0})} // Reset View
+          onClick={() => {
+            // Reset to Auto-Fit
+            // Triggering a re-calc by temporarily clearing layout? No, just replicate auto-fit logic or simple center.
+            // Simple center for now
+            const centerX = (bounds.minX + bounds.maxX) / 2 * unitSize
+            const centerY = (bounds.minY + bounds.maxY) / 2 * unitSize
+            setPan({ x: -centerX, y: -centerY })
+          }} 
           className="text-xs text-blue-500 hover:text-blue-700 ml-2"
           title="Center Map"
         >
@@ -353,29 +409,44 @@ export default function TerritoryMap({
         </button>
       </div>
 
-      {/* The Infinite Canvas */}
+      {/* The Infinite Canvas (Now Bounded Visuals) */}
       <div 
         ref={containerRef}
-        className="w-full h-full relative"
+        className="w-full h-full relative bg-gray-100" // Gray background for "Void"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
         style={{
-          backgroundColor: '#fff',
-          // Micro-grid is too small to show grid lines, just white background
-          backgroundImage: 'none',
           cursor: isDragging ? 'grabbing' : 'grab'
         }}
       >
         <div 
-          className="absolute top-1/2 left-1/2 will-change-transform"
+          className="absolute top-1/2 left-1/2 will-change-transform bg-white shadow-2xl" // White background for "Map"
           style={{
-            transform: `translate(${pan.x}px, ${pan.y}px)`, // No scale here, size is handled by unitSize
+            transform: `translate(${pan.x}px, ${pan.y}px)`, 
+            // Explicitly size the content wrapper to match layout bounds
+            // We need to offset the "origin" because pan is relative to (0,0)
+            // But our layout starts at minX. 
+            // Actually, we can just use the map rendering logic below, 
+            // but adding a visual background requires knowing the exact rect.
+            left: 0, top: 0, // Reset these, rely on transform
             width: 0, height: 0, // Wrapper is just an anchor
             overflow: 'visible'
           }}
         >
+          {/* Visual Background for the Map Area */}
+          <div 
+            className="absolute bg-white shadow-xl"
+            style={{
+              left: bounds.minX * unitSize,
+              top: bounds.minY * unitSize,
+              width: (bounds.maxX - bounds.minX) * unitSize,
+              height: (bounds.maxY - bounds.minY) * unitSize,
+              zIndex: -1
+            }}
+          />
+
           {Array.from(layout.entries()).map(([id, pos]) => {
             const opinion = opinions.find(o => o.id === id)!
             const opacity = getOpacity(opinion.createdAt)
