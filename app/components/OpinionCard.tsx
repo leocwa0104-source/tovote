@@ -53,10 +53,20 @@ interface OpinionCardProps {
   type: 'WHY' | 'WHY_NOT'
   currentUser: { id: string } | null
   isPrivateTopic?: boolean
+  onSuccess?: () => void
+  initialIsEditing?: boolean
 }
 
-export default function OpinionCard({ opinion, factionId, type, currentUser, isPrivateTopic }: OpinionCardProps) {
-  const [isEditing, setIsEditing] = useState(false)
+export default function OpinionCard({ 
+  opinion, 
+  factionId, 
+  type, 
+  currentUser, 
+  isPrivateTopic,
+  onSuccess,
+  initialIsEditing = false
+}: OpinionCardProps) {
+  const [isEditing, setIsEditing] = useState(initialIsEditing)
   const [isExpanded, setIsExpanded] = useState(false)
   const [loading, setLoading] = useState(false)
   const [selectedCitation, setSelectedCitation] = useState<CitationTarget | null>(null)
@@ -69,6 +79,7 @@ export default function OpinionCard({ opinion, factionId, type, currentUser, isP
     try {
       await createOpinion(formData)
       setIsEditing(false)
+      onSuccess?.()
     } catch (error) {
       console.error(error)
       alert('Failed to save opinion')
@@ -84,6 +95,7 @@ export default function OpinionCard({ opinion, factionId, type, currentUser, isP
     setLoading(true)
     try {
       await deleteOpinion(opinion.id)
+      onSuccess?.()
     } catch (error) {
       console.error(error)
       alert('Failed to delete opinion')

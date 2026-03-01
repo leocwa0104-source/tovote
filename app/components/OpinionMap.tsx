@@ -25,9 +25,20 @@ export default function OpinionMap({ opinions, selectedId, onSelect }: OpinionMa
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 })
   const [isDragging, setIsDragging] = useState(false)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
   const dragStart = useRef<{ x: number, y: number } | null>(null)
 
   useEffect(() => {
+    if (selectedId && selectedId !== expandedId) {
+       // If selectedId is controlled from outside (e.g. initial load), sync it
+       // But we prioritize internal interaction
+    }
+  }, [selectedId])
+
+  // Reset expanded state when opinions change significantly (e.g. tab switch)
+  useEffect(() => {
+    setExpandedId(null)
+  }, [opinions])
     if (!containerRef.current) return
     
     const updateDimensions = () => {
@@ -67,8 +78,28 @@ export default function OpinionMap({ opinions, selectedId, onSelect }: OpinionMa
   // Helper to clamp values
   const clamp = (val: number, min: number, max: number) => Math.min(Math.max(val, min), max)
 
+  // Fix: Prevent default browser zooming/scrolling when interacting with the map
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    const preventDefault = (e: WheelEvent) => {
+      e.preventDefault()
+    }
+
+    // Passive: false is crucial for preventing wheel default behavior in some browsers
+    container.addEventListener('wheel', preventDefault, { passive: false })
+
+    return () => {
+      container.removeEventListener('wheel', preventDefault)
+    }
+  }, [])
+
   const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault()
+    // Event is already prevented by the native listener above, 
+    // but we keep this for React's synthetic event system consistency if needed
+    // or just rely on the logic here.
+    // We need to stop propagation to prevent parent scrolling if any.
     e.stopPropagation()
 
     const zoomSensitivity = 0.001
@@ -168,6 +199,16 @@ export default function OpinionMap({ opinions, selectedId, onSelect }: OpinionMa
     dragStart.current = null
   }
 
+  const handleBlockSelect = (id: string) => {
+    setExpandedId(id)
+    onSelect(id)
+  }
+
+  const expandedNode = useMemo(() => {
+    if (!expandedId) return null
+    return layout.find(n => n.id === expandedId)
+  }, [expandedId, layout])
+
   return (
     <div 
       ref={containerRef} 
@@ -198,7 +239,7 @@ export default function OpinionMap({ opinions, selectedId, onSelect }: OpinionMa
               key={node.id}
               node={node}
               isActive={selectedId === node.id}
-              onSelect={onSelect}
+              onSelect={handleBlockSelect}
               scale={transform.scale}
             />
           ))}
@@ -206,11 +247,71 @@ export default function OpinionMap({ opinions, selectedId, onSelect }: OpinionMa
       )}
       
       {/* HUD / Controls */}
-      <div className="absolute bottom-4 right-4 flex flex-col gap-2 pointer-events-none">
+      <div className="absolute bottom-4 right-4 flex flex-col gap-2 pointer-events-none z-10">
          <div className="bg-black/70 text-white text-[10px] px-2 py-1 rounded backdrop-blur-sm">
            {Math.round(transform.scale * 100)}%
          </div>
       </div>
+
+      {/* Expanded Overlay */}
+      {expandedNode && (
+        <div 
+          className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[1px] cursor-default p-4"
+          onClick={(e) => {
+            e.stopPropagation()
+            setExpandedId(null)
+            onSelect('') // Clear selection
+          }}
+        >
+          <div 
+            className={`relative w-full max-w-lg bg-white shadow-2xl overflow-hidden flex flex-col max-h-[90%] border-l-4 ${
+              expandedNode.data.type === 'WHY' ? 'border-green-500' : 'border-red-500'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+             {/* Header */}
+             <div className="flex justify-between items-start p-6 pb-2">
+                <div className="flex items-center gap-2">
+                   <div className={`w-2 h-2 rounded-full ${expandedNode.data.type === 'WHY' ? 'bg-green-500' : 'bg-red-500'}`} />
+                   <span className="font-mono text-sm text-gray-500">@{expandedNode.data.author.username}</span>
+                </div>
+                <button 
+                  onClick={() => {
+                    setExpandedId(null)
+                    onSelect('')
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+             </div>
+
+             {/* Content */}
+             <div className="p-6 pt-2 overflow-y-auto">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 leading-snug">
+                  {expandedNode.data.summary}
+                </h3>
+                {expandedNode.data.detail ? (
+                  <div className="prose prose-sm text-gray-600 whitespace-pre-wrap">
+                    {expandedNode.data.detail.replace(/@\[[^:]+: (.*?)\]/g, '@$1')}
+                  </div>
+                ) : (
+                  <p className="text-gray-400 italic text-sm">No additional details provided.</p>
+                )}
+             </div>
+             
+             {/* Footer */}
+             <div className="bg-gray-50 p-3 text-xs text-gray-400 border-t border-gray-100 flex justify-between items-center">
+                <span>ID: {expandedNode.id.slice(0, 8)}</span>
+                <span className="uppercase tracking-wider font-bold opacity-50">
+                  {expandedNode.data.type === 'WHY' ? 'Supporting' : 'Opposing'}
+                </span>
+             </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
