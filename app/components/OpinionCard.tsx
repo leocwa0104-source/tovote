@@ -57,6 +57,7 @@ interface OpinionCardProps {
 
 export default function OpinionCard({ opinion, factionId, type, currentUser, isPrivateTopic }: OpinionCardProps) {
   const [isEditing, setIsEditing] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
   const [loading, setLoading] = useState(false)
   const [selectedCitation, setSelectedCitation] = useState<CitationTarget | null>(null)
   const [mentionedCitations, setMentionedCitations] = useState<CitationTarget[]>([])
@@ -269,9 +270,30 @@ export default function OpinionCard({ opinion, factionId, type, currentUser, isP
           {/* Detail Section */}
           {opinion.detail && (
             <div className="mt-1.5 pl-0">
-              <div className="text-sm text-gray-600 whitespace-pre-wrap break-words leading-relaxed font-light">
-                {renderDetailWithCitations(opinion.detail, opinion.citations)}
-              </div>
+              {isExpanded ? (
+                <div className="text-sm text-gray-600 whitespace-pre-wrap break-words leading-relaxed font-light">
+                  {renderDetailWithCitations(opinion.detail, opinion.citations)}
+                  <button 
+                    onClick={() => setIsExpanded(false)}
+                    className="inline-flex items-center justify-center w-full mt-2 text-gray-300 hover:text-gray-500 py-1 transition-colors"
+                    title="Collapse"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="18 15 12 9 6 15"></polyline>
+                    </svg>
+                  </button>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => setIsExpanded(true)}
+                  className="inline-flex items-center gap-1 text-xs text-gray-300 hover:text-gray-500 mt-1 transition-colors"
+                  title="Expand"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
+              )}
             </div>
           )}
         </div>

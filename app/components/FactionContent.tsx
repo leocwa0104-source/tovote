@@ -1,9 +1,7 @@
-'use client'
-
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import OpinionCard from './OpinionCard'
-import TerritoryMap from './TerritoryMap'
+import OpinionMap from './OpinionMap'
 
 interface CitationTarget {
   id: string
@@ -76,21 +74,29 @@ export default function FactionContent({
   isPrivateTopic
 }: FactionContentProps) {
   const [activeTab, setActiveTab] = useState<'WHY' | 'WHY_NOT'>('WHY')
+  const [selectedOpinionId, setSelectedOpinionId] = useState<string | null>(null)
 
   // Filter opinions based on activeTab
   const currentOpinions = faction.opinions.filter((o: Opinion) => o.type === activeTab)
   
-  // Sort opinions: User's own opinion first (if exists), then by date (newest first)
   const userOpinion = user ? currentOpinions.find((o: Opinion) => o.authorId === user.id) : undefined
-  const otherOpinions = currentOpinions
-    .filter((o: Opinion) => !user || o.authorId !== user.id)
-    .sort((a: Opinion, b: Opinion) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+  // Auto-select user's opinion initially if exists, but only once
+  useEffect(() => {
+    if (userOpinion) {
+      // Only set if nothing selected yet
+      setSelectedOpinionId(prev => prev === null ? userOpinion.id : prev)
+    }
+  }, [userOpinion?.id, activeTab]) // Re-run when tab changes
+
+  const selectedOpinion = selectedOpinionId 
+    ? currentOpinions.find(o => o.id === selectedOpinionId) 
+    : undefined
 
   const tabColor = activeTab === 'WHY' ? 'text-green-700' : 'text-red-700'
-  const tabBgColor = activeTab === 'WHY' ? 'bg-green-500' : 'bg-red-500'
 
   return (
-    <div className="w-full bg-white h-full flex flex-col">
+    <div className="w-full bg-white h-full flex flex-col overflow-hidden">
       {/* Unified Header Section */}
       <div className="bg-white text-gray-900 px-6 pt-4 pb-0 relative flex-shrink-0 border-b border-gray-100 z-10">
         
@@ -103,10 +109,15 @@ export default function FactionContent({
           )}
 
           {/* Tab Navigation - Compact Toggle */}
-          <div className="flex justify-start mt-2 mb-4 border-b border-transparent">
+          <div className="flex justify-between items-end mb-4">
             <div 
-              className={`relative flex items-center rounded-full p-0.5 cursor-pointer w-20 h-6 select-none transition-colors duration-300 ${tabBgColor}`}
-              onClick={() => setActiveTab(activeTab === 'WHY' ? 'WHY_NOT' : 'WHY')}
+              className={`relative flex items-center rounded-full p-0.5 cursor-pointer w-20 h-6 select-none transition-colors duration-300 ${
+                activeTab === 'WHY' ? 'bg-green-500' : 'bg-red-500'
+              }`}
+              onClick={() => {
+                setActiveTab(activeTab === 'WHY' ? 'WHY_NOT' : 'WHY')
+                setSelectedOpinionId(null) // Reset selection on tab switch
+              }}
             >
               {/* Text Labels Layer */}
               <div className="absolute inset-0 flex items-center justify-between px-2">
@@ -127,66 +138,92 @@ export default function FactionContent({
                 }`}
               ></div>
             </div>
+            
+            <div className="text-xs text-gray-400 font-mono">
+              {currentOpinions.length} territories
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Dynamic Content Area */}
-      <div className="flex-grow flex flex-col overflow-hidden relative">
-        
-        {/* Creation Area (Only if user hasn't posted) */}
-        {user && !userOpinion && (
-          <div className="flex-shrink-0 px-6 pt-6 pb-2 bg-gradient-to-b from-white via-white/95 to-transparent z-10">
-             <div className="max-w-4xl mx-auto">
-                <h3 className={`text-xs font-bold uppercase tracking-widest mb-4 ${tabColor} opacity-70 flex items-center gap-2`}>
-                  Claim Territory
-                  <span className="h-px flex-grow bg-current opacity-20"></span>
-                </h3>
-                
+      {/* Map Area - Takes available space */}
+      <div className="flex-grow relative bg-gray-50 overflow-y-auto flex flex-col">
+        <div className="min-h-full w-full flex items-center justify-center p-4">
+           <OpinionMap 
+             opinions={currentOpinions}
+             selectedId={selectedOpinionId || undefined}
+             onSelect={setSelectedOpinionId}
+           />
+        </div>
+      </div>
+
+      {/* Detail / Action Panel - Fixed at bottom */}
+      <div className="flex-shrink-0 border-t border-gray-200 bg-white p-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-20 max-h-[40vh] overflow-y-auto">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className={`text-xs font-bold uppercase tracking-widest ${tabColor} opacity-70 flex items-center gap-2`}>
+              {selectedOpinion ? (
+                userOpinion?.id === selectedOpinion.id ? 'Your Territory' : 'Territory Detail'
+              ) : (
+                userOpinion ? 'Select a Territory' : 'Claim Territory'
+              )}
+              <span className="h-px w-12 bg-current opacity-20"></span>
+            </h3>
+            
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              {selectedOpinionId && (
+                 <button 
+                   onClick={() => setSelectedOpinionId(null)}
+                   className="text-xs text-gray-400 hover:text-gray-600 underline"
+                 >
+                   Close
+                 </button>
+              )}
+            </div>
+          </div>
+
+          {selectedOpinion ? (
+            <OpinionCard 
+              key={selectedOpinion.id}
+              opinion={selectedOpinion}
+              factionId={faction.id}
+              type={activeTab}
+              currentUser={user}
+              isPrivateTopic={isPrivateTopic}
+            />
+          ) : (
+            user ? (
+              !userOpinion ? (
                 <OpinionCard 
-                  key={`new-${activeTab}`} 
+                  key="new"
                   opinion={undefined}
                   factionId={faction.id}
                   type={activeTab}
                   currentUser={user}
                   isPrivateTopic={isPrivateTopic}
                 />
-             </div>
-          </div>
-        )}
-
-        {/* Territory Map (Includes user's opinion if it exists) */}
-        <div className="flex-grow overflow-hidden relative px-2">
-            <div className="h-full max-w-4xl mx-auto flex flex-col">
-              <h3 className={`text-xs font-bold uppercase tracking-widest mb-2 px-4 ${tabColor} opacity-70 flex items-center gap-2 mt-4`}>
-                Territory Map ({currentOpinions.length})
-                <span className="h-px flex-grow bg-current opacity-20"></span>
-              </h3>
-              
-              <div className="flex-grow overflow-hidden relative rounded-lg border border-gray-100 bg-gray-50/30">
-                 <TerritoryMap 
-                    opinions={currentOpinions} // Pass ALL opinions, including user's
-                    type={activeTab}
-                    factionId={faction.id}
-                    currentUser={user}
-                    isPrivateTopic={isPrivateTopic}
-                    className="h-full w-full"
-                 />
-              </div>
-            </div>
-        </div>
-        
-        {/* Login Prompt (if not logged in) */}
-        {!user && (
-           <div className="px-6 py-4 text-center">
-              <div className="bg-white/50 p-4 rounded-lg border border-dashed border-gray-300 inline-block">
-                <p className="text-gray-500 mb-2 text-xs">Sign in to claim your territory</p>
-                <Link href="/login" className="text-blue-600 font-bold hover:underline text-sm">
+              ) : (
+                <div className="text-center py-4 text-gray-500 text-sm">
+                  <p className="mb-2">You have already claimed a territory in this faction.</p>
+                  <button 
+                    onClick={() => setSelectedOpinionId(userOpinion.id)}
+                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded text-gray-700 font-medium transition-colors"
+                  >
+                    View Your Territory
+                  </button>
+                </div>
+              )
+            ) : (
+              <div className="text-center py-8 bg-gray-50 rounded border border-dashed border-gray-200">
+                <p className="text-gray-500 mb-2">Sign in to claim your territory on the map</p>
+                <Link href="/login" className="text-blue-600 font-bold hover:underline">
                   Login / Register
                 </Link>
               </div>
-           </div>
-        )}
+            )
+          )}
+        </div>
       </div>
     </div>
   )
