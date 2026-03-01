@@ -80,6 +80,7 @@ export default function FactionContent({
   
   const [selectedOpinionId, setSelectedOpinionId] = useState<string | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [modalStack, setModalStack] = useState<Opinion[]>([])
   
   const userOpinion = user ? currentOpinions.find((o: Opinion) => o.authorId === user.id) : undefined
 
@@ -89,8 +90,59 @@ export default function FactionContent({
   //     setSelectedOpinionId(prev => prev === null ? userOpinion.id : prev)
   //   }
   // }, [userOpinion?.id]) 
+  
+  // Sync selectedOpinionId with modalStack
+  useEffect(() => {
+    if (selectedOpinionId) {
+        // If the selectedOpinionId is already in the stack (e.g. at index 0), do nothing
+        // This prevents resetting the stack when we just want to initialize it
+        // However, if we click a new block on the map, we want to reset the stack
+        
+        // Simple logic: if stack is empty or the first item is different, reset stack
+        if (modalStack.length === 0 || modalStack[0].id !== selectedOpinionId) {
+            const opinion = currentOpinions.find(o => o.id === selectedOpinionId)
+            if (opinion) {
+                setModalStack([opinion])
+            }
+        }
+    } else {
+        // Only clear if we explicitly set it to null (which happens in closeTopModal when stack empties)
+        if (modalStack.length > 0) {
+            setModalStack([])
+        }
+    }
+  }, [selectedOpinionId])
 
-  const viewingOpinion = selectedOpinionId ? currentOpinions.find(o => o.id === selectedOpinionId) : null 
+  // Helper to handle citation click
+  const handleCitationClick = (target: CitationTarget) => {
+    // Check if target is in currentOpinions
+    const existing = currentOpinions.find(o => o.id === target.id)
+    if (existing) {
+        setModalStack(prev => [...prev, existing])
+    } else {
+        // Construct a partial opinion object for display
+        // We need to cast it to Opinion or make OpinionDetailView accept a union
+        // For now, we cast it since CitationTarget has similar fields
+        const partialOpinion = {
+            ...target,
+            authorId: '', // placeholder
+            createdAt: new Date(),
+            citations: [],
+            citedBy: [],
+            factionId: '', // placeholder
+        } as unknown as Opinion // Force cast for now
+        setModalStack(prev => [...prev, partialOpinion])
+    }
+  }
+
+  const closeTopModal = () => {
+    if (modalStack.length <= 1) {
+      setModalStack([])
+      setSelectedOpinionId(null)
+    } else {
+      setModalStack(prev => prev.slice(0, -1))
+    }
+  } 
 
   return (
     <div className="w-full bg-white h-full flex flex-col overflow-hidden relative">
@@ -143,20 +195,25 @@ export default function FactionContent({
          />
       </div>
 
-      {/* View Detail Modal (Same style as Create Modal) */}
-      {viewingOpinion && !showCreateModal && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4">
+      {/* View Detail Modal (Stacked) */}
+      {modalStack.map((opinion, index) => (
+        <div 
+            key={opinion.id + index}
+            className="absolute inset-0 z-40 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4"
+            style={{ zIndex: 40 + index }} // Stack z-index
+        >
           <div className="bg-white rounded shadow-xl w-full max-w-lg h-[80%] max-h-[800px] flex flex-col overflow-hidden relative">
              
              <div className="p-6 h-full">
                <OpinionDetailView 
-                 opinion={viewingOpinion} 
-                 onClose={() => setSelectedOpinionId(null)}
+                 opinion={opinion} 
+                 onClose={closeTopModal}
+                 onCitationClick={(target: any) => handleCitationClick(target)}
                />
              </div>
           </div>
         </div>
-      )}
+      ))}
 
       {/* Create/Edit Modal */}
       {showCreateModal && (

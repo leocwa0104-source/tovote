@@ -16,15 +16,19 @@ interface OpinionDetailViewProps {
     citations?: {
         id: string
         target: {
+            id: string
             summary: string
+            detail: string | null
+            type: 'WHY' | 'WHY_NOT'
             author: { username: string }
         }
     }[]
   }
   onClose: () => void
+  onCitationClick?: (target: any) => void
 }
 
-export default function OpinionDetailView({ opinion, onClose }: OpinionDetailViewProps) {
+export default function OpinionDetailView({ opinion, onClose, onCitationClick }: OpinionDetailViewProps) {
   const [copied, setCopied] = useState(false)
 
   const handleCopyId = () => {
@@ -101,7 +105,11 @@ export default function OpinionDetailView({ opinion, onClose }: OpinionDetailVie
                     <h4 className="text-xs font-mono font-bold text-gray-400 uppercase tracking-wide mb-2">References</h4>
                     <div className="flex flex-col gap-2">
                         {opinion.citations.map(c => (
-                            <div key={c.id} className="text-xs bg-gray-50 p-2 rounded text-gray-600">
+                            <div 
+                                key={c.id} 
+                                className={`text-xs bg-gray-50 p-2 rounded text-gray-600 ${onCitationClick ? 'cursor-pointer hover:bg-gray-100' : ''}`}
+                                onClick={() => onCitationClick && onCitationClick(c.target)}
+                            >
                                 <span className="font-bold">@{c.target.author.username}</span>: {c.target.summary}
                             </div>
                         ))}
