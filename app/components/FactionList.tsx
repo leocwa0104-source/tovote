@@ -37,18 +37,27 @@ export default function FactionList({
     if (!normalizedQuery) return factions
 
     const keywords = normalizedQuery.split(/[\s,，.。;；]+/).filter(Boolean)
-    if (keywords.length === 0) return factions
+    // Filter out whitespace and punctuation for character matching
+    const chars = normalizedQuery.split('').filter(c => !/[\s,，.。;；]/.test(c))
+    
+    if (keywords.length === 0 && chars.length === 0) return factions
 
     return factions
       .map(faction => {
         const name = faction.name.toLowerCase()
         let matchCount = 0
-        // Exact match bonus (highest priority)
+        
+        // 1. Exact phrase match (highest priority)
         if (name.includes(normalizedQuery)) matchCount += 100
         
-        // Keyword match
+        // 2. Keyword match (medium priority)
         keywords.forEach(k => {
-          if (name.includes(k)) matchCount += 1
+          if (name.includes(k)) matchCount += 10
+        })
+
+        // 3. Character fuzzy match (low priority, but enables "一天三千元" -> "如何一天赚三千元")
+        chars.forEach(c => {
+          if (name.includes(c)) matchCount += 1
         })
         
         return { faction, matchCount }

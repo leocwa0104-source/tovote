@@ -33,18 +33,27 @@ export default function TopicNav({ topics, privateTopics = [], isAuthenticated }
     if (!normalizedQuery) return currentList
 
     const keywords = normalizedQuery.split(/[\s,，.。;；]+/).filter(Boolean)
-    if (keywords.length === 0) return currentList
+    // Filter out whitespace and punctuation for character matching
+    const chars = normalizedQuery.split('').filter(c => !/[\s,，.。;；]/.test(c))
+    
+    if (keywords.length === 0 && chars.length === 0) return currentList
 
     return currentList
       .map(topic => {
         const title = topic.title.toLowerCase()
         let matchCount = 0
-        // Exact match bonus (highest priority)
+        
+        // 1. Exact phrase match (highest priority)
         if (title.includes(normalizedQuery)) matchCount += 100
         
-        // Keyword match
+        // 2. Keyword match (medium priority)
         keywords.forEach(k => {
-          if (title.includes(k)) matchCount += 1
+          if (title.includes(k)) matchCount += 10
+        })
+
+        // 3. Character fuzzy match (low priority, but enables "一天三千元" -> "如何一天赚三千元")
+        chars.forEach(c => {
+          if (title.includes(c)) matchCount += 1
         })
         
         return { topic, matchCount }
