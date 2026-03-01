@@ -139,8 +139,24 @@ export async function checkTopicAccess(topicId: string) {
     if (!topic.isPrivate) return true
     
     const user = await getCurrentUser()
-    if (user && user.id === topic.creatorId) return true
+    
+    if (user) {
+      // 1. Creator always has access
+      if (user.id === topic.creatorId) return true
 
+      // 2. Members always have access
+      const membership = await prisma.membership.findUnique({
+        where: {
+          userId_topicId: {
+            userId: user.id,
+            topicId: topic.id
+          }
+        }
+      })
+      if (membership) return true
+    }
+
+    // 3. Fallback to cookie check (for anonymous users or temporary access)
     const cookieStore = await cookies()
     const cookieValue = cookieStore.get(`access_topic_${topicId}`)?.value
     
