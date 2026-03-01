@@ -35,7 +35,27 @@ export default function FactionList({
   const normalizedQuery = query.trim().toLowerCase()
   const filteredFactions = useMemo(() => {
     if (!normalizedQuery) return factions
-    return factions.filter((f) => f.name.toLowerCase().includes(normalizedQuery))
+
+    const keywords = normalizedQuery.split(/[\s,，.。;；]+/).filter(Boolean)
+    if (keywords.length === 0) return factions
+
+    return factions
+      .map(faction => {
+        const name = faction.name.toLowerCase()
+        let matchCount = 0
+        // Exact match bonus (highest priority)
+        if (name.includes(normalizedQuery)) matchCount += 100
+        
+        // Keyword match
+        keywords.forEach(k => {
+          if (name.includes(k)) matchCount += 1
+        })
+        
+        return { faction, matchCount }
+      })
+      .filter(item => item.matchCount > 0)
+      .sort((a, b) => b.matchCount - a.matchCount)
+      .map(item => item.faction)
   }, [factions, normalizedQuery])
   const hasExact = useMemo(() => {
     const nq = normalizedQuery

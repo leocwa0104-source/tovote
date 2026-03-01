@@ -31,7 +31,27 @@ export default function TopicNav({ topics, privateTopics = [], isAuthenticated }
   const normalizedQuery = query.trim().toLowerCase()
   const filteredTopics = useMemo(() => {
     if (!normalizedQuery) return currentList
-    return currentList.filter((t) => t.title.toLowerCase().includes(normalizedQuery))
+
+    const keywords = normalizedQuery.split(/[\s,，.。;；]+/).filter(Boolean)
+    if (keywords.length === 0) return currentList
+
+    return currentList
+      .map(topic => {
+        const title = topic.title.toLowerCase()
+        let matchCount = 0
+        // Exact match bonus (highest priority)
+        if (title.includes(normalizedQuery)) matchCount += 100
+        
+        // Keyword match
+        keywords.forEach(k => {
+          if (title.includes(k)) matchCount += 1
+        })
+        
+        return { topic, matchCount }
+      })
+      .filter(item => item.matchCount > 0)
+      .sort((a, b) => b.matchCount - a.matchCount)
+      .map(item => item.topic)
   }, [normalizedQuery, currentList])
   
   const hasExact = useMemo(() => {
