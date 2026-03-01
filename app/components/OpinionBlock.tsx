@@ -28,6 +28,11 @@ export default function OpinionBlock({ node, isActive, onSelect, scale }: Opinio
   const showSummary = minDim > 30
   const showDetail = minDim > 60 // Show detail preview sooner
 
+  // Dynamic font sizing
+  const headerFontSize = Math.max(9, Math.min(minDim / 20, 14))
+  const summaryFontSize = Math.max(10, Math.min(minDim / 10, 24))
+  const detailFontSize = Math.max(8, Math.min(minDim / 15, 12))
+
   return (
     <div
       className={`absolute cursor-pointer border border-white/10 overflow-hidden flex flex-col p-1 transition-colors duration-200 ${
@@ -50,8 +55,8 @@ export default function OpinionBlock({ node, isActive, onSelect, scale }: Opinio
         
         {/* Header: Avatar + Username */}
         {showAvatar && (
-          <div className="flex items-center gap-1 opacity-80 min-h-[12px] flex-shrink-0">
-            <span className="font-mono text-[9px] truncate leading-none">
+          <div className="flex items-center gap-1 opacity-80 min-h-[12px] flex-shrink-0" style={{ fontSize: headerFontSize }}>
+            <span className="font-mono truncate leading-none">
               @{opinion.author.username}
             </span>
           </div>
@@ -59,14 +64,20 @@ export default function OpinionBlock({ node, isActive, onSelect, scale }: Opinio
         
         {/* Summary (Headline) */}
         {showSummary && (
-          <div className="font-bold text-[10px] leading-tight break-words line-clamp-2 flex-shrink-0">
+          <div 
+            className="font-bold leading-tight break-words line-clamp-3 flex-shrink-0"
+            style={{ fontSize: summaryFontSize, lineHeight: 1.1 }}
+          >
             {opinion.summary}
           </div>
         )}
 
         {/* Detail Preview (First 20 chars) */}
         {showDetail && opinion.detail && (
-          <div className="text-[8px] opacity-70 leading-tight mt-0.5 break-words overflow-hidden line-clamp-3">
+          <div 
+            className="opacity-70 leading-tight mt-0.5 break-words overflow-hidden line-clamp-3"
+            style={{ fontSize: detailFontSize }}
+          >
             {opinion.detail.slice(0, 20)}
             {opinion.detail.length > 20 && '...'}
           </div>
