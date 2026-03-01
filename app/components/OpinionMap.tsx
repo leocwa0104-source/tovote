@@ -39,6 +39,8 @@ export default function OpinionMap({ opinions, selectedId, onSelect }: OpinionMa
   useEffect(() => {
     setExpandedId(null)
   }, [opinions])
+
+  useEffect(() => {
     if (!containerRef.current) return
     
     const updateDimensions = () => {
