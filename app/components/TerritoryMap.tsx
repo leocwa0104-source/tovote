@@ -54,18 +54,29 @@ interface TerritoryMapProps {
   className?: string
 }
 
-// Helper to calculate grid span based on content length (Linear)
-// We use a high-resolution micro-grid to allow precise area fitting
+// Helper to calculate grid span based on content length (Logarithmic)
+// Area scales with log of content length to compress extreme differences
+// while preserving relative order.
 const getGridSpan = (summary: string, detail: string | null) => {
   const totalLength = summary.length + (detail?.length || 0)
   
-  // Micro-grid capacity: extremely small to allow fine-grained sizing
-  // If baseSize is 20px (at zoom 1), 20x20 area fits about 4 chars?
-  // Let's say 1 unit = 2 chars capacity.
-  const CHARS_PER_UNIT = 2 
+  // Logarithmic mapping:
+  // We want a minimum size for visibility, and growth that slows down.
+  // Base size for very short comments (e.g. 10 chars)
+  // Max size for very long comments (e.g. 1000 chars) shouldn't be 100x larger.
   
-  // Minimum 1 unit
-  const unitsNeeded = Math.max(4, Math.ceil(totalLength / CHARS_PER_UNIT))
+  // Formula: Units = Base + Multiplier * log2(Length)
+  // log2(10) ~ 3.3
+  // log2(100) ~ 6.6
+  // log2(1000) ~ 10
+  // If we want 10 chars -> 4 units (2x2)
+  // 1000 chars -> 25 units (5x5)? Or more?
+  // Let's try Multiplier = 4.
+  // 10 chars -> 4 * 3.3 = 13 units
+  // 1000 chars -> 4 * 10 = 40 units (approx 3x size linear dim)
+  
+  // Let's use a micro-grid unit count directly.
+  const unitsNeeded = Math.ceil(Math.log2(Math.max(10, totalLength)) * 8)
   
   // Calculate dimensions to minimize waste
   // We prefer rects with aspect ratio between 1:1 and 3:1 (landscape or portrait)
@@ -76,7 +87,6 @@ const getGridSpan = (summary: string, detail: string | null) => {
   let bestRatioDiff = Math.abs((bestW / bestH) - 1.5) // Prefer 3:2 landscape slightly
 
   // Search range: narrow range around square root to keep it efficient
-  // But wide enough to find good rectangular fits
   const sqrt = Math.sqrt(unitsNeeded)
   const minSide = Math.floor(sqrt * 0.5)
   const maxSide = Math.ceil(sqrt * 2.0)
@@ -361,6 +371,7 @@ export default function TerritoryMap({
           {Array.from(layout.entries()).map(([id, pos]) => {
             const opinion = opinions.find(o => o.id === id)!
             const opacity = getOpacity(opinion.createdAt)
+            const detailPreview = opinion.detail ? opinion.detail.slice(0, 20) + (opinion.detail.length > 20 ? '...' : '') : ''
             
             return (
               <div
@@ -373,47 +384,42 @@ export default function TerritoryMap({
                   height: pos.h * unitSize - visualGap,
                   opacity: Math.max(0.2, opacity), // Minimum visibility
                   borderRadius: '0px', // Sharp edges for map feel
-                  // No padding to maximize text area
-                  padding: '1px' 
+                  // Small padding to prevent text hitting borders
+                  padding: '2px' 
                 }}
               >
-                {/* Content rendering based on LOD */}
-                <div className="flex-1 overflow-hidden w-full h-full">
-                  {zoomLevel < 0.8 ? (
-                     // LOD 1: Blocks only (color intensity already set by opacity)
-                     null
-                  ) : (
-                    <div className="w-full h-full flex flex-col">
-                      <div 
-                        className="font-bold text-gray-800 break-words whitespace-pre-wrap tracking-tighter w-full"
-                        style={{ 
-                          fontSize: `${fontSize}px`,
-                          lineHeight: '1.05', // Extremely tight line height
-                          wordBreak: 'break-all' // Force break anywhere to fill space
-                        }}
-                      >
-                        {opinion.summary}
-                      </div>
-                      
-                      {zoomLevel > 1.2 && opinion.detail && (
-                        <div 
-                          className="mt-0.5 text-gray-600 break-words whitespace-pre-wrap tracking-tighter w-full"
-                          style={{ 
-                            fontSize: `${Math.max(8, fontSize * 0.9)}px`, 
-                            lineHeight: '1.05',
-                            wordBreak: 'break-all'
-                          }}
-                        >
-                          {opinion.detail}
-                        </div>
-                      )}
-                      
-                      {/* Meta info only at high zoom */}
-                      {zoomLevel > 1.8 && (
-                        <div className="mt-auto pt-0.5 flex items-center justify-between text-[6px] text-gray-400 border-t border-black/5 w-full">
-                          <span className="truncate">@{opinion.author.username}</span>
-                        </div>
-                      )}
+                {/* Unified Content Structure */}
+                <div className="w-full h-full flex flex-col overflow-hidden">
+                  
+                  {/* Username Header */}
+                  <div 
+                    className="text-gray-500 font-mono truncate mb-0.5"
+                    style={{ fontSize: `${Math.max(6, fontSize * 0.6)}px` }}
+                  >
+                    @{opinion.author.username}
+                  </div>
+
+                  {/* Summary (Bold) */}
+                  <div 
+                    className="font-bold text-gray-800 break-words whitespace-pre-wrap leading-tight"
+                    style={{ 
+                      fontSize: `${fontSize}px`,
+                      // Limit lines if box is small? Or just let it overflow hidden?
+                      // Let's let overflow hide naturally.
+                    }}
+                  >
+                    {opinion.summary}
+                  </div>
+                  
+                  {/* Detail Preview (First 20 chars) */}
+                  {detailPreview && (
+                    <div 
+                      className="mt-0.5 text-gray-600 break-words whitespace-pre-wrap leading-tight"
+                      style={{ 
+                        fontSize: `${Math.max(8, fontSize * 0.9)}px`
+                      }}
+                    >
+                      {detailPreview}
                     </div>
                   )}
                 </div>
