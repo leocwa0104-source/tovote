@@ -58,15 +58,17 @@ interface TerritoryMapProps {
 const getGridSpan = (summary: string, detail: string | null) => {
   const totalLength = summary.length + (detail?.length || 0)
   
-  // Logarithmic scale for area
-  // < 50 chars -> 1x1
-  // < 200 chars -> 2x2
-  // < 500 chars -> 3x3
-  // > 500 chars -> 4x4
+  // Adjusted Logarithmic scale for tighter packing
+  // < 30 chars -> 1x1
+  // < 100 chars -> 2x1 (Wide) or 1x2 (Tall) - Randomize for variety? Let's stick to squareish for now
+  // < 300 chars -> 2x2
+  // < 800 chars -> 3x3
+  // > 800 chars -> 4x4
   
-  if (totalLength < 50) return { row: 1, col: 1 }
-  if (totalLength < 200) return { row: 2, col: 2 }
-  if (totalLength < 500) return { row: 3, col: 3 }
+  if (totalLength < 30) return { row: 1, col: 1 }
+  if (totalLength < 100) return { row: 1, col: 2 } // Make small-medium comments wide
+  if (totalLength < 300) return { row: 2, col: 2 }
+  if (totalLength < 800) return { row: 3, col: 3 }
   return { row: 4, col: 4 }
 }
 
@@ -262,6 +264,28 @@ export default function TerritoryMap({
   const borderColor = type === 'WHY' ? 'border-green-100' : 'border-red-100'
   const emptyPatternColor = type === 'WHY' ? '#f0fdf4' : '#fef2f2' // green-50 / red-50
 
+  // Calculate dynamic font size based on zoom and container size
+  // Base font size is 12px at zoom 1.0
+  // Scaled by zoomLevel, clamped between 8px and 24px
+  const getFontSize = (w: number, h: number, textLength: number) => {
+    // Estimate char capacity: (w * h * unitSize^2) / (fontSize^2)
+    // We want to fill the box.
+    // Let's try a simpler heuristic:
+    // Font scale factor based on block size vs text length
+    const area = w * h
+    const density = textLength / area 
+    
+    // High density (lot of text in small space) -> smaller font
+    // Low density (little text in big space) -> larger font
+    
+    let size = 14 // Base size
+    if (density < 20) size = 18 // Big text for short phrases
+    if (density > 50) size = 12 // Small text for paragraphs
+    if (density > 100) size = 10 // Tiny text for essays
+
+    return Math.max(8, Math.min(24, size * zoomLevel))
+  }
+
   return (
     <div className={`flex flex-col h-full relative group overflow-hidden select-none cursor-grab active:cursor-grabbing ${className}`}>
       {/* Zoom Slider Control */}
@@ -299,110 +323,73 @@ export default function TerritoryMap({
             linear-gradient(to right, ${emptyPatternColor} 1px, transparent 1px),
             linear-gradient(to bottom, ${emptyPatternColor} 1px, transparent 1px)
           `,
-          backgroundSize: '40px 40px',
+          backgroundSize: `${unitSize}px ${unitSize}px`,
+          backgroundPosition: `${pan.x + window.innerWidth/2}px ${pan.y + window.innerHeight/2}px`, // Center origin visually
+          cursor: isDragging ? 'grabbing' : 'grab'
         }}
       >
-        {/* Transform Layer */}
         <div 
-          className="absolute left-1/2 top-1/2 w-0 h-0"
+          className="absolute top-1/2 left-1/2 will-change-transform"
           style={{
-            transform: `translate(${pan.x}px, ${pan.y}px)`
+            transform: `translate(${pan.x}px, ${pan.y}px)`, // No scale here, size is handled by unitSize
+            width: 0, height: 0, // Wrapper is just an anchor
+            overflow: 'visible'
           }}
         >
-          {opinions.map(opinion => {
-            const pos = layout.get(opinion.id)
-            if (!pos) return null
-
-            const ageOpacity = getOpacity(opinion.createdAt)
-            const isUserOwn = currentUser && opinion.authorId === currentUser.id
+          {Array.from(layout.entries()).map(([id, pos]) => {
+            const opinion = opinions.find(o => o.id === id)!
+            const opacity = getOpacity(opinion.createdAt)
+            const fontSize = getFontSize(pos.w, pos.h, opinion.summary.length + (opinion.detail?.length || 0))
             
-            const showSummary = zoomLevel >= 0.8
-            const showDetail = zoomLevel >= 1.8
-            
-            const fontSize = Math.max(10, zoomLevel * 8) + 'px'
-
-            // Calculate absolute position
-            // Center the coordinate system: x * unitSize
-            const left = pos.x * unitSize
-            const top = pos.y * unitSize
-            const width = pos.w * unitSize - gap
-            const height = pos.h * unitSize - gap
-
             return (
-              <div 
-                key={opinion.id}
+              <div
+                key={id}
+                className={`absolute flex flex-col p-1 transition-all duration-300 ease-out border shadow-sm hover:shadow-md hover:z-10 ${baseColor} ${borderColor}`}
                 style={{
-                  position: 'absolute',
-                  left: `${left}px`,
-                  top: `${top}px`,
-                  width: `${width}px`,
-                  height: `${height}px`,
-                  opacity: !showSummary ? ageOpacity : 1,
-                  // Transition for smooth zoom/pan? Maybe too heavy for pan. 
-                  // Only transition dimensions and opacity.
-                  transition: 'width 0.2s, height 0.2s, left 0.2s, top 0.2s, opacity 0.3s'
+                  left: pos.x * unitSize,
+                  top: pos.y * unitSize,
+                  width: pos.w * unitSize - gap,
+                  height: pos.h * unitSize - gap,
+                  opacity: Math.max(0.2, opacity), // Minimum visibility
+                  borderRadius: Math.max(2, 4 * zoomLevel) + 'px'
                 }}
-                className={`
-                  bg-white shadow-sm overflow-hidden
-                  hover:z-10 hover:shadow-md hover:opacity-100
-                  ${!showSummary ? 'rounded-[1px]' : 'rounded-sm'}
-                  ${isUserOwn ? 'ring-2 ring-blue-500/50 z-10' : `border ${borderColor}`}
-                  ${!showSummary ? baseColor : ''}
-                  ${showDetail ? 'overflow-y-auto scrollbar-thin scrollbar-thumb-gray-100' : ''}
-                `}
-                // Prevent drag propagation when interacting with card content
-                onMouseDown={e => e.stopPropagation()} 
               >
-                {/* Content Rendering (Same as before) */}
-                {showSummary && (
-                  <div 
-                    className="absolute inset-0 pointer-events-none bg-white mix-blend-hard-light"
-                    style={{ opacity: 1 - ageOpacity }}
-                  />
-                )}
-
-                {!showSummary && (
-                   <div title={`${opinion.summary} (${new Date(opinion.createdAt).toLocaleDateString()})`} className="w-full h-full" />
-                )}
-
-                {showSummary && !showDetail && (
-                  <div className="h-full flex flex-col p-2 pointer-events-none"> {/* Disable pointer events for smooth drag */}
-                    <div className="flex items-center gap-1 mb-1 opacity-60">
-                      <div className="w-1.5 h-1.5 rounded-full bg-gray-300 flex-shrink-0" />
-                      <span className="font-mono truncate text-gray-500" style={{ fontSize: '0.7em' }}>
-                        {opinion.author.username}
-                      </span>
+                {/* Content rendering based on LOD */}
+                <div className="flex-1 overflow-hidden">
+                  {zoomLevel < 0.8 ? (
+                     // LOD 1: Blocks only (color intensity already set by opacity)
+                     null
+                  ) : (
+                    <div className="h-full flex flex-col">
+                      <div 
+                        className="font-bold leading-tight text-gray-800 break-words"
+                        style={{ fontSize: `${fontSize}px` }}
+                      >
+                        {opinion.summary}
+                      </div>
+                      
+                      {zoomLevel > 1.2 && opinion.detail && (
+                        <div 
+                          className="mt-1 text-gray-600 overflow-hidden text-ellipsis"
+                          style={{ fontSize: `${Math.max(8, fontSize * 0.85)}px` }}
+                        >
+                          {opinion.detail}
+                        </div>
+                      )}
+                      
+                      {/* Meta info only at high zoom */}
+                      {zoomLevel > 1.8 && (
+                        <div className="mt-auto pt-1 flex items-center justify-between text-[8px] text-gray-400 border-t border-black/5">
+                          <span>@{opinion.author.username}</span>
+                          <span>{new Date(opinion.createdAt).toLocaleDateString()}</span>
+                        </div>
+                      )}
                     </div>
-                    <p 
-                      className="font-medium leading-tight line-clamp-4 break-words text-gray-800"
-                      style={{ fontSize: fontSize }}
-                    >
-                      {opinion.summary}
-                    </p>
-                  </div>
-                )}
-
-                {showDetail && (
-                  <div className="h-full w-full">
-                    <OpinionCard
-                      opinion={opinion}
-                      factionId={factionId}
-                      type={type}
-                      currentUser={currentUser}
-                      isPrivateTopic={isPrivateTopic}
-                    />
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             )
           })}
-          
-          {opinions.length === 0 && (
-            <div className="absolute transform -translate-x-1/2 -translate-y-1/2 w-64 text-center text-gray-300 italic">
-              <span className="text-4xl mb-4 block opacity-20">{type === 'WHY' ? '🌱' : '🛡️'}</span>
-              <span>Unclaimed Territory</span>
-            </div>
-          )}
         </div>
       </div>
     </div>
