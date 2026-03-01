@@ -98,12 +98,27 @@ export default function TerritoryMap({
   isPrivateTopic,
   className = ''
 }: TerritoryMapProps) {
-  // Zoom Level: 0 (Macro), 1 (Meso), 2 (Micro)
-  // Default to 1 (Readable summaries)
-  const [zoomLevel, setZoomLevel] = useState<0 | 1 | 2>(1)
+  // Continuous Zoom: 0.5 (Macro) to 3.0 (Micro)
+  // Adaptive Density: Initial zoom depends on opinion count
+  // < 5 opinions -> start at 2.5 (Large)
+  // < 20 opinions -> start at 1.5 (Medium)
+  // > 20 opinions -> start at 1.0 (Small)
+  const initialZoom = useMemo(() => {
+    const count = opinions.length
+    if (count < 5) return 2.5
+    if (count < 20) return 1.5
+    return 1.0
+  }, [opinions.length])
+
+  const [zoomLevel, setZoomLevel] = useState<number>(initialZoom)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // Handle wheel zoom with Ctrl key
+  // Update zoom if initialZoom changes drastically (e.g. first load)
+  useEffect(() => {
+    setZoomLevel(initialZoom)
+  }, [initialZoom])
+
+  // Handle wheel zoom with Ctrl key (Continuous)
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
@@ -111,13 +126,11 @@ export default function TerritoryMap({
     const handleWheel = (e: WheelEvent) => {
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault()
-        if (e.deltaY < 0) {
-          // Zoom In
-          setZoomLevel(prev => Math.min(prev + 1, 2) as 0 | 1 | 2)
-        } else {
-          // Zoom Out
-          setZoomLevel(prev => Math.max(prev - 1, 0) as 0 | 1 | 2)
-        }
+        const delta = e.deltaY * -0.002 // Sensitivity
+        setZoomLevel(prev => {
+          const next = prev + delta
+          return Math.min(Math.max(next, 0.5), 3.0)
+        })
       }
     }
 
@@ -125,161 +138,151 @@ export default function TerritoryMap({
     return () => container.removeEventListener('wheel', handleWheel)
   }, [])
 
-  const zoomIn = () => setZoomLevel(prev => Math.min(prev + 1, 2) as 0 | 1 | 2)
-  const zoomOut = () => setZoomLevel(prev => Math.max(prev - 1, 0) as 0 | 1 | 2)
+  const handleZoomChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setZoomLevel(parseFloat(e.target.value))
+  }
 
-  // Grid configuration based on Zoom Level
-  const gridConfig = useMemo(() => {
-    switch (zoomLevel) {
-      case 0: // Macro: Tiny blocks, dense
-        return {
-          className: 'grid-cols-[repeat(auto-fill,minmax(20px,1fr))] gap-0.5',
-          cellPadding: 'p-0',
-          showText: false
-        }
-      case 1: // Meso: Cards with summary
-        return {
-          className: 'grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2',
-          cellPadding: 'p-2',
-          showText: true
-        }
-      case 2: // Micro: Full detail
-        return {
-          className: 'grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4',
-          cellPadding: 'p-0', // OpinionCard has its own padding
-          showText: true
-        }
+  // Calculate dynamic grid properties based on zoomLevel
+  const gridStyle = useMemo(() => {
+    // Base unit size varies linearly with zoom
+    // Zoom 0.5 -> 20px
+    // Zoom 1.0 -> 100px
+    // Zoom 3.0 -> 300px
+    const baseSize = Math.max(20, zoomLevel * 100)
+    
+    return {
+      gridTemplateColumns: `repeat(auto-fill, minmax(${baseSize}px, 1fr))`,
+      gap: `${Math.max(2, zoomLevel * 4)}px`,
+      // Center grid when content is sparse
+      justifyContent: 'center',
+      alignContent: 'start'
     }
   }, [zoomLevel])
 
   const baseColor = type === 'WHY' ? 'bg-green-500' : 'bg-red-500'
   const borderColor = type === 'WHY' ? 'border-green-100' : 'border-red-100'
+  const emptyPatternColor = type === 'WHY' ? '#f0fdf4' : '#fef2f2' // green-50 / red-50
 
   return (
     <div className={`flex flex-col h-full relative group ${className}`}>
-      {/* Map Controls (Visible on hover) */}
-      <div className="absolute top-2 right-2 z-20 flex flex-col gap-1 bg-white/90 backdrop-blur shadow-sm rounded border border-gray-200 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-        <button 
-          onClick={zoomIn} 
-          disabled={zoomLevel === 2}
-          className="w-6 h-6 flex items-center justify-center hover:bg-gray-100 text-gray-600 disabled:opacity-30" 
-          title="Zoom In (Ctrl+Wheel)"
-        >
-          +
-        </button>
-        <div className="h-px bg-gray-200 w-full"></div>
-        <button 
-          onClick={zoomOut} 
-          disabled={zoomLevel === 0}
-          className="w-6 h-6 flex items-center justify-center hover:bg-gray-100 text-gray-600 disabled:opacity-30" 
-          title="Zoom Out (Ctrl+Wheel)"
-        >
-          -
-        </button>
+      {/* Zoom Slider Control (Visible on hover) */}
+      <div className="absolute top-2 right-2 z-20 flex items-center gap-2 bg-white/90 backdrop-blur shadow-sm rounded-full border border-gray-200 px-3 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <span className="text-[10px] text-gray-500 font-mono">Zoom</span>
+        <input 
+          type="range" 
+          min="0.5" 
+          max="3.0" 
+          step="0.1" 
+          value={zoomLevel} 
+          onChange={handleZoomChange}
+          className="w-24 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-gray-600"
+        />
       </div>
 
       {/* The Map Grid */}
       <div 
         ref={containerRef}
-        className={`
-          flex-grow overflow-y-auto p-4 transition-all duration-500 ease-in-out
-          grid ${gridConfig.className} grid-flow-dense auto-rows-min content-start
-        `}
+        className="flex-grow overflow-y-auto p-4 transition-all duration-300 ease-out scrollbar-thin scrollbar-thumb-gray-200"
+        style={{
+          // Background Texture for "Empty Territory" feel
+          backgroundImage: `
+            linear-gradient(to right, ${emptyPatternColor} 1px, transparent 1px),
+            linear-gradient(to bottom, ${emptyPatternColor} 1px, transparent 1px)
+          `,
+          backgroundSize: '40px 40px',
+          backgroundColor: '#fff' // Base white
+        }}
       >
-        {opinions.map(opinion => {
-          const span = getGridSpan(opinion.summary, opinion.detail)
-          const opacity = getOpacity(opinion.createdAt)
-          const isUserOwn = currentUser && opinion.authorId === currentUser.id
-          
-          // Dynamic Style
-          const style: React.CSSProperties = {
-            gridColumn: `span ${span.col}`,
-            gridRow: `span ${span.row}`,
-            opacity: zoomLevel === 0 ? opacity : 1, // Only use opacity for aging in Macro view? Or always?
-            // User asked for "Time -> Style (Simple/Minimalist)". 
-            // "Latest -> Solid, Old -> Faded".
-            // Let's apply opacity to the BORDER or TEXT in detailed views, 
-            // but for the block itself in macro view.
-          }
-          
-          // In detailed views (1 & 2), we might want to keep readability high, 
-          // so maybe apply opacity to the container background or border instead of the whole thing.
-          // But "Opacity = 1 - k * age" was agreed. Let's try applying it to the container.
-          // However, reading faded text is hard. 
-          // Let's keep opacity high for text, but fade the "presence" (border/shadow/bg).
-          
-          const ageOpacity = getOpacity(opinion.createdAt)
+        <div 
+          className="grid grid-flow-dense auto-rows-min w-full max-w-full"
+          style={gridStyle}
+        >
+          {opinions.map(opinion => {
+            const span = getGridSpan(opinion.summary, opinion.detail)
+            const ageOpacity = getOpacity(opinion.createdAt)
+            const isUserOwn = currentUser && opinion.authorId === currentUser.id
+            
+            // LOD Logic
+            // Level 0: Just Block (Zoom < 0.8)
+            // Level 1: Summary (Zoom 0.8 - 1.8)
+            // Level 2: Full Detail (Zoom > 1.8)
+            const showSummary = zoomLevel >= 0.8
+            const showDetail = zoomLevel >= 1.8
+            
+            // Dynamic Font Size based on Zoom
+            const fontSize = Math.max(10, zoomLevel * 8) + 'px'
 
-          return (
-            <div 
-              key={opinion.id}
-              style={{
-                ...style,
-                opacity: zoomLevel === 0 ? ageOpacity : 1 // In macro, fade the block. In detailed, keep it readable but maybe style borders.
-              }}
-              className={`
-                relative bg-white shadow-sm transition-all duration-300
-                hover:z-10 hover:scale-[1.02] hover:shadow-md hover:opacity-100
-                ${zoomLevel === 0 ? 'rounded-[1px]' : 'rounded-sm'}
-                ${isUserOwn ? 'ring-2 ring-blue-500/50 z-10' : `border ${borderColor}`}
-                ${zoomLevel === 0 ? baseColor : ''}
-                ${zoomLevel === 2 ? 'overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200' : 'overflow-hidden'}
-              `}
-            >
-              {/* Visual Aging Overlay for Zoom Level 1 & 2 */}
-              {zoomLevel > 0 && (
-                <div 
-                  className="absolute inset-0 pointer-events-none bg-white mix-blend-hard-light"
-                  style={{ opacity: 1 - ageOpacity }}
-                />
-              )}
-
-              {/* Content based on LOD */}
-              {zoomLevel === 0 && (
-                 // Just a colored block, opacity handles the age.
-                 // Maybe a tooltip?
-                 <div title={`${opinion.summary} (${new Date(opinion.createdAt).toLocaleDateString()})`} className="w-full h-full" />
-              )}
-
-              {zoomLevel === 1 && (
-                <div className={`h-full flex flex-col ${gridConfig.cellPadding}`}>
-                  <div className="flex items-center gap-1 mb-1 opacity-60">
-                    <div className="w-2 h-2 rounded-full bg-gray-300 flex-shrink-0" />
-                    <span className="text-[10px] font-mono truncate">{opinion.author.username}</span>
-                  </div>
-                  <p className="text-xs font-medium leading-tight line-clamp-4 break-words text-gray-800">
-                    {opinion.summary}
-                  </p>
-                  {/* Faded footer for very old posts? */}
+            return (
+              <div 
+                key={opinion.id}
+                style={{
+                  gridColumn: `span ${span.col}`,
+                  gridRow: `span ${span.row}`,
+                  opacity: !showSummary ? ageOpacity : 1, // Fade block in macro view
+                }}
+                className={`
+                  relative bg-white shadow-sm transition-all duration-300
+                  hover:z-10 hover:scale-[1.02] hover:shadow-md hover:opacity-100
+                  ${!showSummary ? 'rounded-[1px]' : 'rounded-sm'}
+                  ${isUserOwn ? 'ring-2 ring-blue-500/50 z-10' : `border ${borderColor}`}
+                  ${!showSummary ? baseColor : ''}
+                  ${showDetail ? 'overflow-y-auto scrollbar-thin scrollbar-thumb-gray-100' : 'overflow-hidden'}
+                `}
+              >
+                {/* Visual Aging Overlay */}
+                {showSummary && (
                   <div 
-                    className="mt-auto pt-1 text-[9px] text-gray-400 font-mono opacity-50"
-                  >
-                    {new Date(opinion.createdAt).toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' })}
-                  </div>
-                </div>
-              )}
-
-              {zoomLevel === 2 && (
-                <div className="h-full w-full">
-                  <OpinionCard
-                    opinion={opinion}
-                    factionId={factionId}
-                    type={type}
-                    currentUser={currentUser}
-                    isPrivateTopic={isPrivateTopic}
+                    className="absolute inset-0 pointer-events-none bg-white mix-blend-hard-light"
+                    style={{ opacity: 1 - ageOpacity }}
                   />
-                </div>
-              )}
+                )}
+
+                {/* Level 0: Macro Block */}
+                {!showSummary && (
+                   <div title={`${opinion.summary} (${new Date(opinion.createdAt).toLocaleDateString()})`} className="w-full h-full" />
+                )}
+
+                {/* Level 1: Summary Card */}
+                {showSummary && !showDetail && (
+                  <div className="h-full flex flex-col p-2">
+                    <div className="flex items-center gap-1 mb-1 opacity-60">
+                      <div className="w-1.5 h-1.5 rounded-full bg-gray-300 flex-shrink-0" />
+                      <span className="font-mono truncate text-gray-500" style={{ fontSize: '0.7em' }}>
+                        {opinion.author.username}
+                      </span>
+                    </div>
+                    <p 
+                      className="font-medium leading-tight line-clamp-4 break-words text-gray-800"
+                      style={{ fontSize: fontSize }}
+                    >
+                      {opinion.summary}
+                    </p>
+                  </div>
+                )}
+
+                {/* Level 2: Full Detail (OpinionCard) */}
+                {showDetail && (
+                  <div className="h-full w-full">
+                    <OpinionCard
+                      opinion={opinion}
+                      factionId={factionId}
+                      type={type}
+                      currentUser={currentUser}
+                      isPrivateTopic={isPrivateTopic}
+                    />
+                  </div>
+                )}
+              </div>
+            )
+          })}
+          
+          {opinions.length === 0 && (
+            <div className="col-span-full h-64 flex flex-col items-center justify-center text-gray-300 italic">
+              <span className="text-4xl mb-4 opacity-20">{type === 'WHY' ? '🌱' : '🛡️'}</span>
+              <span>Unclaimed Territory</span>
             </div>
-          )
-        })}
-        
-        {opinions.length === 0 && (
-          <div className="col-span-full h-32 flex flex-col items-center justify-center text-gray-300 italic border-2 border-dashed border-gray-100 rounded-lg m-4">
-            <span className="text-2xl mb-2 opacity-20">{type === 'WHY' ? '🌱' : '🛡️'}</span>
-            <span>Unclaimed Territory</span>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   )
