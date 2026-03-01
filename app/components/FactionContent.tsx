@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import OpinionCard from './OpinionCard'
+import TerritoryMap from './TerritoryMap'
 
 interface CitationTarget {
   id: string
@@ -80,18 +81,18 @@ export default function FactionContent({
   const currentOpinions = faction.opinions.filter((o: Opinion) => o.type === activeTab)
   
   // Sort opinions: User's own opinion first (if exists), then by date (newest first)
-  // Actually, let's separate user opinion from others for clarity as before
   const userOpinion = user ? currentOpinions.find((o: Opinion) => o.authorId === user.id) : undefined
   const otherOpinions = currentOpinions
     .filter((o: Opinion) => !user || o.authorId !== user.id)
     .sort((a: Opinion, b: Opinion) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
   const tabColor = activeTab === 'WHY' ? 'text-green-700' : 'text-red-700'
+  const tabBgColor = activeTab === 'WHY' ? 'bg-green-500' : 'bg-red-500'
 
   return (
     <div className="w-full bg-white h-full flex flex-col">
       {/* Unified Header Section */}
-      <div className="bg-white text-gray-900 px-6 pt-4 pb-0 relative flex-shrink-0 border-b border-gray-100">
+      <div className="bg-white text-gray-900 px-6 pt-4 pb-0 relative flex-shrink-0 border-b border-gray-100 z-10">
         
         <div className="relative z-10">
           
@@ -104,9 +105,7 @@ export default function FactionContent({
           {/* Tab Navigation - Compact Toggle */}
           <div className="flex justify-start mt-2 mb-4 border-b border-transparent">
             <div 
-              className={`relative flex items-center rounded-full p-0.5 cursor-pointer w-20 h-6 select-none transition-colors duration-300 ${
-                activeTab === 'WHY' ? 'bg-green-500' : 'bg-red-500'
-              }`}
+              className={`relative flex items-center rounded-full p-0.5 cursor-pointer w-20 h-6 select-none transition-colors duration-300 ${tabBgColor}`}
               onClick={() => setActiveTab(activeTab === 'WHY' ? 'WHY_NOT' : 'WHY')}
             >
               {/* Text Labels Layer */}
@@ -133,62 +132,54 @@ export default function FactionContent({
       </div>
 
       {/* Dynamic Content Area */}
-      <div className="flex-grow p-6 md:p-8 overflow-y-auto">
-        <div className="max-w-3xl mx-auto space-y-8">
-          {/* User's Opinion (Input or Edit) */}
-          <div>
-            <h3 className={`text-xs font-bold uppercase tracking-widest mb-4 ${tabColor} opacity-70 flex items-center gap-2`}>
-              {user ? 'Your Perspective' : 'Join the discussion'}
-              <span className="h-px flex-grow bg-current opacity-20"></span>
-            </h3>
-            
-            {user ? (
-               <OpinionCard 
-            key={`user-${activeTab}`} // Force re-render on tab switch
-            opinion={userOpinion}
-            factionId={faction.id}
-            type={activeTab}
-            currentUser={user}
-            isPrivateTopic={isPrivateTopic}
-          />
-            ) : (
-              <div className="bg-white/50 p-6 rounded-lg text-center border border-dashed border-gray-300">
-                <p className="text-gray-500 mb-2">Sign in to share your thoughts</p>
-                <Link href="/login" className="text-blue-600 font-bold hover:underline">
-                  Login / Register
-                </Link>
-              </div>
-            )}
-          </div>
-
-          {/* Community Opinions */}
-          <div>
-            <h3 className={`text-xs font-bold uppercase tracking-widest mb-4 ${tabColor} opacity-70 flex items-center gap-2`}>
-              Community Arguments ({otherOpinions.length})
-              <span className="h-px flex-grow bg-current opacity-20"></span>
-            </h3>
-            
-            <div className="space-y-0">
-              {otherOpinions.length > 0 ? (
-                otherOpinions.map((opinion: Opinion) => (
-                  <OpinionCard 
-            key={opinion.id}
-            opinion={opinion}
-            factionId={faction.id}
-            type={activeTab}
-            currentUser={user}
-            isPrivateTopic={isPrivateTopic}
-          />
-                ))
+      <div className="flex-grow flex flex-col overflow-hidden relative">
+        {/* User's Territory (Pinned) */}
+        <div className="flex-shrink-0 px-6 pt-6 pb-2 bg-gradient-to-b from-white via-white/95 to-transparent z-10">
+           <div className="max-w-4xl mx-auto">
+              <h3 className={`text-xs font-bold uppercase tracking-widest mb-4 ${tabColor} opacity-70 flex items-center gap-2`}>
+                {user ? 'Your Territory' : 'Claim Territory'}
+                <span className="h-px flex-grow bg-current opacity-20"></span>
+              </h3>
+              
+              {user ? (
+                 <OpinionCard 
+                  key={`user-${activeTab}`} // Force re-render on tab switch
+                  opinion={userOpinion}
+                  factionId={faction.id}
+                  type={activeTab}
+                  currentUser={user}
+                  isPrivateTopic={isPrivateTopic}
+                />
               ) : (
-                <div className="text-center py-12 text-gray-400 italic bg-white/50 rounded-xl border border-transparent">
-                  {activeTab === 'WHY' 
-                    ? 'No arguments for joining yet. Be the first!' 
-                    : 'No counter-arguments yet. Everything looks good?'}
+                <div className="bg-white/50 p-6 rounded-lg text-center border border-dashed border-gray-300">
+                  <p className="text-gray-500 mb-2">Sign in to share your thoughts</p>
+                  <Link href="/login" className="text-blue-600 font-bold hover:underline">
+                    Login / Register
+                  </Link>
                 </div>
               )}
+           </div>
+        </div>
+
+        {/* Community Territory Map */}
+        <div className="flex-grow overflow-hidden relative px-2">
+            <div className="h-full max-w-4xl mx-auto flex flex-col">
+              <h3 className={`text-xs font-bold uppercase tracking-widest mb-2 px-4 ${tabColor} opacity-70 flex items-center gap-2 mt-4`}>
+                Territory Map ({otherOpinions.length})
+                <span className="h-px flex-grow bg-current opacity-20"></span>
+              </h3>
+              
+              <div className="flex-grow overflow-hidden relative rounded-lg border border-gray-100 bg-gray-50/30">
+                 <TerritoryMap 
+                    opinions={otherOpinions}
+                    type={activeTab}
+                    factionId={faction.id}
+                    currentUser={user}
+                    isPrivateTopic={isPrivateTopic}
+                    className="h-full w-full"
+                 />
+              </div>
             </div>
-          </div>
         </div>
       </div>
     </div>
