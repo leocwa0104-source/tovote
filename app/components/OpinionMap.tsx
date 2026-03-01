@@ -72,7 +72,8 @@ export default function OpinionMap({ opinions, selectedId, onSelect, currentUser
     // Transform opinions to TreemapItems
     const items = opinions.map(o => ({
       id: o.id,
-      value: Math.max(20, o.summary.length + (o.detail?.length || 0) * 0.5), 
+      // Fixed value for uniform sizing (modified by structure/nesting)
+      value: 100, 
       data: o,
       neighborId: o.neighborId
     }))
@@ -124,35 +125,13 @@ export default function OpinionMap({ opinions, selectedId, onSelect, currentUser
     }
   }, [transform]) // Re-bind when transform changes to capture latest state
 
-  // Focus on a specific node (Zoom-to-Focus)
-  const focusNode = (node: TreemapNode) => {
-    if (!containerRef.current) return
+  // Focus on a specific node (Zoom-to-Focus) removed
+    // const focusNode = ... 
 
-    const containerWidth = containerRef.current.offsetWidth
-    const containerHeight = containerRef.current.offsetHeight
-    
-    // Calculate target scale to make the node fill about 60% of the screen
-    // or at least be readable
-    const nodeSize = Math.max(node.w, node.h)
-    // Ensure minimum scale is > 3 to trigger full content mode (see OpinionBlock.tsx)
-    // If calculated scale is < 3.1, force it to 3.1
-    const targetScale = Math.min(Math.max((Math.min(containerWidth, containerHeight) * 0.6) / nodeSize, 3.1), 8)
-    
-    // Calculate target position to center the node
-    // targetX = center - nodeX * scale - nodeW/2 * scale
-    const targetX = (containerWidth / 2) - (node.x + node.w / 2) * targetScale
-    const targetY = (containerHeight / 2) - (node.y + node.h / 2) * targetScale
-
-    setTransform({
-      x: targetX,
-      y: targetY,
-      scale: targetScale
-    })
-    
-    // Update expanded state for high-detail rendering
-    setExpandedId(node.data.id)
-    onSelect(node.data.id)
-  }
+    // Handle node click to select
+    const handleNodeClick = (node: TreemapNode) => {
+        onSelect(node.data.id)
+    }
 
   // Handle click on map background to reset view
   const handleBackgroundClick = () => {
@@ -262,7 +241,7 @@ export default function OpinionMap({ opinions, selectedId, onSelect, currentUser
             key={node.data.id}
             node={node}
             isActive={node.data.id === selectedId}
-            onSelect={() => focusNode(node)}
+            onSelect={() => handleNodeClick(node)}
             scale={transform.scale}
           />
         ))}

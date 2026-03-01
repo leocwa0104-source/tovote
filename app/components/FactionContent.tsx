@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import OpinionCard from './OpinionCard'
 import OpinionMap from './OpinionMap'
+import OpinionDetailView from './OpinionDetailView'
 
 interface CitationTarget {
   id: string
@@ -82,13 +83,14 @@ export default function FactionContent({
   
   const userOpinion = user ? currentOpinions.find((o: Opinion) => o.authorId === user.id) : undefined
 
-  // Auto-select user's opinion initially if exists, but only once
-  useEffect(() => {
-    if (userOpinion) {
-      // Only set if nothing selected yet
-      setSelectedOpinionId(prev => prev === null ? userOpinion.id : prev)
-    }
-  }, [userOpinion?.id]) 
+  // Auto-select removed to avoid popup on load
+  // useEffect(() => {
+  //   if (userOpinion) {
+  //     setSelectedOpinionId(prev => prev === null ? userOpinion.id : prev)
+  //   }
+  // }, [userOpinion?.id]) 
+
+  const viewingOpinion = selectedOpinionId ? currentOpinions.find(o => o.id === selectedOpinionId) : null 
 
   return (
     <div className="w-full bg-white h-full flex flex-col overflow-hidden relative">
@@ -140,6 +142,21 @@ export default function FactionContent({
            currentUser={user}
          />
       </div>
+
+      {/* View Detail Modal (Same style as Create Modal) */}
+      {viewingOpinion && !showCreateModal && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4">
+          <div className="bg-white rounded shadow-xl w-full max-w-lg h-[80%] max-h-[800px] flex flex-col overflow-hidden relative">
+             
+             <div className="p-6 h-full">
+               <OpinionDetailView 
+                 opinion={viewingOpinion} 
+                 onClose={() => setSelectedOpinionId(null)}
+               />
+             </div>
+          </div>
+        </div>
+      )}
 
       {/* Create/Edit Modal */}
       {showCreateModal && (
