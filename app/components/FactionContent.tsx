@@ -75,12 +75,7 @@ export default function FactionContent({
   isOtherMember,
   isPrivateTopic
 }: FactionContentProps) {
-  const [activeTab, setActiveTab] = useState<'WHY' | 'WHY_NOT'>('WHY')
-  const [selectedOpinionId, setSelectedOpinionId] = useState<string | null>(null)
-  const [showCreateModal, setShowCreateModal] = useState(false)
-
-  // Filter opinions based on activeTab
-  const currentOpinions = faction.opinions.filter((o: Opinion) => o.type === activeTab)
+  const currentOpinions = faction.opinions
   
   const userOpinion = user ? currentOpinions.find((o: Opinion) => o.authorId === user.id) : undefined
 
@@ -90,9 +85,7 @@ export default function FactionContent({
       // Only set if nothing selected yet
       setSelectedOpinionId(prev => prev === null ? userOpinion.id : prev)
     }
-  }, [userOpinion?.id, activeTab]) // Re-run when tab changes
-
-  const tabColor = activeTab === 'WHY' ? 'text-green-700' : 'text-red-700'
+  }, [userOpinion?.id]) 
 
   return (
     <div className="w-full bg-white h-full flex flex-col overflow-hidden relative">
@@ -110,35 +103,6 @@ export default function FactionContent({
           {/* Tab Navigation & Actions */}
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-center gap-4">
-              <div 
-                className={`relative flex items-center rounded-full p-0.5 cursor-pointer w-20 h-6 select-none transition-colors duration-300 ${
-                  activeTab === 'WHY' ? 'bg-green-500' : 'bg-red-500'
-                }`}
-                onClick={() => {
-                  setActiveTab(activeTab === 'WHY' ? 'WHY_NOT' : 'WHY')
-                  setSelectedOpinionId(null) // Reset selection on tab switch
-                }}
-              >
-                {/* Text Labels Layer */}
-                <div className="absolute inset-0 flex items-center justify-between px-2">
-                  <span className={`text-[10px] font-bold text-white whitespace-nowrap transition-opacity duration-300 ${activeTab === 'WHY_NOT' ? 'opacity-100' : 'opacity-0'} leading-none`}>
-                    WHY NOT
-                  </span>
-                  <span className={`text-[10px] font-bold text-white whitespace-nowrap transition-opacity duration-300 ${activeTab === 'WHY' ? 'opacity-100' : 'opacity-0'} leading-none`}>
-                    WHY
-                  </span>
-                </div>
-
-                {/* White Circular Slider */}
-                <div 
-                  className={`absolute top-0.5 bottom-0.5 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-300 ease-in-out transform ${
-                    activeTab === 'WHY' 
-                      ? 'translate-x-0' 
-                      : 'translate-x-14'
-                  }`}
-                ></div>
-              </div>
-              
               <div className="text-xs text-gray-400 font-mono">
                 {currentOpinions.length} territories
               </div>
@@ -148,11 +112,7 @@ export default function FactionContent({
             {user ? (
               <button
                 onClick={() => setShowCreateModal(true)}
-                className={`text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded border transition-colors ${
-                  activeTab === 'WHY' 
-                    ? 'border-green-200 text-green-700 hover:bg-green-50' 
-                    : 'border-red-200 text-red-700 hover:bg-red-50'
-                }`}
+                className="text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 {userOpinion ? 'Edit Territory' : 'Claim Territory'}
               </button>
@@ -198,7 +158,7 @@ export default function FactionContent({
                   key={userOpinion?.id || 'new'}
                   opinion={userOpinion}
                   factionId={faction.id}
-                  type={activeTab}
+                  type="WHY" 
                   currentUser={user}
                   isPrivateTopic={isPrivateTopic}
                   onSuccess={() => setShowCreateModal(false)}

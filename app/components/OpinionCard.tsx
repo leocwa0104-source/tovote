@@ -196,7 +196,7 @@ export default function OpinionCard({
       <div className="mb-6 bg-white border border-gray-100 p-5 transition-all">
         <h4 className="font-mono text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
           <span className="w-2 h-2 bg-gray-900 rounded-full"></span>
-          {opinion ? 'Edit Argument' : `New "${type === 'WHY' ? 'Pro' : 'Con'}" Argument`}
+          {opinion ? 'Edit Territory' : 'Claim Territory'}
         </h4>
         
         <form action={handleSubmit} className="flex flex-col gap-4">

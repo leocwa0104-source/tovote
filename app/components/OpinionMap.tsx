@@ -268,15 +268,13 @@ export default function OpinionMap({ opinions, selectedId, onSelect }: OpinionMa
           }}
         >
           <div 
-            className={`relative w-full max-w-lg bg-white shadow-2xl overflow-hidden flex flex-col max-h-[90%] border-l-4 ${
-              expandedNode.data.type === 'WHY' ? 'border-green-500' : 'border-red-500'
-            }`}
+            className="relative w-full max-w-lg bg-white shadow-2xl overflow-hidden flex flex-col max-h-[90%] border-l-4 border-black"
             onClick={(e) => e.stopPropagation()}
           >
              {/* Header */}
              <div className="flex justify-between items-start p-6 pb-2">
                 <div className="flex items-center gap-2">
-                   <div className={`w-2 h-2 rounded-full ${expandedNode.data.type === 'WHY' ? 'bg-green-500' : 'bg-red-500'}`} />
+                   <div className="w-2 h-2 rounded-full bg-black" />
                    <span className="font-mono text-sm text-gray-500">@{expandedNode.data.author.username}</span>
                 </div>
                 <button 
@@ -310,7 +308,7 @@ export default function OpinionMap({ opinions, selectedId, onSelect }: OpinionMa
              <div className="bg-gray-50 p-3 text-xs text-gray-400 border-t border-gray-100 flex justify-between items-center">
                 <span>ID: {expandedNode.id.slice(0, 8)}</span>
                 <span className="uppercase tracking-wider font-bold opacity-50">
-                  {expandedNode.data.type === 'WHY' ? 'Supporting' : 'Opposing'}
+                  Territory
                 </span>
              </div>
           </div>

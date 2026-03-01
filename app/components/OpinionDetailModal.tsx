@@ -46,8 +46,8 @@ export default function OpinionDetailModal({ isOpen, onClose, opinion }: Opinion
       <div className="bg-white p-6 rounded-lg">
         <div className="flex justify-between items-start mb-4">
           <div>
-            <span className="text-xs font-bold text-blue-600 uppercase tracking-wide">
-              {opinion.type === 'WHY' ? 'Why Join' : 'Why Not'}
+            <span className="text-xs font-bold text-gray-900 uppercase tracking-wide">
+              Territory
             </span>
             <div className="text-xs text-gray-500 mt-1">
               Topic: <span className="font-medium text-gray-700">{opinion.faction?.topic?.title || 'Unknown Topic'}</span>

@@ -565,7 +565,8 @@ export async function getFactionOpinions(factionId: string) {
 
 export async function createOpinion(formData: FormData) {
   const factionId = formData.get('factionId') as string
-  const type = formData.get('type') as 'WHY' | 'WHY_NOT'
+  // Force type to 'WHY' to unify all opinions as "Territories"
+  const type = 'WHY'
   const summary = formData.get('summary') as string
   const detail = formData.get('detail') as string
   const citationIds = formData.get('citationIds') as string // JSON array string
