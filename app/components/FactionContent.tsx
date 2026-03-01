@@ -133,45 +133,39 @@ export default function FactionContent({
 
       {/* Dynamic Content Area */}
       <div className="flex-grow flex flex-col overflow-hidden relative">
-        {/* User's Territory (Pinned) */}
-        <div className="flex-shrink-0 px-6 pt-6 pb-2 bg-gradient-to-b from-white via-white/95 to-transparent z-10">
-           <div className="max-w-4xl mx-auto">
-              <h3 className={`text-xs font-bold uppercase tracking-widest mb-4 ${tabColor} opacity-70 flex items-center gap-2`}>
-                {user ? 'Your Territory' : 'Claim Territory'}
-                <span className="h-px flex-grow bg-current opacity-20"></span>
-              </h3>
-              
-              {user ? (
-                 <OpinionCard 
-                  key={`user-${activeTab}`} // Force re-render on tab switch
-                  opinion={userOpinion}
+        
+        {/* Creation Area (Only if user hasn't posted) */}
+        {user && !userOpinion && (
+          <div className="flex-shrink-0 px-6 pt-6 pb-2 bg-gradient-to-b from-white via-white/95 to-transparent z-10">
+             <div className="max-w-4xl mx-auto">
+                <h3 className={`text-xs font-bold uppercase tracking-widest mb-4 ${tabColor} opacity-70 flex items-center gap-2`}>
+                  Claim Territory
+                  <span className="h-px flex-grow bg-current opacity-20"></span>
+                </h3>
+                
+                <OpinionCard 
+                  key={`new-${activeTab}`} 
+                  opinion={undefined}
                   factionId={faction.id}
                   type={activeTab}
                   currentUser={user}
                   isPrivateTopic={isPrivateTopic}
                 />
-              ) : (
-                <div className="bg-white/50 p-6 rounded-lg text-center border border-dashed border-gray-300">
-                  <p className="text-gray-500 mb-2">Sign in to share your thoughts</p>
-                  <Link href="/login" className="text-blue-600 font-bold hover:underline">
-                    Login / Register
-                  </Link>
-                </div>
-              )}
-           </div>
-        </div>
+             </div>
+          </div>
+        )}
 
-        {/* Community Territory Map */}
+        {/* Territory Map (Includes user's opinion if it exists) */}
         <div className="flex-grow overflow-hidden relative px-2">
             <div className="h-full max-w-4xl mx-auto flex flex-col">
               <h3 className={`text-xs font-bold uppercase tracking-widest mb-2 px-4 ${tabColor} opacity-70 flex items-center gap-2 mt-4`}>
-                Territory Map ({otherOpinions.length})
+                Territory Map ({currentOpinions.length})
                 <span className="h-px flex-grow bg-current opacity-20"></span>
               </h3>
               
               <div className="flex-grow overflow-hidden relative rounded-lg border border-gray-100 bg-gray-50/30">
                  <TerritoryMap 
-                    opinions={otherOpinions}
+                    opinions={currentOpinions} // Pass ALL opinions, including user's
                     type={activeTab}
                     factionId={faction.id}
                     currentUser={user}
@@ -181,6 +175,18 @@ export default function FactionContent({
               </div>
             </div>
         </div>
+        
+        {/* Login Prompt (if not logged in) */}
+        {!user && (
+           <div className="px-6 py-4 text-center">
+              <div className="bg-white/50 p-4 rounded-lg border border-dashed border-gray-300 inline-block">
+                <p className="text-gray-500 mb-2 text-xs">Sign in to claim your territory</p>
+                <Link href="/login" className="text-blue-600 font-bold hover:underline text-sm">
+                  Login / Register
+                </Link>
+              </div>
+           </div>
+        )}
       </div>
     </div>
   )
