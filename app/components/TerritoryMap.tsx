@@ -54,70 +54,22 @@ interface TerritoryMapProps {
   className?: string
 }
 
-// Helper to calculate grid span based on content length (Logarithmic)
-// Area scales with log of content length to compress extreme differences
-// while preserving relative order.
-const getGridSpan = (summary: string, detail: string | null) => {
-  const totalLength = summary.length + (detail?.length || 0)
-  
-  // Logarithmic mapping:
-  // We want a minimum size for visibility, and growth that slows down.
-  // Base size for very short comments (e.g. 10 chars)
-  // Max size for very long comments (e.g. 1000 chars) shouldn't be 100x larger.
-  
-  // Formula: Units = Base + Multiplier * log2(Length)
-  // log2(10) ~ 3.3
-  // log2(100) ~ 6.6
-  // log2(1000) ~ 10
-  // If we want 10 chars -> 4 units (2x2)
-  // 1000 chars -> 25 units (5x5)? Or more?
-  // Let's try Multiplier = 4.
-  // 10 chars -> 4 * 3.3 = 13 units
-  // 1000 chars -> 4 * 10 = 40 units (approx 3x size linear dim)
-  
-  // Let's use a micro-grid unit count directly.
-  const unitsNeeded = Math.ceil(Math.log2(Math.max(10, totalLength)) * 8)
-  
-  // Calculate dimensions to minimize waste
-  // We prefer rects with aspect ratio between 1:1 and 3:1 (landscape or portrait)
-  
-  let bestW = Math.ceil(Math.sqrt(unitsNeeded))
-  let bestH = Math.ceil(unitsNeeded / bestW)
-  let minWaste = (bestW * bestH) - unitsNeeded
-  let bestRatioDiff = Math.abs((bestW / bestH) - 1.5) // Prefer 3:2 landscape slightly
-
-  // Search range: narrow range around square root to keep it efficient
-  const sqrt = Math.sqrt(unitsNeeded)
-  const minSide = Math.floor(sqrt * 0.5)
-  const maxSide = Math.ceil(sqrt * 2.0)
-
-  for (let w = minSide; w <= maxSide; w++) {
-    if (w < 1) continue
-    const h = Math.ceil(unitsNeeded / w)
-    const waste = (w * h) - unitsNeeded
-    const ratio = w / h
+  // Helper to calculate grid span based on content length (Logarithmic)
+  // Area scales with log of content length to compress extreme differences
+  // while preserving relative order.
+  const getGridSpan = (summary: string, detail: string | null) => {
+    const totalLength = summary.length + (detail?.length || 0)
     
-    // Skip extreme ratios (> 4:1 or < 1:4)
-    if (ratio > 4 || ratio < 0.25) continue
-
-    // Priority: 1. Minimize Waste, 2. Optimized Aspect Ratio
-    if (waste < minWaste) {
-      minWaste = waste
-      bestW = w
-      bestH = h
-      bestRatioDiff = Math.abs(ratio - 1.5)
-    } else if (waste === minWaste) {
-      const currentRatioDiff = Math.abs(ratio - 1.5)
-      if (currentRatioDiff < bestRatioDiff) {
-        bestW = w
-        bestH = h
-        bestRatioDiff = currentRatioDiff
-      }
-    }
+    // Logarithmic mapping:
+    // Formula: Units = Base + Multiplier * log2(Length)
+    // Let's use a micro-grid unit count directly.
+    const unitsNeeded = Math.ceil(Math.log2(Math.max(10, totalLength)) * 8)
+    
+    // Force Square Shape
+    const side = Math.ceil(Math.sqrt(unitsNeeded))
+    
+    return { row: side, col: side }
   }
-  
-  return { row: bestH, col: bestW }
-}
 
 // Helper to calculate opacity based on time (Linear)
 const getOpacity = (createdAt: Date | string) => {
@@ -193,9 +145,9 @@ export default function TerritoryMap({
 
   // Calculate Spiral Layout
   // Returns map of opinion.id -> { x, y, w, h }
-  const layout = useMemo(() => {
+  // And the bounding box of the entire layout { minX, maxX, minY, maxY }
+  const { layout, bounds } = useMemo(() => {
     // 1. Sort opinions by createdAt descending (Newest first)
-    // Note: If updatedAt is available in the future, use it here.
     const sortedOpinions = [...opinions].sort((a, b) => 
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     )
@@ -205,6 +157,8 @@ export default function TerritoryMap({
     const occupied = new Set<string>() // format "x,y"
     const itemPositions = new Map<string, { x: number, y: number, w: number, h: number }>()
     
+    let minX = 0, maxX = 0, minY = 0, maxY = 0
+
     // Check if a rectangle fits at (x, y)
     const checkFit = (x: number, y: number, w: number, h: number) => {
       for (let i = 0; i < w; i++) {
@@ -222,6 +176,11 @@ export default function TerritoryMap({
           occupied.add(`${x + i},${y + j}`)
         }
       }
+      // Update bounds
+      minX = Math.min(minX, x)
+      maxX = Math.max(maxX, x + w)
+      minY = Math.min(minY, y)
+      maxY = Math.max(maxY, y + h)
     }
 
     // Spiral traversal generator
@@ -235,7 +194,7 @@ export default function TerritoryMap({
       // Start at 0,0
       yield { x, y }
 
-      for (let i = 0; i < 10000; i++) { // Safety limit
+      for (let i = 0; i < 50000; i++) { // Safety limit increased for micro-grid
         // Logic for spiral steps
         // -1 < x <= 1, -1 < y <= 1 -> Shell 1
         if (-x === y || (x < 0 && x === -y) || (x > 0 && x === 1-y)) {
@@ -260,9 +219,6 @@ export default function TerritoryMap({
       
       // Find first available spot
       for (let pos of spiral) {
-        // We try to place the top-left corner at pos.x, pos.y
-        // To make it more "centered", we might want to offset based on size, 
-        // but simple top-left spiral works well enough for packing.
         if (checkFit(pos.x, pos.y, w, h)) {
           markOccupied(pos.x, pos.y, w, h)
           itemPositions.set(opinion.id, { x: pos.x, y: pos.y, w, h })
@@ -271,13 +227,65 @@ export default function TerritoryMap({
       }
     })
 
-    return itemPositions
+    return { layout: itemPositions, bounds: { minX, maxX, minY, maxY } }
   }, [opinions])
 
   // Pan State
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
   const lastMousePos = useRef({ x: 0, y: 0 })
+
+  // Auto-fit Logic: Calculate initial Zoom and Pan to center content
+  useEffect(() => {
+    if (layout.size === 0) return
+
+    // Calculate content dimensions in Grid Units
+    const contentWidth = bounds.maxX - bounds.minX
+    const contentHeight = bounds.maxY - bounds.minY
+    
+    // Get container dimensions (approximate if not mounted, or use window)
+    const containerW = containerRef.current?.clientWidth || window.innerWidth
+    const containerH = containerRef.current?.clientHeight || window.innerHeight
+
+    // Target: Fit content within 80% of container
+    // We need to solve for zoomLevel:
+    // (contentWidth * unitSize) < containerW * 0.8
+    // unitSize = baseSize + visualGap
+    // baseSize = zoomLevel * 10
+    // visualGap = zoomLevel * 1
+    // unitSize = zoomLevel * 11
+    
+    // So: contentWidth * zoomLevel * 11 = containerW * 0.8
+    // zoomLevel = (containerW * 0.8) / (contentWidth * 11)
+    
+    // Calculate required zoom for width and height
+    const zoomW = (containerW * 0.8) / (Math.max(contentWidth, 1) * 11)
+    const zoomH = (containerH * 0.8) / (Math.max(contentHeight, 1) * 11)
+    
+    // Use the smaller zoom to fit both dimensions
+    // Clamp between 0.5 and 3.0
+    const bestZoom = Math.min(Math.max(Math.min(zoomW, zoomH), 0.5), 3.0)
+    
+    setZoomLevel(bestZoom)
+
+    // Center the content
+    // The origin (0,0) is at screen center + pan.x, pan.y
+    // We want the center of the bounding box to be at screen center.
+    // Center of BB in grid units:
+    const centerX = (bounds.minX + bounds.maxX) / 2
+    const centerY = (bounds.minY + bounds.maxY) / 2
+    
+    // Center of BB in pixels (relative to origin):
+    const unitSize = bestZoom * 11 // baseSize(10*z) + gap(1*z)
+    const centerPxX = centerX * unitSize
+    const centerPxY = centerY * unitSize
+    
+    // If pan is 0,0 -> Origin is at Screen Center.
+    // Content Center is at (centerPxX, centerPxY) from Origin.
+    // To move Content Center to Screen Center, we need to shift Origin by (-centerPxX, -centerPxY)
+    setPan({ x: -centerPxX, y: -centerPxY })
+
+  }, [layout, bounds])
 
   const handleMouseDown = (e: React.MouseEvent) => {
     // Only drag with left click and not on interactive elements if needed
