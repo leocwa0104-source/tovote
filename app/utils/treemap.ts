@@ -129,13 +129,15 @@ export function computeTreemapLayout(
         id: `group-${group[0].id}`, // Virtual ID
         value: groupValue * scale,
         isGroup: true,
+        data: null, // Virtual nodes don't have original data
         children: group.map(i => ({ ...i, value: i.value * scale })) // Scale children too
       };
     } else {
       return {
         ...group,
         value: group.value * scale,
-        isGroup: false
+        isGroup: false,
+        children: undefined
       };
     }
   }).sort((a, b) => b.value - a.value);
@@ -314,6 +316,7 @@ export function computeTreemapLayout(
       const childrenNodes = node.children.map(c => ({
         ...c,
         isGroup: false,
+        data: c.data,
         children: undefined
       }));
       
