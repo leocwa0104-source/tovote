@@ -1,5 +1,5 @@
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { TreemapNode } from '../utils/treemap'
 
 interface OpinionBlockProps {
@@ -11,6 +11,7 @@ interface OpinionBlockProps {
 
 export default function OpinionBlock({ node, isActive, onSelect, scale }: OpinionBlockProps) {
   const opinion = node.data
+  const [copied, setCopied] = useState(false)
   
   // Minimalist black/white style logic
   // Consistent base style for all opinions within a faction
@@ -38,6 +39,13 @@ export default function OpinionBlock({ node, isActive, onSelect, scale }: Opinio
   const summaryFontSize = Math.max(10, Math.min(minDim / 10, 24))
   const detailFontSize = Math.max(10, Math.min(minDim / 15, 16))
 
+  const handleCopyId = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    navigator.clipboard.writeText(opinion.id)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   return (
     <div
       className={`absolute cursor-pointer border overflow-hidden flex flex-col p-1 transition-colors duration-200 ${
@@ -60,10 +68,21 @@ export default function OpinionBlock({ node, isActive, onSelect, scale }: Opinio
         
         {/* Header: Avatar + Username */}
         {showAvatar && (
-          <div className="flex items-center gap-1 opacity-60 min-h-[12px] flex-shrink-0" style={{ fontSize: headerFontSize }}>
-            <span className="font-mono truncate leading-none">
+          <div className="flex items-center justify-between gap-1 min-h-[12px] flex-shrink-0" style={{ fontSize: headerFontSize }}>
+            <span className="font-mono truncate leading-none opacity-60">
               @{opinion.author.username}
             </span>
+            
+            {/* Copy ID Button - Only visible in full content mode */}
+            {showFullContent && (
+              <button 
+                className="pointer-events-auto opacity-40 hover:opacity-100 transition-opacity bg-black/5 hover:bg-black/10 rounded px-1.5 py-0.5 text-[0.8em] font-mono border border-transparent hover:border-black/10"
+                onClick={handleCopyId}
+                title="Copy ID"
+              >
+                {copied ? 'Copied!' : `#${opinion.id.slice(0, 4)}`}
+              </button>
+            )}
           </div>
         )}
         
