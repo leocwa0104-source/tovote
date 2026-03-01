@@ -150,14 +150,24 @@ export default function TerritoryMap({
     // Zoom 3.0 -> 300px
     const baseSize = Math.max(20, zoomLevel * 100)
     
+    // Aggressive Auto-Fit for Sparse Content
+    // If we have very few items (< 5) and zoom is high, force them to stretch
+    const isSparse = opinions.length > 0 && opinions.length < 5
+    const isHighZoom = zoomLevel > 1.5
+
     return {
-      gridTemplateColumns: `repeat(auto-fill, minmax(${baseSize}px, 1fr))`,
+      gridTemplateColumns: isSparse && isHighZoom
+        ? `repeat(auto-fit, minmax(${baseSize}px, 1fr))` // Force stretch to fill width
+        : `repeat(auto-fill, minmax(${baseSize}px, 1fr))`, // Standard grid behavior
       gap: `${Math.max(2, zoomLevel * 4)}px`,
       // Center grid when content is sparse
       justifyContent: 'center',
-      alignContent: 'start'
+      alignContent: 'start',
+      width: '100%', // Ensure grid takes full width
+      maxWidth: isSparse && isHighZoom ? '100%' : 'fit-content', // Center the grid block itself
+      margin: '0 auto' // Center horizontally
     }
-  }, [zoomLevel])
+  }, [zoomLevel, opinions.length])
 
   const baseColor = type === 'WHY' ? 'bg-green-500' : 'bg-red-500'
   const borderColor = type === 'WHY' ? 'border-green-100' : 'border-red-100'
