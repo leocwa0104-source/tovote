@@ -154,18 +154,13 @@ export default function FactionContent({
     if (!user) return
 
     if (userOpinion) {
-        if (confirm("Are you sure you want to move your territory here?")) {
-             try {
-                 await setOpinionNeighbor(userOpinion.id, targetId)
-                 alert("Territory moved!")
-                 // Close all modals to see the map update? Or just stay?
-                 // Let's close modals to let user see the new position
-                 setModalStack([])
-                 setSelectedOpinionId(null)
-             } catch (e) {
-                 console.error(e)
-                 alert("Failed to move territory")
-             }
+        try {
+            await setOpinionNeighbor(userOpinion.id, targetId)
+            setModalStack([])
+            setSelectedOpinionId(null)
+        } catch (e) {
+            console.error(e)
+            alert("Failed to move territory")
         }
     } else {
         setInitialNeighborId(targetId)

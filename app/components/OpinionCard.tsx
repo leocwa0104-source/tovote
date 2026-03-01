@@ -83,8 +83,12 @@ export default function OpinionCard({
   const handleSubmit = async (formData: FormData) => {
     setLoading(true)
     try {
+      // Manual append is no longer needed if we use hidden input, 
+      // but keeping it for safety if state is source of truth
       if (selectedNeighborId) {
-        formData.append('neighborId', selectedNeighborId)
+        formData.set('neighborId', selectedNeighborId)
+      } else {
+        formData.delete('neighborId')
       }
       
       await createOpinion(formData)
@@ -246,23 +250,18 @@ export default function OpinionCard({
           />
           
           <div className="flex gap-3 justify-end items-center pt-2">
-            {/* Neighbor Selector */}
+            {/* Neighbor Display (Static) */}
             <div className="flex-grow flex items-center gap-2">
                <span className="text-xs text-gray-400 uppercase tracking-wide">Neighbor:</span>
-               <select 
-                 value={selectedNeighborId || ''}
-                 onChange={(e) => setSelectedNeighborId(e.target.value || null)}
-                 className="bg-gray-50 border-b border-gray-200 text-xs text-gray-700 py-1 focus:outline-none focus:border-gray-800 max-w-[150px]"
-               >
-                 <option value="">None (Auto)</option>
-                 {availableNeighbors
-                   .filter(n => n.id !== opinion?.id) // Can't neighbor self
-                   .map(n => (
-                   <option key={n.id} value={n.id}>
-                     {n.author.username}: {n.summary.substring(0, 20)}{n.summary.length > 20 ? '...' : ''}
-                   </option>
-                 ))}
-               </select>
+               <span className="text-xs text-gray-700 font-mono py-1">
+                 {selectedNeighborId ? (
+                    availableNeighbors.find(n => n.id === selectedNeighborId) 
+                    ? `${availableNeighbors.find(n => n.id === selectedNeighborId)?.author.username}`
+                    : "Linked"
+                 ) : "None (Auto)"}
+               </span>
+               {/* Hidden input to submit the value */}
+               <input type="hidden" name="neighborId" value={selectedNeighborId || ''} />
             </div>
 
             {opinion && (
