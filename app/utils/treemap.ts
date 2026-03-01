@@ -79,6 +79,28 @@ function groupItems(items: TreemapItem[]): (TreemapItem | TreemapItem[])[] {
   return groups;
 }
 
+// Helper for Squarified Treemap
+function sum(nodes: { value: number }[]): number {
+  return nodes.reduce((acc, n) => acc + n.value, 0);
+}
+
+function worst(row: { value: number }[], sideLength: number): number {
+  if (row.length === 0) return Infinity;
+  const s = sum(row);
+  if (s === 0) return 0;
+  
+  let maxRatio = 0;
+  const s2 = s * s;
+  const w2 = sideLength * sideLength;
+  
+  for (const node of row) {
+    const r = node.value;
+    const ratio = Math.max((w2 * r) / s2, s2 / (w2 * r));
+    if (ratio > maxRatio) maxRatio = ratio;
+  }
+  return maxRatio;
+}
+
 export function computeTreemapLayout(
   items: TreemapItem[],
   containerWidth: number,
