@@ -28,23 +28,23 @@ export type FactionSimilarityResult = {
 export async function checkTopicSimilarity(newTitle: string): Promise<SimilarityResult> {
   if (!newTitle || newTitle.trim().length < 2) return { matches: [] }
 
-  const query = newTitle.trim()
-  
-  const STOP_WORDS = new Set(['the', 'and', 'or', 'of', 'in', 'on', 'at', 'to', 'is', 'are', 'was', 'were', 'it', 'that', 'this'])
-
-  // Break down the title into keywords (filtering out short words and stop words)
-  const keywords = query
-    .split(/\s+/)
-    .map(word => word.replace(/[^\p{L}\p{N}]/gu, '')) // Keep letters (including unicode) and numbers
-    .filter(word => word.length > 1 && !STOP_WORDS.has(word.toLowerCase())) // Filter short words and stop words
-
-
-  if (keywords.length === 0) {
-    // If no significant keywords, just do a direct partial match
-    return fallbackSearch(query)
-  }
-
   try {
+    const query = newTitle.trim()
+    
+    const STOP_WORDS = new Set(['the', 'and', 'or', 'of', 'in', 'on', 'at', 'to', 'is', 'are', 'was', 'were', 'it', 'that', 'this'])
+
+    // Break down the title into keywords (filtering out short words and stop words)
+    const keywords = query
+      .split(/\s+/)
+      .map(word => word.replace(/[^\p{L}\p{N}]/gu, '')) // Keep letters (including unicode) and numbers
+      .filter(word => word.length > 1 && !STOP_WORDS.has(word.toLowerCase())) // Filter short words and stop words
+
+
+    if (keywords.length === 0) {
+      // If no significant keywords, just do a direct partial match
+      return await fallbackSearch(query)
+    }
+
     // Construct OR conditions for each keyword
     const keywordConditions = keywords.map(word => ({
       title: { contains: word, mode: 'insensitive' as const }

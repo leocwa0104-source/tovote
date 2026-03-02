@@ -49,9 +49,13 @@ export default function OpinionCard({
         formData.delete('neighborId')
       }
       
-      await createOpinion(formData)
-      setIsEditing(false)
-      onSuccess?.()
+      const result = await createOpinion(formData)
+      if (result?.success) {
+        setIsEditing(false)
+        onSuccess?.()
+      } else {
+        alert(result?.error || 'Failed to save opinion')
+      }
     } catch (error) {
       console.error(error)
       alert('Failed to save opinion')
@@ -66,8 +70,12 @@ export default function OpinionCard({
 
     setLoading(true)
     try {
-      await deleteOpinion(opinion.id)
-      onSuccess?.()
+      const result = await deleteOpinion(opinion.id)
+      if (result?.success) {
+        onSuccess?.()
+      } else {
+        alert(result?.error || 'Failed to delete opinion')
+      }
     } catch (error) {
       console.error(error)
       alert('Failed to delete opinion')

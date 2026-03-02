@@ -67,8 +67,10 @@ export default function CreatePublicTopicForm({ user, initialTitle }: { user: Us
     }
 
     const result = await createTopic(null, formData)
-    if (result && result.message !== 'success') {
-      alert(result.message)
+    // @ts-ignore
+    if (result && !result.success) {
+      // @ts-ignore
+      alert(result.error || 'Failed to create topic')
     }
   }
 

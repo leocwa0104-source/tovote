@@ -69,9 +69,13 @@ export default function FactionContent({ faction, user, isPrivateTopic }: Factio
 
     if (userOpinion) {
         try {
-            await setOpinionNeighbor(userOpinion.id, targetId)
-            setModalStack([])
-            setSelectedOpinionId(null)
+            const result = await setOpinionNeighbor(userOpinion.id, targetId)
+            if (result?.success) {
+                setModalStack([])
+                setSelectedOpinionId(null)
+            } else {
+                alert(result?.error || "Failed to move territory")
+            }
         } catch (e) {
             console.error(e)
             alert("Failed to move territory")

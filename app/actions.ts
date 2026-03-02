@@ -87,11 +87,11 @@ export async function createTopic(prevState: unknown, formData: FormData) {
     const seekRational = formData.get('seekRational') === 'on'
     
     if (!seekBrainstorming && !seekRational) {
-      return { message: 'Please select at least one discussion style (Brainstorming or Rational).' }
+      return { success: false, error: 'Please select at least one discussion style (Brainstorming or Rational).' }
     }
     
     const user = await getCurrentUser()
-    if (!user) return { message: 'Unauthorized' }
+    if (!user) return { success: false, error: 'Unauthorized' }
 
     // Only check for uniqueness if the new topic is public (isPrivate: false)
     if (!isPrivate) {
@@ -103,7 +103,7 @@ export async function createTopic(prevState: unknown, formData: FormData) {
       })
 
       if (existingPublicTopic) {
-        return { message: 'A public topic with this title already exists. Please choose a different title.' }
+        return { success: false, error: 'A public topic with this title already exists. Please choose a different title.' }
       }
     }
 
@@ -134,10 +134,10 @@ export async function createTopic(prevState: unknown, formData: FormData) {
     }
     
     revalidatePath('/')
-    return { message: 'success' }
+    return { success: true }
   } catch (e) {
     console.error("createTopic error:", e)
-    return { message: 'Failed to create topic' }
+    return { success: false, error: 'Failed to create topic' }
   }
 }
 
@@ -406,7 +406,7 @@ export async function createFaction(topicId: string, prevState: unknown, formDat
   const seekRational = formData.get('seekRational') === 'on'
   
   if (!seekBrainstorming && !seekRational) {
-    return { message: 'Please select at least one faction style (Brainstorming or Rational).' }
+    return { success: false, error: 'Please select at least one faction style (Brainstorming or Rational).' }
   }
   
   try {
@@ -418,7 +418,7 @@ export async function createFaction(topicId: string, prevState: unknown, formDat
     })
 
     if (existingFaction) {
-      return { message: 'Faction with this name already exists in this topic. Please choose a different name.' }
+      return { success: false, error: 'Faction with this name already exists in this topic. Please choose a different name.' }
     }
 
     await prisma.faction.create({
@@ -432,9 +432,10 @@ export async function createFaction(topicId: string, prevState: unknown, formDat
     })
     
     revalidatePath(`/topic/${topicId}`)
-    return { message: 'success' }
-  } catch {
-    return { message: 'Failed to create faction' }
+    return { success: true }
+  } catch (e) {
+    console.error("createFaction error:", e)
+    return { success: false, error: 'Failed to create faction' }
   }
 }
 
@@ -442,7 +443,7 @@ export async function joinFaction(topicId: string, factionId: string, formData?:
   void formData
   try {
     const user = await getCurrentUser()
-    if (!user) throw new Error("Unauthorized")
+    if (!user) return { success: false, error: "Unauthorized" }
     
     // Check if user is already a member of a faction in this topic
     const existingMembership = await prisma.membership.findUnique({
@@ -456,7 +457,7 @@ export async function joinFaction(topicId: string, factionId: string, formData?:
 
     if (existingMembership) {
       if (existingMembership.factionId === factionId) {
-        return; // Already in this faction
+        return { success: true }; // Already in this faction
       }
       // Switch faction
       await prisma.$transaction([
@@ -475,7 +476,7 @@ export async function joinFaction(topicId: string, factionId: string, formData?:
     } else {
       // Join new
       const hasAccess = await checkTopicAccess(topicId)
-      if (!hasAccess) throw new Error("Unauthorized")
+      if (!hasAccess) return { success: false, error: "Unauthorized" }
 
       await prisma.$transaction([
         prisma.membership.create({
@@ -494,8 +495,10 @@ export async function joinFaction(topicId: string, factionId: string, formData?:
     
     revalidatePath(`/topic/${topicId}`)
     revalidatePath('/')
+    return { success: true }
   } catch (e) {
     console.error("joinFaction error:", e)
+    return { success: false, error: "Failed to join faction" }
   }
 }
 
@@ -679,23 +682,33 @@ export async function leaveFaction(topicId: string, formData?: FormData) {
   void formData
   try {
     const user = await getCurrentUser()
-    if (!user) throw new Error("Unauthorized")
+    if (!user) return { success: false, error: "Unauthorized" }
     
-    await prisma.membership.update({
-      where: {
-        userId_topicId: {
-          userId: user.id,
-          topicId
-        }
-      },
-      data: {
-        factionId: null
-      }
+    const existingMembership = await prisma.membership.findUnique({
+      where: { userId_topicId: { userId: user.id, topicId } }
     })
+
+    if (!existingMembership || !existingMembership.factionId) {
+      return { success: true }
+    }
+
+    await prisma.$transaction([
+      prisma.membership.update({
+        where: { userId_topicId: { userId: user.id, topicId } },
+        data: { factionId: null }
+      }),
+      // Decrement topic total value
+      prisma.topic.update({
+        where: { id: topicId },
+        data: { totalValue: { decrement: 1 } }
+      })
+    ])
     
     revalidatePath(`/topic/${topicId}`)
+    return { success: true }
   } catch (e) {
     console.error("leaveFaction error:", e)
+    return { success: false, error: "Failed to leave faction" }
   }
 }
 
@@ -804,29 +817,29 @@ export async function ensureTopicMembership(topicId: string) {
 export async function joinTopic(topicId: string) {
   try {
     const user = await getCurrentUser()
-    if (!user) throw new Error("Unauthorized")
+    if (!user) return { success: false, error: "Unauthorized" }
     const hasAccess = await checkTopicAccess(topicId)
-    if (!hasAccess) throw new Error("Unauthorized")
-    const existing = await prisma.membership.findUnique({
-      where: { userId_topicId: { userId: user.id, topicId } }
+    if (!hasAccess) return { success: false, error: "Unauthorized" }
+    
+    await prisma.membership.upsert({
+      where: { userId_topicId: { userId: user.id, topicId } },
+      update: {},
+      create: { userId: user.id, topicId }
     })
-    if (!existing) {
-      await prisma.membership.create({
-        data: { userId: user.id, topicId }
-      })
-    }
+    
     revalidatePath(`/topic/${topicId}`)
     revalidatePath('/')
+    return { success: true }
   } catch (e) {
     console.error("joinTopic error:", e)
+    return { success: false, error: "Failed to join topic" }
   }
-  redirect(`/topic/${topicId}`)
 }
 
 export async function leaveTopic(topicId: string) {
   try {
     const user = await getCurrentUser()
-    if (!user) throw new Error("Unauthorized")
+    if (!user) return { success: false, error: "Unauthorized" }
 
     await prisma.membership.delete({
       where: { userId_topicId: { userId: user.id, topicId } }
@@ -834,8 +847,10 @@ export async function leaveTopic(topicId: string) {
     
     revalidatePath(`/topic/${topicId}`)
     revalidatePath('/')
+    return { success: true }
   } catch (e) {
     console.error("leaveTopic error:", e)
+    return { success: false, error: "Failed to leave topic" }
   }
 }
 
@@ -850,11 +865,16 @@ export async function postReason() {
 }
 
 export async function getFactionOpinions(factionId: string) {
-  return prisma.opinion.findMany({
-    where: { factionId },
-    orderBy: { createdAt: 'desc' },
-    include: { author: true }
-  })
+  try {
+    return await prisma.opinion.findMany({
+      where: { factionId },
+      orderBy: { createdAt: 'desc' },
+      include: { author: true }
+    })
+  } catch (e) {
+    console.error("getFactionOpinions error:", e)
+    return []
+  }
 }
 
 export async function createOpinion(formData: FormData) {
@@ -868,13 +888,13 @@ export async function createOpinion(formData: FormData) {
     const neighborId = formData.get('neighborId') as string | null
     
     const user = await getCurrentUser()
-    if (!user) throw new Error("Unauthorized")
+    if (!user) return { success: false, error: "Unauthorized" }
     
     const faction = await prisma.faction.findUnique({ where: { id: factionId } })
-    if (!faction) throw new Error("Faction not found")
+    if (!faction) return { success: false, error: "Faction not found" }
 
     const hasAccess = await checkTopicAccess(faction.topicId)
-    if (!hasAccess) throw new Error("Unauthorized")
+    if (!hasAccess) return { success: false, error: "Unauthorized" }
     
     const opinion = await prisma.opinion.upsert({
       where: {
@@ -952,20 +972,22 @@ export async function createOpinion(formData: FormData) {
 
     revalidatePath(`/topic/${faction.topicId}`)
     revalidatePath(`/topic/${faction.topicId}/faction/${faction.id}`)
+    return { success: true }
   } catch (e) {
     console.error("createOpinion error:", e)
+    return { success: false, error: "Failed to create opinion" }
   }
 }
 
 export async function deleteOpinion(opinionId: string) {
   try {
     const user = await getCurrentUser()
-    if (!user) throw new Error("Unauthorized")
+    if (!user) return { success: false, error: "Unauthorized" }
     
     const opinion = await prisma.opinion.findUnique({ where: { id: opinionId } })
-    if (!opinion) throw new Error("Opinion not found")
+    if (!opinion) return { success: false, error: "Opinion not found" }
     
-    if (opinion.authorId !== user.id) throw new Error("Forbidden")
+    if (opinion.authorId !== user.id) return { success: false, error: "Forbidden" }
     
     const faction = await prisma.faction.findUnique({ where: { id: opinion.factionId } })
     
@@ -975,26 +997,28 @@ export async function deleteOpinion(opinionId: string) {
       revalidatePath(`/topic/${faction.topicId}`)
       revalidatePath(`/topic/${faction.topicId}/faction/${faction.id}`)
     }
+    return { success: true }
   } catch (e) {
     console.error("deleteOpinion error:", e)
+    return { success: false, error: "Failed to delete opinion" }
   }
 }
 
 export async function setOpinionNeighbor(opinionId: string, neighborId: string | null) {
   try {
     const user = await getCurrentUser()
-    if (!user) throw new Error("Unauthorized")
+    if (!user) return { success: false, error: "Unauthorized" }
 
     const opinion = await prisma.opinion.findUnique({ where: { id: opinionId } })
-    if (!opinion) throw new Error("Opinion not found")
-    if (opinion.authorId !== user.id) throw new Error("Forbidden")
+    if (!opinion) return { success: false, error: "Opinion not found" }
+    if (opinion.authorId !== user.id) return { success: false, error: "Forbidden" }
 
-    if (neighborId === opinionId) throw new Error("Cannot be neighbor to self")
+    if (neighborId === opinionId) return { success: false, error: "Cannot be neighbor to self" }
 
     if (neighborId) {
         const neighbor = await prisma.opinion.findUnique({ where: { id: neighborId } })
-        if (!neighbor) throw new Error("Neighbor not found")
-        if (neighbor.factionId !== opinion.factionId) throw new Error("Neighbor must be in the same faction")
+        if (!neighbor) return { success: false, error: "Neighbor not found" }
+        if (neighbor.factionId !== opinion.factionId) return { success: false, error: "Neighbor must be in the same faction" }
     }
 
     await prisma.opinion.update({
@@ -1006,8 +1030,10 @@ export async function setOpinionNeighbor(opinionId: string, neighborId: string |
     if (faction) {
         revalidatePath(`/topic/${faction.topicId}`)
     }
+    return { success: true }
   } catch (e) {
     console.error("setOpinionNeighbor error:", e)
+    return { success: false, error: "Failed to set neighbor" }
   }
 }
 

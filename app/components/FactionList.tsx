@@ -160,23 +160,42 @@ export default function FactionList({
                         Login
                       </button>
                     ) : isMember ? (
-                      <form action={leaveFaction.bind(null, topicId)}>
-                        <button className="py-1 px-2 bg-white text-red-500 rounded hover:bg-red-50 font-medium transition-colors border border-red-200 text-xs">
-                          Leave
-                        </button>
-                      </form>
+                      <button 
+                        onClick={async (e) => {
+                          e.stopPropagation()
+                          if (!confirm('Are you sure you want to leave this faction?')) return
+                          try {
+                            const res = await leaveFaction(topicId)
+                            if (!res.success) alert(res.error || 'Failed to leave faction')
+                          } catch (err) {
+                            console.error(err)
+                            alert('An error occurred')
+                          }
+                        }}
+                        className="py-1 px-2 bg-white text-red-500 rounded hover:bg-red-50 font-medium transition-colors border border-red-200 text-xs"
+                      >
+                        Leave
+                      </button>
                     ) : (
-                      <form action={joinFaction.bind(null, topicId, faction.id)}>
-                        <button 
-                          className={`py-1 px-2 rounded font-medium transition-colors border text-xs ${
-                            currentFactionId 
-                              ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' 
-                              : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
-                          }`}
-                        >
-                          {currentFactionId ? 'Switch' : 'Join'}
-                        </button>
-                      </form>
+                      <button 
+                        onClick={async (e) => {
+                          e.stopPropagation()
+                          try {
+                            const res = await joinFaction(topicId, faction.id)
+                            if (!res.success) alert(res.error || 'Failed to join faction')
+                          } catch (err) {
+                            console.error(err)
+                            alert('An error occurred')
+                          }
+                        }}
+                        className={`py-1 px-2 rounded font-medium transition-colors border text-xs ${
+                          currentFactionId 
+                            ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' 
+                            : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                        }`}
+                      >
+                        {currentFactionId ? 'Switch' : 'Join'}
+                      </button>
                     )}
                   </div>
                 </div>
