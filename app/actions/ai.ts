@@ -34,9 +34,10 @@ export async function checkTopicSimilarity(newTitle: string): Promise<Similarity
     const STOP_WORDS = new Set(['the', 'and', 'or', 'of', 'in', 'on', 'at', 'to', 'is', 'are', 'was', 'were', 'it', 'that', 'this'])
 
     // Break down the title into keywords (filtering out short words and stop words)
+    // Use simple regex for compatibility if unicode properties fail
     const keywords = query
       .split(/\s+/)
-      .map(word => word.replace(/[^\p{L}\p{N}]/gu, '')) // Keep letters (including unicode) and numbers
+      .map(word => word.replace(/[^\w\u4e00-\u9fa5]/g, '')) // Keep letters, numbers, and Chinese characters
       .filter(word => word.length > 1 && !STOP_WORDS.has(word.toLowerCase())) // Filter short words and stop words
 
 
@@ -92,7 +93,7 @@ export async function checkFactionSimilarity(topicId: string, newName: string): 
   
   const keywords = query
     .split(/\s+/)
-    .map(word => word.replace(/[^\p{L}\p{N}]/gu, ''))
+    .map(word => word.replace(/[^\w\u4e00-\u9fa5]/g, ''))
     .filter(word => word.length > 1 && !STOP_WORDS.has(word.toLowerCase()))
 
   try {
