@@ -2,6 +2,9 @@
   "name": "tou",
   "version": "0.1.0",
   "private": false,
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "build": "prisma generate && next build",
     "start": "next start",
