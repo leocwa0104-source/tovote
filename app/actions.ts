@@ -460,7 +460,6 @@ export async function joinFaction(topicId: string, factionId: string, formData?:
     revalidatePath('/')
   } catch (e) {
     console.error("joinFaction error:", e)
-    return { success: false, error: 'Failed to join faction' }
   }
 }
 
