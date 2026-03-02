@@ -88,15 +88,15 @@ export async function checkTopicSimilarity(newTitle: string): Promise<Similarity
 export async function checkFactionSimilarity(topicId: string, newName: string): Promise<FactionSimilarityResult> {
   if (!topicId || !newName || newName.trim().length < 2) return { matches: [] }
   
-  const query = newName.trim()
-  const STOP_WORDS = new Set(['the', 'and', 'or', 'of', 'in', 'on', 'at', 'to', 'is', 'are', 'was', 'were', 'it', 'that', 'this'])
-  
-  const keywords = query
-    .split(/\s+/)
-    .map(word => word.replace(/[^\w\u4e00-\u9fa5]/g, ''))
-    .filter(word => word.length > 1 && !STOP_WORDS.has(word.toLowerCase()))
-
   try {
+    const query = newName.trim()
+    const STOP_WORDS = new Set(['the', 'and', 'or', 'of', 'in', 'on', 'at', 'to', 'is', 'are', 'was', 'were', 'it', 'that', 'this'])
+    
+    const keywords = query
+      .split(/\s+/)
+      .map(word => word.replace(/[^\w\u4e00-\u9fa5]/g, ''))
+      .filter(word => word.length > 1 && !STOP_WORDS.has(word.toLowerCase()))
+
     const keywordConditions = keywords.map(word => ({
       name: { contains: word, mode: 'insensitive' as const }
     }))
@@ -133,20 +133,25 @@ export async function checkFactionSimilarity(topicId: string, newName: string): 
 }
 
 async function fallbackSearch(query: string) {
-  const matches = await prisma.topic.findMany({
-    where: {
-      title: { contains: query, mode: 'insensitive' }
-    },
-    take: 5,
-    select: { id: true, title: true }
-  })
+  try {
+    const matches = await prisma.topic.findMany({
+      where: {
+        title: { contains: query, mode: 'insensitive' }
+      },
+      take: 5,
+      select: { id: true, title: true }
+    })
 
-  return {
-    matches: matches.map(m => ({
-      id: m.id,
-      title: m.title,
-      reason: 'Contains similar text',
-      similarityScore: 1
-    }))
+    return {
+      matches: matches.map(m => ({
+        id: m.id,
+        title: m.title,
+        reason: 'Contains similar text',
+        similarityScore: 1
+      }))
+    }
+  } catch (error) {
+    console.error('Fallback Search Failed:', error)
+    return { matches: [] }
   }
 }
