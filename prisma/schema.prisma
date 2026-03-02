@@ -18,6 +18,21 @@ model User {
   topics      Topic[]
   memberships Membership[]
   opinions    Opinion[]
+  transactions Transaction[]
+  purchases   Purchase[]
+  // tickets     Int      @default(0) // Deprecated: Use Purchase.remainingTickets
+}
+
+model Purchase {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  packageId String   // 'daily', 'weekly', 'monthly'
+  amount    Float    // Price
+  tickets   Int      // Initial Tickets
+  remainingTickets Int // Remaining tickets
+  expiresAt DateTime // Expiration time
+  createdAt DateTime @default(now())
 }
 
 model Topic {
@@ -34,6 +49,8 @@ model Topic {
   seekBrainstorming Boolean @default(false)
   seekRational      Boolean @default(false)
 
+  totalValue        Int      @default(0) // Cache for sorting: sum of all factions' (members + paid votes)
+  
   factions    Faction[]
   memberships Membership[] // Helper to track user participation in topic
 }
@@ -49,8 +66,22 @@ model Faction {
   seekBrainstorming Boolean @default(false)
   seekRational      Boolean @default(false)
   
+  paidVoteCount     Int      @default(0)
+
   members     Membership[]
   opinions    Opinion[]
+  transactions Transaction[]
+}
+
+model Transaction {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  factionId String
+  faction   Faction  @relation(fields: [factionId], references: [id])
+  amount    Float
+  votes     Int
+  createdAt DateTime @default(now())
 }
 
 model Membership {

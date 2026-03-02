@@ -13,6 +13,7 @@ interface Topic {
   seekRational?: boolean
   creator?: { username: string }
   memberCount?: number
+  totalValue?: number
 }
 
 interface TopicNavProps {
@@ -25,12 +26,23 @@ export default function TopicNav({ topics, privateTopics = [], isAuthenticated }
   const pathname = usePathname()
   const [query, setQuery] = useState('')
   const [activeTab, setActiveTab] = useState<'public' | 'private'>('public')
+  const [sortMode, setSortMode] = useState<'latest' | 'value'>('latest')
 
   const currentList = activeTab === 'public' ? topics : privateTopics
 
   const normalizedQuery = query.trim().toLowerCase()
   const filteredTopics = useMemo(() => {
-    if (!normalizedQuery) return currentList
+    if (!normalizedQuery) {
+      // Sort by selected mode when no search query
+      return [...currentList].sort((a, b) => {
+        if (sortMode === 'value') {
+          // Sort by totalValue desc, then by id (stable)
+          return (b.totalValue || 0) - (a.totalValue || 0)
+        }
+        // 'latest' relies on server order (createdAt desc)
+        return 0
+      })
+    }
 
     const keywords = normalizedQuery.split(/[\s,，.。;；]+/).filter(Boolean)
     // Filter out whitespace and punctuation for character matching
@@ -95,6 +107,27 @@ export default function TopicNav({ topics, privateTopics = [], isAuthenticated }
           </button>
         </div>
       )}
+
+      <div className="px-2 mb-2 flex items-center justify-between text-xs text-gray-500">
+        <span className="font-semibold uppercase tracking-wider">
+          {activeTab} Topics
+        </span>
+        <div className="flex gap-2">
+           <button 
+             onClick={() => setSortMode('latest')}
+             className={sortMode === 'latest' ? 'font-bold text-blue-600 underline' : 'hover:text-gray-700'}
+           >
+             Latest
+           </button>
+           <span>|</span>
+           <button 
+             onClick={() => setSortMode('value')}
+             className={sortMode === 'value' ? 'font-bold text-amber-600 underline' : 'hover:text-gray-700'}
+           >
+             High Value
+           </button>
+        </div>
+      </div>
 
       <div className="px-2 mb-2">
         {activeTab === 'public' ? (

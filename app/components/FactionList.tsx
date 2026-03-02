@@ -1,6 +1,6 @@
 'use client'
 
-import { joinFaction, leaveFaction } from '@/app/actions'
+import { joinFaction, leaveFaction, rechargeFaction } from '@/app/actions'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 
@@ -10,6 +10,7 @@ interface FactionListItem {
   seekBrainstorming?: boolean
   seekRational?: boolean
   _count: { members: number }
+  paidVoteCount: number
 }
 
 interface FactionListProps {
@@ -31,6 +32,27 @@ export default function FactionList({
 }: FactionListProps) {
   const router = useRouter()
   const [query, setQuery] = useState('')
+  const [rechargingFactionId, setRechargingFactionId] = useState<string | null>(null)
+  const [isRecharging, setIsRecharging] = useState(false)
+
+  const handleRecharge = async (factionId: string, tickets: number) => {
+    if (!user) return
+    setIsRecharging(true)
+    try {
+      const res = await rechargeFaction(topicId, factionId, tickets)
+      if (res.success) {
+        setRechargingFactionId(null)
+        // Optionally show success message
+      } else {
+        alert(res.error || 'Failed to recharge')
+      }
+    } catch (e) {
+      console.error(e)
+      alert('An error occurred')
+    } finally {
+      setIsRecharging(false)
+    }
+  }
 
   const normalizedQuery = query.trim().toLowerCase()
   const filteredFactions = useMemo(() => {
@@ -120,34 +142,74 @@ export default function FactionList({
                 )}
               </div>
               
-              <div className="flex items-center justify-between text-xs text-gray-400">
-                <span>{faction._count.members} members</span>
-                
-                <div onClick={(e) => e.stopPropagation()}>
-                  {!user ? (
-                    <button disabled className="py-1 px-2 bg-gray-50 text-gray-400 rounded border border-gray-200 font-medium cursor-not-allowed text-xs">
-                      Login
-                    </button>
-                  ) : isMember ? (
-                    <form action={leaveFaction.bind(null, topicId)}>
-                      <button className="py-1 px-2 bg-white text-red-500 rounded hover:bg-red-50 font-medium transition-colors border border-red-200 text-xs">
-                        Leave
-                      </button>
-                    </form>
-                  ) : (
-                    <form action={joinFaction.bind(null, topicId, faction.id)}>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between text-xs text-gray-400">
+                  <span>{faction._count.members + (faction.paidVoteCount || 0)} votes</span>
+                  
+                  <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1">
+                    {user && (
                       <button 
-                        className={`py-1 px-2 rounded font-medium transition-colors border text-xs ${
-                          currentFactionId 
-                            ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' 
-                            : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
-                        }`}
+                        onClick={() => setRechargingFactionId(faction.id === rechargingFactionId ? null : faction.id)}
+                        className="p-1 rounded hover:bg-amber-50 text-amber-500 transition-colors"
+                        title="Boost Faction"
                       >
-                        {currentFactionId ? 'Switch' : 'Join'}
+                        ⚡
                       </button>
-                    </form>
-                  )}
+                    )}
+
+                    {!user ? (
+                      <button disabled className="py-1 px-2 bg-gray-50 text-gray-400 rounded border border-gray-200 font-medium cursor-not-allowed text-xs">
+                        Login
+                      </button>
+                    ) : isMember ? (
+                      <form action={leaveFaction.bind(null, topicId)}>
+                        <button className="py-1 px-2 bg-white text-red-500 rounded hover:bg-red-50 font-medium transition-colors border border-red-200 text-xs">
+                          Leave
+                        </button>
+                      </form>
+                    ) : (
+                      <form action={joinFaction.bind(null, topicId, faction.id)}>
+                        <button 
+                          className={`py-1 px-2 rounded font-medium transition-colors border text-xs ${
+                            currentFactionId 
+                              ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' 
+                              : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                          }`}
+                        >
+                          {currentFactionId ? 'Switch' : 'Join'}
+                        </button>
+                      </form>
+                    )}
+                  </div>
                 </div>
+
+                {rechargingFactionId === faction.id && (
+                  <div className="mt-2 p-2 bg-amber-50 rounded border border-amber-100 text-xs shadow-sm animate-in fade-in slide-in-from-top-1" onClick={(e) => e.stopPropagation()}>
+                    <div className="font-bold text-amber-800 mb-2 flex justify-between items-center">
+                      <span>Use Tickets to Vote</span>
+                      <button onClick={() => setRechargingFactionId(null)} className="text-amber-400 hover:text-amber-600">✕</button>
+                    </div>
+                    <div className="flex gap-2 mb-2">
+                      <button 
+                        onClick={() => handleRecharge(faction.id, 1)}
+                        disabled={isRecharging}
+                        className="flex-1 py-1 px-2 bg-white border border-amber-300 rounded text-amber-700 hover:bg-amber-100 disabled:opacity-50 transition-colors"
+                      >
+                        1 Vote (1 Ticket)
+                      </button>
+                      <button 
+                        onClick={() => handleRecharge(faction.id, 2)}
+                        disabled={isRecharging}
+                        className="flex-1 py-1 px-2 bg-white border border-amber-300 rounded text-amber-700 hover:bg-amber-100 disabled:opacity-50 transition-colors"
+                      >
+                        2 Votes (2 Tickets)
+                      </button>
+                    </div>
+                    <div className="text-[10px] text-amber-600 text-center">
+                      * Can support once every 12 hours
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

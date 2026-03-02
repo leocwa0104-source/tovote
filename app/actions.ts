@@ -33,7 +33,26 @@ export async function getCurrentUser() {
   const cookieStore = await cookies()
   const userId = cookieStore.get('userId')?.value
   if (!userId) return null
-  return prisma.user.findUnique({ where: { id: userId } })
+  const user = await prisma.user.findUnique({ 
+    where: { id: userId },
+    include: {
+      purchases: {
+        where: {
+          remainingTickets: { gt: 0 },
+          expiresAt: { gt: new Date() }
+        },
+        orderBy: { expiresAt: 'asc' }
+      }
+    }
+  })
+
+  if (user) {
+    // Calculate total valid tickets dynamically
+    // @ts-ignore: User type extension
+    user.tickets = user.purchases.reduce((sum, p) => sum + p.remainingTickets, 0)
+  }
+
+  return user
 }
 
 // --- Topics ---
@@ -171,16 +190,23 @@ export async function checkTopicAccess(topicId: string) {
     return cookieValue === 'anonymous'
 }
 
-export async function getTopics() {
+export async function getTopics(sortBy: 'latest' | 'value' = 'latest') {
   return prisma.topic.findMany({
     where: { isPrivate: false },
-    orderBy: { createdAt: 'desc' },
+    orderBy: sortBy === 'value' ? { totalValue: 'desc' } : { createdAt: 'desc' },
     include: {
       creator: {
         select: { username: true }
       },
       _count: {
-        select: { factions: true, memberships: true }
+        select: {
+          factions: true,
+          memberships: {
+            where: {
+              factionId: { not: null }
+            }
+          }
+        }
       }
     }
   })
@@ -314,8 +340,8 @@ export async function getTopic(id: string) {
   
   if (!topic) return null
   
-  // Sort factions by member count descending
-  topic.factions.sort((a, b) => b._count.members - a._count.members)
+  // Sort factions by total votes (members + paid votes) descending
+  topic.factions.sort((a, b) => (b._count.members + b.paidVoteCount) - (a._count.members + a.paidVoteCount))
   
   return topic
 }
@@ -380,25 +406,184 @@ export async function joinFaction(topicId: string, factionId: string, _formData?
       return; // Already in this faction
     }
     // Switch faction
-    await prisma.membership.update({
-      where: { id: existingMembership.id },
-      data: { factionId }
-    })
+    await prisma.$transaction([
+      prisma.membership.update({
+        where: { id: existingMembership.id },
+        data: { factionId }
+      }),
+      // If user was not in any faction before, increment topic total value
+      ...(existingMembership.factionId === null ? [
+        prisma.topic.update({
+          where: { id: topicId },
+          data: { totalValue: { increment: 1 } }
+        })
+      ] : [])
+    ])
   } else {
     // Join new
     const hasAccess = await checkTopicAccess(topicId)
     if (!hasAccess) throw new Error("Unauthorized")
 
-    await prisma.membership.create({
-      data: {
-        userId: user.id,
-        topicId,
-        factionId
-      }
-    })
+    await prisma.$transaction([
+      prisma.membership.create({
+        data: {
+          userId: user.id,
+          topicId,
+          factionId
+        }
+      }),
+      prisma.topic.update({
+        where: { id: topicId },
+        data: { totalValue: { increment: 1 } }
+      })
+    ])
   }
   
   revalidatePath(`/topic/${topicId}`)
+  revalidatePath('/')
+}
+
+export async function buyPackage(packageId: 'daily' | 'weekly' | 'monthly') {
+  const user = await getCurrentUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
+
+  // Define packages
+  const PACKAGES = {
+    daily: { price: 2, tickets: 3, limitMs: 24 * 60 * 60 * 1000 },
+    weekly: { price: 10, tickets: 15, limitMs: 7 * 24 * 60 * 60 * 1000 },
+    monthly: { price: 30, tickets: 60, limitMs: 30 * 24 * 60 * 60 * 1000 }
+  }
+
+  const pkg = PACKAGES[packageId]
+  if (!pkg) return { success: false, error: 'Invalid package' }
+
+  // Check purchase limit
+  const lastPurchase = await prisma.purchase.findFirst({
+    where: {
+      userId: user.id,
+      packageId: packageId,
+      createdAt: {
+        gt: new Date(Date.now() - pkg.limitMs)
+      }
+    },
+    orderBy: { createdAt: 'desc' }
+  })
+
+  if (lastPurchase) {
+    const hoursLeft = (pkg.limitMs - (Date.now() - lastPurchase.createdAt.getTime())) / (1000 * 60 * 60)
+    return { success: false, error: `Package limit reached. Wait ${hoursLeft.toFixed(1)} hours.` }
+  }
+
+  // Mock Payment & Add Tickets
+  try {
+    await prisma.purchase.create({
+      data: {
+        userId: user.id,
+        packageId,
+        amount: pkg.price,
+        tickets: pkg.tickets,
+        remainingTickets: pkg.tickets,
+        expiresAt: new Date(Date.now() + pkg.limitMs)
+      }
+    })
+
+    revalidatePath('/')
+    return { success: true }
+  } catch (e) {
+    console.error(e)
+    return { success: false, error: 'Purchase failed' }
+  }
+}
+
+export async function rechargeFaction(topicId: string, factionId: string, ticketsNeeded: number) {
+  const user = await getCurrentUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
+
+  // 1. Get all valid purchases with remaining tickets, sorted by expiration (FIFO)
+  const validPurchases = await prisma.purchase.findMany({
+    where: {
+      userId: user.id,
+      remainingTickets: { gt: 0 },
+      expiresAt: { gt: new Date() }
+    },
+    orderBy: { expiresAt: 'asc' }
+  })
+
+  const totalAvailable = validPurchases.reduce((sum, p) => sum + p.remainingTickets, 0)
+  
+  if (totalAvailable < ticketsNeeded) {
+    return { success: false, error: 'Insufficient tickets' }
+  }
+
+  // Check cooldown
+  const lastTransaction = await prisma.transaction.findFirst({
+    where: {
+      userId: user.id,
+      factionId: factionId,
+      createdAt: {
+        gt: new Date(Date.now() - 12 * 60 * 60 * 1000) // 12 hours ago
+      }
+    },
+    orderBy: { createdAt: 'desc' }
+  })
+
+  if (lastTransaction) {
+    const hoursLeft = 12 - (Date.now() - lastTransaction.createdAt.getTime()) / (1000 * 60 * 60)
+    return { success: false, error: `Cooldown active. Please wait ${hoursLeft.toFixed(1)} hours.` }
+  }
+
+  try {
+    const votes = ticketsNeeded
+    
+    // Prepare updates
+    const purchaseUpdates = []
+    let remainingToDeduct = ticketsNeeded
+
+    for (const purchase of validPurchases) {
+      if (remainingToDeduct <= 0) break
+
+      const deductAmount = Math.min(purchase.remainingTickets, remainingToDeduct)
+      
+      purchaseUpdates.push(
+        prisma.purchase.update({
+          where: { id: purchase.id },
+          data: { remainingTickets: { decrement: deductAmount } }
+        })
+      )
+      
+      remainingToDeduct -= deductAmount
+    }
+
+    await prisma.$transaction([
+      ...purchaseUpdates,
+      // Record transaction
+      prisma.transaction.create({
+        data: {
+          userId: user.id,
+          factionId,
+          amount: 0, // No direct money spent here
+          votes
+        }
+      }),
+      // Update faction
+      prisma.faction.update({
+        where: { id: factionId },
+        data: { paidVoteCount: { increment: votes } }
+      }),
+      // Update topic value
+      prisma.topic.update({
+        where: { id: topicId },
+        data: { totalValue: { increment: votes } }
+      })
+    ])
+
+    revalidatePath(`/topic/${topicId}`)
+    revalidatePath('/')
+    return { success: true }
+  } catch (e) {
+    console.error(e)
+    return { success: false, error: 'Transaction failed' }
+  }
 }
 
 export async function leaveFaction(topicId: string, _formData?: FormData) {
