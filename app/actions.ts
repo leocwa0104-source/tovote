@@ -450,7 +450,7 @@ export async function joinFaction(topicId: string, factionId: string, formData?:
 
 import { PACKAGES, PackageId } from '@/lib/constants'
 
-export async function buyPackage(packageId: PackageId) {
+export async function buyPackage(packageId: PackageId): Promise<{ success: boolean; error?: string; checkoutUrl?: string }> {
   const user = await getCurrentUser()
   if (!user) return { success: false, error: 'Unauthorized' }
 
