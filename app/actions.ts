@@ -13,50 +13,66 @@ import bcrypt from 'bcryptjs'
 // --- User Management ---
 
 export async function login(formData: FormData) {
-  const username = formData.get('username') as string
-  if (!username) throw new Error("Username required")
-  
-  let user = await prisma.user.findUnique({ where: { username } })
-  if (!user) {
-    user = await prisma.user.create({ data: { username } })
+  try {
+    const username = formData.get('username') as string
+    if (!username) throw new Error("Username required")
+    
+    let user = await prisma.user.findUnique({ where: { username } })
+    if (!user) {
+      user = await prisma.user.create({ data: { username } })
+    }
+    
+    const cookieStore = await cookies()
+    cookieStore.set('userId', user.id)
+    
+    revalidatePath('/')
+  } catch (e) {
+    console.error("login error:", e)
+    // We can't return error message easily here since it's a form action without state
+    // But preventing crash is better
   }
-  
-  const cookieStore = await cookies()
-  cookieStore.set('userId', user.id)
-  
-  revalidatePath('/')
 }
 
 export async function logout() {
-  const cookieStore = await cookies()
-  cookieStore.delete('userId')
-  redirect('/')
+  try {
+    const cookieStore = await cookies()
+    cookieStore.delete('userId')
+    redirect('/')
+  } catch (e) {
+    console.error("logout error:", e)
+    redirect('/') // Ensure redirect happens even if cookie deletion fails
+  }
 }
 
 export async function getCurrentUser() {
-  const cookieStore = await cookies()
-  const userId = cookieStore.get('userId')?.value
-  if (!userId) return null
-  const user = await prisma.user.findUnique({ 
-    where: { id: userId },
-    include: {
-      purchases: {
-        where: {
-          remainingTickets: { gt: 0 },
-          expiresAt: { gt: new Date() }
-        },
-        orderBy: { expiresAt: 'asc' }
+  try {
+    const cookieStore = await cookies()
+    const userId = cookieStore.get('userId')?.value
+    if (!userId) return null
+    const user = await prisma.user.findUnique({ 
+      where: { id: userId },
+      include: {
+        purchases: {
+          where: {
+            remainingTickets: { gt: 0 },
+            expiresAt: { gt: new Date() }
+          },
+          orderBy: { expiresAt: 'asc' }
+        }
       }
+    })
+
+    if (user) {
+      // Calculate total valid tickets dynamically
+      const tickets = user.purchases ? user.purchases.reduce((sum, p) => sum + p.remainingTickets, 0) : 0
+      Object.assign(user, { tickets })
     }
-  })
 
-  if (user) {
-    // Calculate total valid tickets dynamically
-    const tickets = user.purchases ? user.purchases.reduce((sum, p) => sum + p.remainingTickets, 0) : 0
-    Object.assign(user, { tickets })
+    return user
+  } catch (e) {
+    console.error("getCurrentUser error:", e)
+    return null
   }
-
-  return user
 }
 
 // --- Topics ---
@@ -163,6 +179,7 @@ export async function verifyTopicPassword(topicId: string, password: string) {
 }
 
 export async function checkTopicAccess(topicId: string) {
+  try {
     const topic = await prisma.topic.findUnique({ where: { id: topicId } })
     if (!topic) return false
     if (!topic.isPrivate) return true
@@ -198,62 +215,76 @@ export async function checkTopicAccess(topicId: string) {
 
     // If user is anonymous, cookie must be 'anonymous'
     return cookieValue === 'anonymous'
+  } catch (e) {
+    console.error("checkTopicAccess error:", e)
+    return false
+  }
 }
 
 export async function getTopics(sortBy: 'latest' | 'value' = 'latest') {
-  return prisma.topic.findMany({
-    where: { isPrivate: false },
-    orderBy: sortBy === 'value' ? { totalValue: 'desc' } : { createdAt: 'desc' },
-    include: {
-      creator: {
-        select: { username: true }
-      },
-      _count: {
-        select: {
-          factions: true,
-          memberships: {
-            where: {
-              factionId: { not: null }
-            }
-          }
-        }
-      }
-    }
-  })
-}
-
-export async function getJoinedPrivateTopics() {
-  const user = await getCurrentUser()
-  if (!user) return []
-
-  const memberships = await prisma.membership.findMany({
-    where: { 
-      userId: user.id,
-      topic: { isPrivate: true }
-    },
-    include: {
-      topic: {
-        include: {
-          creator: {
-            select: { username: true }
-          },
-          _count: {
-            select: { 
-              factions: true, 
-              memberships: {
-                where: {
-                  factionId: { not: null }
-                }
+  try {
+    return await prisma.topic.findMany({
+      where: { isPrivate: false },
+      orderBy: sortBy === 'value' ? { totalValue: 'desc' } : { createdAt: 'desc' },
+      include: {
+        creator: {
+          select: { username: true }
+        },
+        _count: {
+          select: {
+            factions: true,
+            memberships: {
+              where: {
+                factionId: { not: null }
               }
             }
           }
         }
       }
-    },
-    orderBy: { joinedAt: 'desc' }
-  })
+    })
+  } catch (e) {
+    console.error("getTopics error:", e)
+    return []
+  }
+}
 
-  return memberships.map(m => m.topic)
+export async function getJoinedPrivateTopics() {
+  try {
+    const user = await getCurrentUser()
+    if (!user) return []
+
+    const memberships = await prisma.membership.findMany({
+      where: { 
+        userId: user.id,
+        topic: { isPrivate: true }
+      },
+      include: {
+        topic: {
+          include: {
+            creator: {
+              select: { username: true }
+            },
+            _count: {
+              select: { 
+                factions: true, 
+                memberships: {
+                  where: {
+                    factionId: { not: null }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      orderBy: { joinedAt: 'desc' }
+    })
+
+    return memberships.map(m => m.topic)
+  } catch (e) {
+    console.error("getJoinedPrivateTopics error:", e)
+    return []
+  }
 }
 
 export async function joinPrivateTopic(title: string, creatorName: string, password: string) {
@@ -301,47 +332,49 @@ export async function joinPrivateTopic(title: string, creatorName: string, passw
 }
 
 export async function getTopic(id: string) {
-  const topic = await prisma.topic.findUnique({
-    where: { id },
-    include: {
-      creator: true,
-      _count: {
-        select: { memberships: true }
-      },
-      factions: {
-        include: {
-          _count: {
-            select: { members: true }
-          },
-          members: {
-            take: 50, // Limit to 50 members for now
-            include: {
-              user: true
-            }
-          },
-          opinions: {
-            orderBy: { createdAt: 'desc' },
-            include: { 
-              author: true,
-              citations: {
-                include: {
-                  target: {
-                    include: { 
-                      author: true,
-                      faction: {
-                        include: {
-                          topic: true
+  try {
+    const topic = await prisma.topic.findUnique({
+      where: { id },
+      include: {
+        creator: true,
+        _count: {
+          select: { memberships: true }
+        },
+        factions: {
+          include: {
+            _count: {
+              select: { members: true }
+            },
+            members: {
+              take: 50, // Limit to 50 members for now
+              include: {
+                user: true
+              }
+            },
+            opinions: {
+              orderBy: { createdAt: 'desc' },
+              include: { 
+                author: true,
+                citations: {
+                  include: {
+                    target: {
+                      include: { 
+                        author: true,
+                        faction: {
+                          include: {
+                            topic: true
+                          }
                         }
                       }
                     }
                   }
-                }
-              },
-              citedBy: {
-                include: {
-                  source: {
-                    include: {
-                      author: true
+                },
+                citedBy: {
+                  include: {
+                    source: {
+                      include: {
+                        author: true
+                      }
                     }
                   }
                 }
@@ -350,15 +383,18 @@ export async function getTopic(id: string) {
           }
         }
       }
-    }
-  })
-  
-  if (!topic) return null
-  
-  // Sort factions by total votes (members + paid votes) descending
-  topic.factions.sort((a, b) => (b._count.members + b.paidVoteCount) - (a._count.members + a.paidVoteCount))
-  
-  return topic
+    })
+    
+    if (!topic) return null
+    
+    // Sort factions by total votes (members + paid votes) descending
+    topic.factions.sort((a, b) => (b._count.members + b.paidVoteCount) - (a._count.members + a.paidVoteCount))
+    
+    return topic
+  } catch (e) {
+    console.error("getTopic error:", e)
+    return null
+  }
 }
 
 // --- Factions ---
@@ -641,10 +677,10 @@ export async function rechargeFaction(topicId: string, factionId: string, ticket
 
 export async function leaveFaction(topicId: string, formData?: FormData) {
   void formData
-  const user = await getCurrentUser()
-  if (!user) throw new Error("Unauthorized")
-  
   try {
+    const user = await getCurrentUser()
+    if (!user) throw new Error("Unauthorized")
+    
     await prisma.membership.update({
       where: {
         userId_topicId: {
@@ -656,124 +692,151 @@ export async function leaveFaction(topicId: string, formData?: FormData) {
         factionId: null
       }
     })
-  } catch {
-    // Ignore if not found
+    
+    revalidatePath(`/topic/${topicId}`)
+  } catch (e) {
+    console.error("leaveFaction error:", e)
   }
-  
-  revalidatePath(`/topic/${topicId}`)
 }
 
 export async function getFaction(factionId: string) {
-  const faction = await prisma.faction.findUnique({
-    where: { id: factionId },
-    include: {
-      topic: true,
-      _count: {
-        select: { members: true }
-      },
-      opinions: {
-        orderBy: { createdAt: 'desc' },
-        include: {
-          author: true,
-          citations: {
-            include: {
-              target: {
-                include: {
-                  author: true,
-                  faction: {
-                    include: {
-                      topic: true
+  try {
+    const faction = await prisma.faction.findUnique({
+      where: { id: factionId },
+      include: {
+        topic: true,
+        _count: {
+          select: { members: true }
+        },
+        opinions: {
+          orderBy: { createdAt: 'desc' },
+          include: {
+            author: true,
+            citations: {
+              include: {
+                target: {
+                  include: {
+                    author: true,
+                    faction: {
+                      include: {
+                        topic: true
+                      }
                     }
                   }
                 }
               }
-            }
-          },
-          citedBy: {
-            include: {
-              source: {
-                include: {
-                  author: true
+            },
+            citedBy: {
+              include: {
+                source: {
+                  include: {
+                    author: true
+                  }
                 }
               }
             }
           }
         }
       }
-    }
-  })
-  return faction
+    })
+    return faction
+  } catch (e) {
+    console.error("getFaction error:", e)
+    return null
+  }
 }
 
 export async function getUserMembership(topicId: string) {
-  const user = await getCurrentUser()
-  if (!user) return null
-  
-  return prisma.membership.findUnique({
-    where: {
-      userId_topicId: {
-        userId: user.id,
-        topicId
+  try {
+    const user = await getCurrentUser()
+    if (!user) return null
+    
+    return await prisma.membership.findUnique({
+      where: {
+        userId_topicId: {
+          userId: user.id,
+          topicId
+        }
       }
-    }
-  })
+    })
+  } catch (e) {
+    console.error("getUserMembership error:", e)
+    return null
+  }
 }
 
 export async function getUserTopicMemberships() {
-  const user = await getCurrentUser()
-  if (!user) return []
-  const memberships = await prisma.membership.findMany({
-    where: { userId: user.id },
-    select: { topicId: true }
-  })
-  return memberships.map(m => m.topicId)
+  try {
+    const user = await getCurrentUser()
+    if (!user) return []
+    const memberships = await prisma.membership.findMany({
+      where: { userId: user.id },
+      select: { topicId: true }
+    })
+    return memberships.map(m => m.topicId)
+  } catch (e) {
+    console.error("getUserTopicMemberships error:", e)
+    return []
+  }
 }
 
 export async function ensureTopicMembership(topicId: string) {
-  const user = await getCurrentUser()
-  if (!user) return
+  try {
+    const user = await getCurrentUser()
+    if (!user) return
 
-  const existing = await prisma.membership.findUnique({
-    where: { userId_topicId: { userId: user.id, topicId } }
-  })
-  
-  if (!existing) {
-    await prisma.membership.create({
-      data: { userId: user.id, topicId }
+    const existing = await prisma.membership.findUnique({
+      where: { userId_topicId: { userId: user.id, topicId } }
     })
-    revalidatePath(`/topic/${topicId}`)
-    revalidatePath('/')
+    
+    if (!existing) {
+      await prisma.membership.create({
+        data: { userId: user.id, topicId }
+      })
+      revalidatePath(`/topic/${topicId}`)
+      revalidatePath('/')
+    }
+  } catch (e) {
+    console.error("ensureTopicMembership error:", e)
   }
 }
 
 export async function joinTopic(topicId: string) {
-  const user = await getCurrentUser()
-  if (!user) throw new Error("Unauthorized")
-  const hasAccess = await checkTopicAccess(topicId)
-  if (!hasAccess) throw new Error("Unauthorized")
-  const existing = await prisma.membership.findUnique({
-    where: { userId_topicId: { userId: user.id, topicId } }
-  })
-  if (!existing) {
-    await prisma.membership.create({
-      data: { userId: user.id, topicId }
+  try {
+    const user = await getCurrentUser()
+    if (!user) throw new Error("Unauthorized")
+    const hasAccess = await checkTopicAccess(topicId)
+    if (!hasAccess) throw new Error("Unauthorized")
+    const existing = await prisma.membership.findUnique({
+      where: { userId_topicId: { userId: user.id, topicId } }
     })
+    if (!existing) {
+      await prisma.membership.create({
+        data: { userId: user.id, topicId }
+      })
+    }
+    revalidatePath(`/topic/${topicId}`)
+    revalidatePath('/')
+  } catch (e) {
+    console.error("joinTopic error:", e)
   }
-  revalidatePath(`/topic/${topicId}`)
-  revalidatePath('/')
   redirect(`/topic/${topicId}`)
 }
 
 export async function leaveTopic(topicId: string) {
-  const user = await getCurrentUser()
-  if (!user) throw new Error("Unauthorized")
   try {
+    const user = await getCurrentUser()
+    if (!user) throw new Error("Unauthorized")
+
     await prisma.membership.delete({
       where: { userId_topicId: { userId: user.id, topicId } }
     })
-  } catch {}
-  revalidatePath(`/topic/${topicId}`)
-  revalidatePath('/')
+    
+    revalidatePath(`/topic/${topicId}`)
+    revalidatePath('/')
+  } catch (e) {
+    console.error("leaveTopic error:", e)
+  }
 }
 
 // --- Messages ---
@@ -782,9 +845,8 @@ export async function postReason() {
   // This function is deprecated and replaced by createOpinion
   // Keeping it temporarily if needed, but the UI should now use createOpinion
   // or we can remove it entirely if we are sure no one uses it.
-  // For now, let's just implement it as a wrapper around createOpinion if possible,
-  // or just throw an error.
-  throw new Error("Deprecated: Use createOpinion instead")
+  console.warn("Deprecated: postReason called. Use createOpinion instead.")
+  return;
 }
 
 export async function getFactionOpinions(factionId: string) {
@@ -796,183 +858,200 @@ export async function getFactionOpinions(factionId: string) {
 }
 
 export async function createOpinion(formData: FormData) {
-  const factionId = formData.get('factionId') as string
-  // Force type to 'WHY' to unify all opinions as "Territories"
-  const type = 'WHY'
-  const summary = formData.get('summary') as string
-  const detail = formData.get('detail') as string
-  const citationIds = formData.get('citationIds') as string // JSON array string
-  const neighborId = formData.get('neighborId') as string | null
-  
-  const user = await getCurrentUser()
-  if (!user) throw new Error("Unauthorized")
-  
-  const faction = await prisma.faction.findUnique({ where: { id: factionId } })
-  if (!faction) throw new Error("Faction not found")
+  try {
+    const factionId = formData.get('factionId') as string
+    // Force type to 'WHY' to unify all opinions as "Territories"
+    const type = 'WHY'
+    const summary = formData.get('summary') as string
+    const detail = formData.get('detail') as string
+    const citationIds = formData.get('citationIds') as string // JSON array string
+    const neighborId = formData.get('neighborId') as string | null
+    
+    const user = await getCurrentUser()
+    if (!user) throw new Error("Unauthorized")
+    
+    const faction = await prisma.faction.findUnique({ where: { id: factionId } })
+    if (!faction) throw new Error("Faction not found")
 
-  const hasAccess = await checkTopicAccess(faction.topicId)
-  if (!hasAccess) throw new Error("Unauthorized")
-  
-  const opinion = await prisma.opinion.upsert({
-    where: {
-      authorId_factionId_type: {
+    const hasAccess = await checkTopicAccess(faction.topicId)
+    if (!hasAccess) throw new Error("Unauthorized")
+    
+    const opinion = await prisma.opinion.upsert({
+      where: {
+        authorId_factionId_type: {
+          authorId: user.id,
+          factionId,
+          type
+        }
+      },
+      update: {
+        summary,
+        detail,
+        // Only update neighbor if explicitly provided, otherwise keep existing
+        ...(neighborId ? { neighborId } : {}),
+        updatedAt: new Date()
+      },
+      create: {
+        summary,
+        detail,
+        type,
         authorId: user.id,
         factionId,
-        type
+        neighborId: neighborId || null
       }
-    },
-    update: {
-      summary,
-      detail,
-      // Only update neighbor if explicitly provided, otherwise keep existing
-      ...(neighborId ? { neighborId } : {}),
-      updatedAt: new Date()
-    },
-    create: {
-      summary,
-      detail,
-      type,
-      authorId: user.id,
-      factionId,
-      neighborId: neighborId || null
-    }
-  })
+    })
 
-  // Handle citations
-  if (citationIds) {
-    try {
-      const ids = JSON.parse(citationIds) as string[]
-      if (Array.isArray(ids) && ids.length > 0) {
-        // Create citations
-        await Promise.all(ids.map(targetId => 
-          prisma.citation.upsert({
-            where: {
-              sourceId_targetId: {
+    // Handle citations
+    if (citationIds) {
+      try {
+        const ids = JSON.parse(citationIds) as string[]
+        if (Array.isArray(ids) && ids.length > 0) {
+          // Create citations
+          await Promise.all(ids.map(targetId => 
+            prisma.citation.upsert({
+              where: {
+                sourceId_targetId: {
+                  sourceId: opinion.id,
+                  targetId
+                }
+              },
+              update: {}, // Do nothing if exists
+              create: {
                 sourceId: opinion.id,
                 targetId
               }
-            },
-            update: {}, // Do nothing if exists
-            create: {
-              sourceId: opinion.id,
-              targetId
-            }
-          })
-        ))
+            })
+          ))
+        }
+      } catch (e) {
+        console.error("Failed to parse citation IDs", e)
       }
-    } catch (e) {
-      console.error("Failed to parse citation IDs", e)
     }
-  }
-  
-  // Ensure user is in the faction they are posting to
-  const existingMembership = await prisma.membership.findUnique({
-    where: { userId_topicId: { userId: user.id, topicId: faction.topicId } }
-  })
-  
-  if (existingMembership) {
-    if (existingMembership.factionId !== factionId) {
-      await prisma.membership.update({
-        where: { id: existingMembership.id },
-        data: { factionId }
+    
+    // Ensure user is in the faction they are posting to
+    const existingMembership = await prisma.membership.findUnique({
+      where: { userId_topicId: { userId: user.id, topicId: faction.topicId } }
+    })
+    
+    if (existingMembership) {
+      if (existingMembership.factionId !== factionId) {
+        await prisma.membership.update({
+          where: { id: existingMembership.id },
+          data: { factionId }
+        })
+      }
+    } else {
+      await prisma.membership.create({
+        data: {
+          userId: user.id,
+          topicId: faction.topicId,
+          factionId
+        }
       })
     }
-  } else {
-    await prisma.membership.create({
-      data: {
-        userId: user.id,
-        topicId: faction.topicId,
-        factionId
-      }
-    })
-  }
 
-  revalidatePath(`/topic/${faction.topicId}`)
-  revalidatePath(`/topic/${faction.topicId}/faction/${faction.id}`)
+    revalidatePath(`/topic/${faction.topicId}`)
+    revalidatePath(`/topic/${faction.topicId}/faction/${faction.id}`)
+  } catch (e) {
+    console.error("createOpinion error:", e)
+  }
 }
 
 export async function deleteOpinion(opinionId: string) {
-  const user = await getCurrentUser()
-  if (!user) throw new Error("Unauthorized")
-  
-  const opinion = await prisma.opinion.findUnique({ where: { id: opinionId } })
-  if (!opinion) throw new Error("Opinion not found")
-  
-  if (opinion.authorId !== user.id) throw new Error("Forbidden")
-  
-  const faction = await prisma.faction.findUnique({ where: { id: opinion.factionId } })
-  
-  await prisma.opinion.delete({ where: { id: opinionId } })
-  
-  if (faction) {
-    revalidatePath(`/topic/${faction.topicId}`)
-    revalidatePath(`/topic/${faction.topicId}/faction/${faction.id}`)
+  try {
+    const user = await getCurrentUser()
+    if (!user) throw new Error("Unauthorized")
+    
+    const opinion = await prisma.opinion.findUnique({ where: { id: opinionId } })
+    if (!opinion) throw new Error("Opinion not found")
+    
+    if (opinion.authorId !== user.id) throw new Error("Forbidden")
+    
+    const faction = await prisma.faction.findUnique({ where: { id: opinion.factionId } })
+    
+    await prisma.opinion.delete({ where: { id: opinionId } })
+    
+    if (faction) {
+      revalidatePath(`/topic/${faction.topicId}`)
+      revalidatePath(`/topic/${faction.topicId}/faction/${faction.id}`)
+    }
+  } catch (e) {
+    console.error("deleteOpinion error:", e)
   }
 }
 
 export async function setOpinionNeighbor(opinionId: string, neighborId: string | null) {
-  const user = await getCurrentUser()
-  if (!user) throw new Error("Unauthorized")
+  try {
+    const user = await getCurrentUser()
+    if (!user) throw new Error("Unauthorized")
 
-  const opinion = await prisma.opinion.findUnique({ where: { id: opinionId } })
-  if (!opinion) throw new Error("Opinion not found")
-  if (opinion.authorId !== user.id) throw new Error("Forbidden")
+    const opinion = await prisma.opinion.findUnique({ where: { id: opinionId } })
+    if (!opinion) throw new Error("Opinion not found")
+    if (opinion.authorId !== user.id) throw new Error("Forbidden")
 
-  if (neighborId === opinionId) throw new Error("Cannot be neighbor to self")
+    if (neighborId === opinionId) throw new Error("Cannot be neighbor to self")
 
-  if (neighborId) {
-      const neighbor = await prisma.opinion.findUnique({ where: { id: neighborId } })
-      if (!neighbor) throw new Error("Neighbor not found")
-      if (neighbor.factionId !== opinion.factionId) throw new Error("Neighbor must be in the same faction")
-  }
+    if (neighborId) {
+        const neighbor = await prisma.opinion.findUnique({ where: { id: neighborId } })
+        if (!neighbor) throw new Error("Neighbor not found")
+        if (neighbor.factionId !== opinion.factionId) throw new Error("Neighbor must be in the same faction")
+    }
 
-  await prisma.opinion.update({
-    where: { id: opinionId },
-    data: { neighborId }
-  })
+    await prisma.opinion.update({
+      where: { id: opinionId },
+      data: { neighborId }
+    })
 
-  const faction = await prisma.faction.findUnique({ where: { id: opinion.factionId } })
-  if (faction) {
-      revalidatePath(`/topic/${faction.topicId}`)
+    const faction = await prisma.faction.findUnique({ where: { id: opinion.factionId } })
+    if (faction) {
+        revalidatePath(`/topic/${faction.topicId}`)
+    }
+  } catch (e) {
+    console.error("setOpinionNeighbor error:", e)
   }
 }
 
 // --- Dashboard ---
 
 export async function getUserDashboardData() {
-  const user = await getCurrentUser()
-  if (!user) return null
+  try {
+    const user = await getCurrentUser()
+    if (!user) return null
 
-  const [joinedFactions, createdTopics] = await Promise.all([
-    prisma.membership.findMany({
-      where: { userId: user.id },
-      include: {
-        topic: true,
-        faction: {
-          include: {
-            _count: {
-              select: { members: true }
+    const [joinedFactions, createdTopics] = await Promise.all([
+      prisma.membership.findMany({
+        where: { userId: user.id },
+        include: {
+          topic: true,
+          faction: {
+            include: {
+              _count: {
+                select: { members: true }
+              }
             }
           }
-        }
-      },
-      orderBy: { joinedAt: 'desc' }
-    }),
-    prisma.topic.findMany({
-      where: { creatorId: user.id },
-      include: {
-        _count: {
-          select: { factions: true, memberships: true }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    })
-  ])
+        },
+        orderBy: { joinedAt: 'desc' }
+      }),
+      prisma.topic.findMany({
+        where: { creatorId: user.id },
+        include: {
+          _count: {
+            select: { factions: true, memberships: true }
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      })
+    ])
 
-  return {
-    user,
-    joinedFactions,
-    createdTopics
+    return {
+      user,
+      joinedFactions,
+      createdTopics
+    }
+  } catch (e) {
+    console.error("getUserDashboardData error:", e)
+    return null
   }
 }
 
@@ -981,35 +1060,40 @@ export async function getUserDashboardData() {
 export async function searchOpinions(query: string) {
   if (!query || query.length < 2) return []
   
-  const user = await getCurrentUser()
-  if (!user) return []
+  try {
+    const user = await getCurrentUser()
+    if (!user) return []
 
-  return prisma.opinion.findMany({
-    where: {
-      OR: [
-        { summary: { contains: query, mode: 'insensitive' } },
-        { detail: { contains: query, mode: 'insensitive' } },
-        { author: { username: { contains: query, mode: 'insensitive' } } }
-      ]
-    },
-    take: 5,
-    orderBy: { createdAt: 'desc' },
-    include: {
-      author: true,
-      faction: {
-        include: {
-          topic: true
+    return await prisma.opinion.findMany({
+      where: {
+        OR: [
+          { summary: { contains: query, mode: 'insensitive' } },
+          { detail: { contains: query, mode: 'insensitive' } },
+          { author: { username: { contains: query, mode: 'insensitive' } } }
+        ]
+      },
+      take: 5,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        author: true,
+        faction: {
+          include: {
+            topic: true
+          }
         }
       }
-    }
-  })
+    })
+  } catch (e) {
+    console.error("searchOpinions error:", e)
+    return []
+  }
 }
 
 export async function getOpinionById(id: string) {
-  const user = await getCurrentUser()
-  if (!user) return null
-  
   try {
+    const user = await getCurrentUser()
+    if (!user) return null
+    
     const opinion = await prisma.opinion.findUnique({
       where: { id },
       include: {
