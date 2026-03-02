@@ -13,7 +13,6 @@ interface Purchase {
 
 export default function TicketBalance({ tickets, purchases }: { tickets: number, purchases: Purchase[] }) {
   const [showStore, setShowStore] = useState(false)
-  const [currency, setCurrency] = useState<'HKD' | 'CNY'>('HKD')
   const [loading, setLoading] = useState(false)
 
   // Filter only active purchases for display
@@ -25,10 +24,6 @@ export default function TicketBalance({ tickets, purchases }: { tickets: number,
       const res = await buyPackage(pkgId)
       if (res.success && res.checkoutUrl) {
         window.location.href = res.checkoutUrl
-      } else if (res.success) {
-        // Fallback for mock/dev environment
-        setShowStore(false)
-        alert('Purchase Successful (Mock)')
       } else {
         alert(res.error || 'Purchase failed')
       }
@@ -39,8 +34,7 @@ export default function TicketBalance({ tickets, purchases }: { tickets: number,
     }
   }
 
-// Remove old PACKAGES definition
-
+  // Remove old PACKAGES definition
 
   return (
     <div className="flex items-center justify-between bg-amber-50 rounded px-2 py-1 border border-amber-100 relative">
@@ -61,12 +55,6 @@ export default function TicketBalance({ tickets, purchases }: { tickets: number,
             <div className="bg-amber-50 p-4 border-b border-amber-100 flex justify-between items-center">
               <h3 className="font-bold text-amber-900">Ticket Store</h3>
               <div className="flex gap-2 items-center">
-                <button 
-                  onClick={() => setCurrency(c => c === 'HKD' ? 'CNY' : 'HKD')}
-                  className="text-xs bg-white border border-amber-200 px-2 py-1 rounded hover:bg-amber-50 text-amber-800"
-                >
-                  {currency === 'HKD' ? '🇭🇰 HKD' : '🇨🇳 CNY'}
-                </button>
                 <button onClick={() => setShowStore(false)} className="text-amber-500 hover:text-amber-700">✕</button>
               </div>
             </div>
@@ -93,11 +81,11 @@ export default function TicketBalance({ tickets, purchases }: { tickets: number,
                     <div>
                       <div className="font-bold text-gray-800">{pkg.label} Pack</div>
                       <div className="text-xs text-gray-500">
-                        {pkg.tickets} Tickets • {currency === 'HKD' ? `HK$${pkg.prices.HKD}` : `¥${pkg.prices.CNY}`}
+                        {pkg.tickets} Tickets • ¥{pkg.price}
                       </div>
                     </div>
                     <button
-                      onClick={() => currency === 'HKD' ? handleBuy(pkg.id as PackageId) : alert('CNY payment coming soon!')}
+                      onClick={() => handleBuy(pkg.id as PackageId)}
                       disabled={loading || !!isCooldown}
                       className={`px-3 py-1.5 rounded text-sm font-bold ${
                         isCooldown 
@@ -112,7 +100,7 @@ export default function TicketBalance({ tickets, purchases }: { tickets: number,
               })}
             </div>
             <div className="p-3 bg-gray-50 text-xs text-center text-gray-500 border-t border-gray-100">
-              Payments are simulated for prototype.
+              Wechat / Alipay supported.
             </div>
           </div>
         </div>

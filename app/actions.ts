@@ -474,67 +474,57 @@ export async function buyPackage(packageId: PackageId) {
     return { success: false, error: `Package limit reached. Wait ${hoursLeft.toFixed(1)} hours.` }
   }
 
-  // --- Payment Integration (Lemon Squeezy) ---
+  // --- Payment Integration (Generic Wechat/Alipay) ---
   try {
-    // Lemon Squeezy Integration
-    const storeId = process.env.LEMONSQUEEZY_STORE_ID
-    const variantId = process.env[`LEMONSQUEEZY_VARIANT_ID_${packageId.toUpperCase()}`]
-    
-    if (!storeId || !variantId) {
-      return { success: false, error: 'Lemon Squeezy not configured' }
+    // 1. Get Payment Config from Env
+    const paymentApiUrl = process.env.PAYMENT_API_URL
+    const paymentAppId = process.env.PAYMENT_APP_ID
+    const paymentSecret = process.env.PAYMENT_SECRET
+
+    // 2. Fallback to Mock if no config (or use a simple direct link if you prefer)
+    if (!paymentApiUrl || !paymentAppId || !paymentSecret) {
+      // For now, return a placeholder or mock success for dev
+      // In production, this should throw error or show "Payment not configured"
+      
+      // MOCK: Simulate immediate success for now (or you can return a QR code url if you have one)
+      // Since user said "leave Wechat and Alipay", we can't really generate a real payment link without a provider.
+      // We will simulate a "Checkout Page" that would exist.
+      
+      // TODO: Replace this with actual API call to your chosen payment provider (e.g. Jeepay, Xunhu, etc.)
+      console.warn("Payment env vars missing. Using mock checkout.")
+      
+      return { 
+        success: false, 
+        error: "Payment provider not configured. Please configure PAYMENT_API_URL, PAYMENT_APP_ID, PAYMENT_SECRET." 
+      }
     }
 
-    // FALLBACK: Use API to create checkout.
-    const apiKey = process.env.LEMONSQUEEZY_API_KEY
-    if (apiKey) {
-      const response = await fetch('https://api.lemonsqueezy.com/v1/checkouts', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/vnd.api+json',
-          'Accept': 'application/vnd.api+json'
-        },
-        body: JSON.stringify({
-          data: {
-            type: 'checkouts',
-            attributes: {
-              checkout_data: {
-                custom: {
-                  userId: user.id,
-                  packageId: packageId
-                }
-              },
-              product_options: {
-                redirect_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/`
-              }
-            },
-            relationships: {
-              store: {
-                data: {
-                  type: 'stores',
-                  id: storeId
-                }
-              },
-              variant: {
-                data: {
-                  type: 'variants',
-                  id: variantId
-                }
-              }
-            }
-          }
-        })
-      })
-      
-      const data = await response.json()
-      if (data?.data?.attributes?.url) {
-        return { success: true, checkoutUrl: data.data.attributes.url }
-      } else {
-        console.error('LS API Error:', JSON.stringify(data))
-        return { success: false, error: 'Failed to create checkout' }
-      }
-    } else {
-        return { success: false, error: 'Missing API Key' }
+    // 3. Construct Payment Request (Generic Structure)
+    // This is a common structure for many 3rd party payment APIs (EasyPay, Jeepay, etc.)
+    // You will need to adjust fields based on the specific provider you choose later.
+    const orderId = `${user.id}_${Date.now()}`
+    const amount = pkg.price // Use CNY for Wechat/Alipay
+    const notifyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/webhook/payment`
+    const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL}/`
+    
+    // Example Payload (adjust to your provider)
+    const payload = {
+      pid: paymentAppId,
+      type: 'alipay', // or 'wxpay', usually passed from frontend choice
+      out_trade_no: orderId,
+      notify_url: notifyUrl,
+      return_url: returnUrl,
+      name: `Ticket Package ${pkg.label}`,
+      money: amount,
+      // sign: generateSign(...) // You would need a signing function here
+    }
+
+    // For now, since we don't have a real provider, we just return error to prompt config.
+    // If you have a specific provider doc, we can implement the exact signature.
+    
+    return { 
+      success: false, 
+      error: "Payment provider integration pending. Please configure API details." 
     }
 
   } catch (e) {
