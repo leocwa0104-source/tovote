@@ -49,7 +49,7 @@ export async function getCurrentUser() {
   if (user) {
     // Calculate total valid tickets dynamically
     // @ts-ignore: User type extension
-    user.tickets = user.purchases.reduce((sum, p) => sum + p.remainingTickets, 0)
+    user.tickets = user.purchases ? user.purchases.reduce((sum, p) => sum + p.remainingTickets, 0) : 0
   }
 
   return user

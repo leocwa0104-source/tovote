@@ -19,7 +19,7 @@ export default async function TopicSidebar() {
           </Link>
           <AuthControl user={user ? { username: user.username } : null} />
         </div>
-        {user && <TicketBalance tickets={(user as any).tickets || 0} purchases={user.purchases || []} />}
+        {user && <TicketBalance tickets={(user as any)?.tickets || 0} purchases={(user as any)?.purchases || []} />}
       </div>
 
       {/* Topic List */}
