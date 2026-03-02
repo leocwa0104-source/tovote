@@ -1,15 +1,15 @@
 
-export interface TreemapItem {
+export interface TreemapItem<TData = unknown> {
   id: string
   value: number
-  data: any
+  data: TData
   neighborId?: string | null
 }
 
-export interface TreemapNode {
+export interface TreemapNode<TData = unknown> {
   id: string
   value: number
-  data: any
+  data: TData
   x: number
   y: number
   w: number
@@ -18,9 +18,9 @@ export interface TreemapNode {
 
 // Helper to group items by neighbor chains (Directed: Child -> Parent)
 // We want the group to be anchored at the "Parent" (Neighbor Target) position.
-function groupItems(items: TreemapItem[]): (TreemapItem | TreemapItem[])[] {
+function groupItems<TData>(items: TreemapItem<TData>[]): (TreemapItem<TData> | TreemapItem<TData>[])[] {
   const itemMap = new Map(items.map(i => [i.id, i]));
-  const groups: (TreemapItem | TreemapItem[])[] = [];
+  const groups: (TreemapItem<TData> | TreemapItem<TData>[])[] = [];
   const processed = new Set<string>();
 
   // Build Parent -> Children map
@@ -35,7 +35,7 @@ function groupItems(items: TreemapItem[]): (TreemapItem | TreemapItem[])[] {
   });
 
   // Helper to collect all descendants
-  function collectDescendants(rootId: string, component: TreemapItem[]) {
+  function collectDescendants(rootId: string, component: TreemapItem<TData>[]) {
     const children = childrenMap.get(rootId);
     if (children) {
       for (const childId of children) {
@@ -121,11 +121,11 @@ function worst(row: { value: number }[], sideLength: number): number {
   return maxRatio;
 }
 
-export function computeTreemapLayout(
-  items: TreemapItem[],
+export function computeTreemapLayout<TData>(
+  items: TreemapItem<TData>[],
   containerWidth: number,
   containerHeight: number
-): TreemapNode[] {
+): TreemapNode<TData>[] {
   if (items.length === 0) return []
 
   // Group items that want to be neighbors
@@ -145,32 +145,35 @@ export function computeTreemapLayout(
   // Prepare top-level items for layout
   // Single items are mapped directly.
   // Groups are mapped to a virtual item with summed value.
-  const topLevelItems = groups.map(group => {
+  type LayoutNode =
+    | { id: string; value: number; isGroup: false; data: TData; children?: undefined }
+    | { id: string; value: number; isGroup: true; data: null; children: TreemapItem<TData>[] };
+
+  const topLevelItems: LayoutNode[] = groups.map((group) => {
     if (Array.isArray(group)) {
       const groupValue = group.reduce((acc, i) => acc + i.value, 0);
       return {
-        id: `group-${group[0].id}`, // Virtual ID
+        id: `group-${group[0].id}`,
         value: groupValue * scale,
-        isGroup: true,
-        data: null, // Virtual nodes don't have original data
-        children: group.map(i => ({ ...i, value: i.value * scale })) // Scale children too
-      };
-    } else {
-      return {
-        ...group,
-        value: group.value * scale,
-        isGroup: false,
-        children: undefined,
-        data: group.data
+        isGroup: true as const,
+        data: null,
+        children: group.map(i => ({ ...i, value: i.value * scale }))
       };
     }
-  }).filter(item => item.value > 0); // Remove sort to preserve stability based on input order
 
-  const result: TreemapNode[] = [];
+    return {
+      id: group.id,
+      value: group.value * scale,
+      isGroup: false as const,
+      data: group.data
+    };
+  }).filter(item => item.value > 0);
+
+  const result: TreemapNode<TData>[] = [];
 
   // Recursive squarify function
   function layoutRects(
-    nodes: typeof topLevelItems, 
+    nodes: LayoutNode[],
     x: number, 
     y: number, 
     w: number, 
@@ -185,7 +188,7 @@ export function computeTreemapLayout(
        return;
     }
 
-    let currentRow: typeof nodes = [];
+    let currentRow: LayoutNode[] = [];
     let remaining = nodes;
     
     // Starting rectangle
@@ -236,7 +239,7 @@ export function computeTreemapLayout(
     }
   }
 
-  function layoutRow(row: typeof topLevelItems, x: number, y: number, w: number, h: number) {
+  function layoutRow(row: LayoutNode[], x: number, y: number, w: number, h: number) {
     const rowArea = sum(row);
     if (rowArea === 0) return;
     
@@ -270,32 +273,28 @@ export function computeTreemapLayout(
     });
   }
 
-  function handleNode(node: typeof topLevelItems[0], x: number, y: number, w: number, h: number) {
-    if (node.isGroup && node.children) {
-      // Recursively layout the group's children within this node's rect
-      
-      // Cast children to correct type
-      const childrenNodes = node.children.map(c => ({
-        ...c,
-        isGroup: false,
-        data: c.data,
-        children: undefined
+  function handleNode(node: LayoutNode, x: number, y: number, w: number, h: number) {
+    if (node.isGroup) {
+      const childrenNodes: LayoutNode[] = node.children.map((c) => ({
+        id: c.id,
+        value: c.value,
+        isGroup: false as const,
+        data: c.data
       }));
-      
+
       layoutRects(childrenNodes, x, y, w, h);
-      
-    } else {
-      // Leaf node
-      result.push({
-        id: node.id,
-        value: node.value, // This is area
-        data: node.data,
-        x,
-        y,
-        w,
-        h
-      });
+      return;
     }
+
+    result.push({
+      id: node.id,
+      value: node.value,
+      data: node.data,
+      x,
+      y,
+      w,
+      h
+    });
   }
 
   // Start layout

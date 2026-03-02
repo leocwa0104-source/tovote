@@ -4,6 +4,13 @@ import Link from 'next/link'
 import AuthControl from './AuthControl'
 import TicketBalance from './TicketBalance'
 
+type Purchase = {
+  packageId: string
+  createdAt: Date
+  remainingTickets: number
+  expiresAt: Date
+}
+
 export default async function TopicSidebar() {
   const topics = await getTopics()
   const user = await getCurrentUser()
@@ -19,7 +26,12 @@ export default async function TopicSidebar() {
           </Link>
           <AuthControl user={user ? { username: user.username } : null} />
         </div>
-        {user && <TicketBalance tickets={(user as any)?.tickets || 0} purchases={(user as any)?.purchases || []} />}
+        {user && (
+          <TicketBalance
+            tickets={(user as unknown as { tickets?: number }).tickets ?? 0}
+            purchases={(user as unknown as { purchases?: Purchase[] }).purchases ?? []}
+          />
+        )}
       </div>
 
       {/* Topic List */}

@@ -1,7 +1,7 @@
 'use client'
 
 import { createTopic } from '@/app/actions'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 type User = { id: string; username: string }
 
@@ -9,13 +9,6 @@ export default function CreatePrivateTopicForm({ user, initialTitle }: { user: U
   const [title, setTitle] = useState(initialTitle ?? '')
   const [seekBrainstorming, setSeekBrainstorming] = useState(false)
   const [seekRational, setSeekRational] = useState(false)
-
-  // Sync title with initialTitle when it changes
-  useEffect(() => {
-    if (initialTitle) {
-      setTitle(initialTitle)
-    }
-  }, [initialTitle])
 
   if (!user) {
     return (

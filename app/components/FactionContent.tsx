@@ -1,88 +1,24 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { setOpinionNeighbor } from '@/app/actions'
 import OpinionCard from './OpinionCard'
 import OpinionMap from './OpinionMap'
 import OpinionDetailView from './OpinionDetailView'
-
-interface CitationTarget {
-  id: string
-  summary: string
-  detail: string | null
-  type: 'WHY' | 'WHY_NOT'
-  author: {
-    username: string
-  }
-  faction: {
-    name: string
-    topic: {
-      title: string
-    }
-  }
-}
-
-interface Opinion {
-  id: string
-  summary: string
-  detail: string | null
-  type: 'WHY' | 'WHY_NOT'
-  authorId: string
-  author: {
-    username: string
-  }
-  createdAt: Date
-  citations: {
-    id: string
-    target: CitationTarget
-  }[]
-  citedBy: {
-    id: string
-    source: {
-      id: string
-      summary: string
-      type: 'WHY' | 'WHY_NOT'
-      author: { username: string }
-    }
-  }[]
-  factionId: string
-  faction?: {
-    name: string
-    topic?: {
-      title: string
-    }
-  }
-}
-
-interface FactionWithOpinions {
-  id: string
-  name: string
-  description: string | null
-  _count: { members: number }
-  opinions: Opinion[]
-}
-
-type User = { id: string; username: string } | null
+import { Opinion, CitationTarget, FactionWithOpinions, User } from '@/app/types'
 
 interface FactionContentProps {
   faction: FactionWithOpinions
-  user: User
-  userMembership?: unknown
-  topicId: string
-  isMember: boolean
-  isOtherMember: boolean
+  user: User | null
+  topicId?: string
+  isMember?: boolean
+  isOtherMember?: boolean
   isPrivateTopic?: boolean
+  userMembership?: unknown
 }
 
-export default function FactionContent({ 
-  faction, 
-  user, 
-  topicId,
-  isMember,
-  isOtherMember,
-  isPrivateTopic
-}: FactionContentProps) {
+export default function FactionContent({ faction, user, isPrivateTopic }: FactionContentProps) {
   const currentOpinions = faction.opinions
   
   const [selectedOpinionId, setSelectedOpinionId] = useState<string | null>(null)
@@ -99,28 +35,6 @@ export default function FactionContent({
   //   }
   // }, [userOpinion?.id]) 
   
-  // Sync selectedOpinionId with modalStack
-  useEffect(() => {
-    if (selectedOpinionId) {
-        // If the selectedOpinionId is already in the stack (e.g. at index 0), do nothing
-        // This prevents resetting the stack when we just want to initialize it
-        // However, if we click a new block on the map, we want to reset the stack
-        
-        // Simple logic: if stack is empty or the first item is different, reset stack
-        if (modalStack.length === 0 || modalStack[0].id !== selectedOpinionId) {
-            const opinion = currentOpinions.find(o => o.id === selectedOpinionId)
-            if (opinion) {
-                setModalStack([opinion])
-            }
-        }
-    } else {
-        // Only clear if we explicitly set it to null (which happens in closeTopModal when stack empties)
-        if (modalStack.length > 0) {
-            setModalStack([])
-        }
-    }
-  }, [selectedOpinionId])
-
   // Helper to handle citation click
   const handleCitationClick = (target: CitationTarget) => {
     // Check if target is in currentOpinions
@@ -128,7 +42,7 @@ export default function FactionContent({
     if (existing) {
         // Enhance existing opinion with faction/topic info from the citation target
         // This ensures even local citations show their context
-        const existingWithContext = {
+        const existingWithContext: Opinion = {
             ...existing,
             faction: target.faction
         }
@@ -223,8 +137,13 @@ export default function FactionContent({
          <OpinionMap 
            opinions={currentOpinions}
            selectedId={selectedOpinionId || undefined}
-           onSelect={setSelectedOpinionId}
-           currentUser={user}
+           onSelect={(id) => {
+             setSelectedOpinionId(id)
+             const opinion = currentOpinions.find(o => o.id === id)
+             if (opinion) {
+                 setModalStack([opinion])
+             }
+           }}
          />
       </div>
 
@@ -241,7 +160,7 @@ export default function FactionContent({
                <OpinionDetailView 
                  opinion={opinion} 
                  onClose={closeTopModal}
-                 onCitationClick={(target: any) => handleCitationClick(target)}
+                 onCitationClick={handleCitationClick}
                  canSetNeighbor={index === 0 && !!user && opinion.authorId !== user.id} // Can set if logged in, not own opinion, and is the primary view (not a citation popup)
                  hasUserPosted={!!userOpinion}
                  onSetNeighbor={handleSetNeighbor}
@@ -274,7 +193,7 @@ export default function FactionContent({
                   factionId={faction.id}
                   type="WHY" 
                   currentUser={user}
-                  isPrivateTopic={isPrivateTopic}
+                  isPrivateTopic={!!isPrivateTopic}
                   onSuccess={() => {
                     setShowCreateModal(false)
                     setInitialNeighborId(null) // Reset

@@ -80,8 +80,6 @@ export default function MentionTextarea({
   placeholder, 
   defaultValue = '', 
   className, 
-  required,
-  maxLength,
   onCitationAdd,
   onKeyDown,
   ref
@@ -96,21 +94,19 @@ export default function MentionTextarea({
     }
   }, [ref])
 
-  const divRef = internalRef
-
   // Initialize content on mount
   useEffect(() => {
-    if (divRef.current) {
+    if (internalRef.current) {
       // Only set initial HTML if it's empty to avoid overwriting user input during re-renders if any
-      if (divRef.current.innerHTML === '') {
-        divRef.current.innerHTML = textToHtml(defaultValue);
+      if (internalRef.current.innerHTML === '') {
+        internalRef.current.innerHTML = textToHtml(defaultValue);
       }
     }
   }, [defaultValue])
 
   const handleInput = useCallback(() => {
-    if (!divRef.current) return;
-    const newText = htmlToText(divRef.current);
+    if (!internalRef.current) return;
+    const newText = htmlToText(internalRef.current);
     setValue(newText);
   }, [])
 
@@ -121,7 +117,7 @@ export default function MentionTextarea({
   }
 
   const insertMentionChip = (opinion: CitationTarget) => {
-    if (!divRef.current) return
+    if (!internalRef.current) return
 
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return;
@@ -129,7 +125,7 @@ export default function MentionTextarea({
     const range = selection.getRangeAt(0);
     
     // Check if selection is inside our editor
-    if (!divRef.current.contains(range.commonAncestorContainer)) return;
+    if (!internalRef.current.contains(range.commonAncestorContainer)) return;
 
     range.deleteContents();
 
@@ -187,7 +183,7 @@ export default function MentionTextarea({
         } else {
           insertTextAtCursor(text);
         }
-      } catch (_err) {
+      } catch {
         insertTextAtCursor(text);
       }
     } else {
@@ -209,7 +205,7 @@ export default function MentionTextarea({
   return (
     <div className="relative w-full">
       <div
-        ref={divRef}
+        ref={internalRef}
         contentEditable
         suppressContentEditableWarning
         onInput={handleInput}

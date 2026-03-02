@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { buyPackage } from '@/app/actions'
+import { PACKAGES, PackageId } from '@/lib/constants'
 
 interface Purchase {
   packageId: string
@@ -12,32 +13,34 @@ interface Purchase {
 
 export default function TicketBalance({ tickets, purchases }: { tickets: number, purchases: Purchase[] }) {
   const [showStore, setShowStore] = useState(false)
+  const [currency, setCurrency] = useState<'HKD' | 'CNY'>('HKD')
   const [loading, setLoading] = useState(false)
 
   // Filter only active purchases for display
   const activePurchases = purchases.filter(p => p.remainingTickets > 0 && new Date(p.expiresAt) > new Date())
 
-  const handleBuy = async (pkgId: 'daily' | 'weekly' | 'monthly') => {
+  const handleBuy = async (pkgId: PackageId) => {
     setLoading(true)
     try {
       const res = await buyPackage(pkgId)
-      if (res.success) {
-        // Success
+      if (res.success && res.checkoutUrl) {
+        window.location.href = res.checkoutUrl
+      } else if (res.success) {
+        // Fallback for mock/dev environment
+        setShowStore(false)
+        alert('Purchase Successful (Mock)')
       } else {
-        alert(res.error)
+        alert(res.error || 'Purchase failed')
       }
-    } catch (e) {
-      alert('Error')
+    } catch {
+      alert('Error initiating purchase')
     } finally {
       setLoading(false)
     }
   }
 
-  const PACKAGES = [
-    { id: 'daily', label: 'Daily', price: 2, tickets: 3, limitMs: 24 * 60 * 60 * 1000 },
-    { id: 'weekly', label: 'Weekly', price: 10, tickets: 15, limitMs: 7 * 24 * 60 * 60 * 1000 },
-    { id: 'monthly', label: 'Monthly', price: 30, tickets: 60, limitMs: 30 * 24 * 60 * 60 * 1000 }
-  ]
+// Remove old PACKAGES definition
+
 
   return (
     <div className="flex items-center justify-between bg-amber-50 rounded px-2 py-1 border border-amber-100 relative">
@@ -57,7 +60,15 @@ export default function TicketBalance({ tickets, purchases }: { tickets: number,
           <div className="bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="bg-amber-50 p-4 border-b border-amber-100 flex justify-between items-center">
               <h3 className="font-bold text-amber-900">Ticket Store</h3>
-              <button onClick={() => setShowStore(false)} className="text-amber-500 hover:text-amber-700">✕</button>
+              <div className="flex gap-2 items-center">
+                <button 
+                  onClick={() => setCurrency(c => c === 'HKD' ? 'CNY' : 'HKD')}
+                  className="text-xs bg-white border border-amber-200 px-2 py-1 rounded hover:bg-amber-50 text-amber-800"
+                >
+                  {currency === 'HKD' ? '🇭🇰 HKD' : '🇨🇳 CNY'}
+                </button>
+                <button onClick={() => setShowStore(false)} className="text-amber-500 hover:text-amber-700">✕</button>
+              </div>
             </div>
             <div className="p-4 flex flex-col gap-3">
               {/* Active Tickets Summary */}
@@ -73,7 +84,7 @@ export default function TicketBalance({ tickets, purchases }: { tickets: number,
                 </div>
               )}
 
-              {PACKAGES.map(pkg => {
+              {Object.values(PACKAGES).map(pkg => {
                 const lastPurchase = purchases.find(p => p.packageId === pkg.id)
                 const isCooldown = lastPurchase && (Date.now() - new Date(lastPurchase.createdAt).getTime() < pkg.limitMs)
                 
@@ -81,10 +92,12 @@ export default function TicketBalance({ tickets, purchases }: { tickets: number,
                   <div key={pkg.id} className={`border rounded-lg p-3 flex justify-between items-center ${isCooldown ? 'bg-gray-50 border-gray-200 opacity-70' : 'bg-white border-amber-200'}`}>
                     <div>
                       <div className="font-bold text-gray-800">{pkg.label} Pack</div>
-                      <div className="text-xs text-gray-500">{pkg.tickets} Tickets • ¥{pkg.price}</div>
+                      <div className="text-xs text-gray-500">
+                        {pkg.tickets} Tickets • {currency === 'HKD' ? `HK$${pkg.prices.HKD}` : `¥${pkg.prices.CNY}`}
+                      </div>
                     </div>
                     <button
-                      onClick={() => handleBuy(pkg.id as any)}
+                      onClick={() => currency === 'HKD' ? handleBuy(pkg.id as PackageId) : alert('CNY payment coming soon!')}
                       disabled={loading || !!isCooldown}
                       className={`px-3 py-1.5 rounded text-sm font-bold ${
                         isCooldown 

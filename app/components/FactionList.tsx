@@ -18,7 +18,6 @@ interface FactionListProps {
   factions: FactionListItem[]
   currentFactionId?: string | null
   selectedFactionId?: string | null
-  isCreatingFaction?: boolean
   user: { id: string } | null
 }
 
@@ -27,7 +26,6 @@ export default function FactionList({
   factions, 
   currentFactionId, 
   selectedFactionId,
-  isCreatingFaction,
   user
 }: FactionListProps) {
   const router = useRouter()

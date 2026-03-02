@@ -4,49 +4,7 @@ import { useState, useRef } from 'react'
 import { createOpinion, deleteOpinion } from '@/app/actions'
 import OpinionDetailModal from './OpinionDetailModal'
 import MentionTextarea from './MentionTextarea'
-
-interface CitationTarget {
-  id: string
-  summary: string
-  detail: string | null
-  type: 'WHY' | 'WHY_NOT'
-  author: {
-    username: string
-  }
-  faction: {
-    name: string
-    topic: {
-      title: string
-    }
-  }
-}
-
-interface Opinion {
-  id: string
-  summary: string
-  detail: string | null
-  type: 'WHY' | 'WHY_NOT'
-  authorId: string
-  author: {
-    username: string
-  }
-  createdAt: Date
-  citations: {
-    id: string
-    target: CitationTarget
-  }[]
-  citedBy: {
-    id: string
-    source: {
-      id: string
-      summary: string
-      type: 'WHY' | 'WHY_NOT'
-      author: { username: string }
-    }
-  }[]
-  factionId: string
-  neighborId?: string | null
-}
+import { Opinion, CitationTarget } from '@/app/types'
 
 interface OpinionCardProps {
   opinion?: Opinion
@@ -76,7 +34,7 @@ export default function OpinionCard({
   const [loading, setLoading] = useState(false)
   const [selectedCitation, setSelectedCitation] = useState<CitationTarget | null>(null)
   const [mentionedCitations, setMentionedCitations] = useState<CitationTarget[]>([])
-  const [selectedNeighborId, setSelectedNeighborId] = useState<string | null>(opinion?.neighborId || initialNeighborId || null)
+  const [selectedNeighborId] = useState<string | null>(opinion?.neighborId || initialNeighborId || null)
 
   const isOwner = currentUser && opinion?.authorId === currentUser.id
 
@@ -313,7 +271,7 @@ export default function OpinionCard({
             <div className="mt-1.5 pl-0">
               {isExpanded ? (
                 <div className="text-sm text-gray-600 whitespace-pre-wrap break-words leading-relaxed font-light">
-                  {renderDetailWithCitations(opinion.detail, opinion.citations)}
+                  {renderDetailWithCitations(opinion.detail, opinion.citations ?? [])}
                   <button 
                     onClick={() => setIsExpanded(false)}
                     className="inline-flex items-center justify-center w-full mt-2 text-gray-300 hover:text-gray-500 py-1 transition-colors"
@@ -385,11 +343,23 @@ export default function OpinionCard({
 
       {selectedCitation && (
         <OpinionDetailModal 
-        isOpen={!!selectedCitation}
-        onClose={() => setSelectedCitation(null)}
-        opinion={selectedCitation}
-      />
-    )}
+          onClose={() => setSelectedCitation(null)}
+          opinion={{
+            id: selectedCitation.id,
+            summary: selectedCitation.summary,
+            detail: selectedCitation.detail,
+            type: selectedCitation.type,
+            authorId: '',
+            author: { username: selectedCitation.author.username },
+            createdAt: new Date(),
+            citations: [],
+            citedBy: [],
+            factionId: '',
+            faction: selectedCitation.faction,
+            neighborId: null
+          }}
+        />
+      )}
   </div>
 )
 }

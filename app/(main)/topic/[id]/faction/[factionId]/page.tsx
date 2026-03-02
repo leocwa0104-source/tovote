@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getFaction, getUserMembership, getCurrentUser, checkTopicAccess } from '@/app/actions'
 import AuthControl from '@/app/components/AuthControl'

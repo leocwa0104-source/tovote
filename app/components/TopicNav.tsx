@@ -73,7 +73,7 @@ export default function TopicNav({ topics, privateTopics = [], isAuthenticated }
       .filter(item => item.matchCount > 0)
       .sort((a, b) => b.matchCount - a.matchCount)
       .map(item => item.topic)
-  }, [normalizedQuery, currentList])
+  }, [normalizedQuery, currentList, sortMode])
   
   const hasExact = useMemo(() => {
     const nq = normalizedQuery

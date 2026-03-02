@@ -35,7 +35,7 @@ export default function JoinPrivateTopicForm() {
       } else {
         setError(result.error || 'Failed to join topic')
       }
-    } catch (e) {
+    } catch {
       setError('An unexpected error occurred')
     } finally {
       setLoading(false)

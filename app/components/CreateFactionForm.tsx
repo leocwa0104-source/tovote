@@ -28,7 +28,7 @@ export default function CreateFactionForm({ topicId, user, initialName }: { topi
         } else {
           setSimilarFactions([])
         }
-      } catch (_e) {
+      } catch {
         setSimilarFactions([])
       } finally {
         setIsChecking(false)

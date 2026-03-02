@@ -93,7 +93,6 @@ export default async function TopicPage(props: {
             factions={topic.factions} 
             currentFactionId={currentFactionId}
             selectedFactionId={selectedFactionId}
-            isCreatingFaction={isCreatingFaction}
             user={user}
           />
         </div>

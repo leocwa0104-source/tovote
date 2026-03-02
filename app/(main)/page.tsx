@@ -2,7 +2,6 @@ import { getCurrentUser } from '@/app/actions'
 import CreatePublicTopicForm from '@/app/components/CreatePublicTopicForm'
 import CreatePrivateTopicForm from '@/app/components/CreatePrivateTopicForm'
 import JoinPrivateTopicForm from '@/app/components/JoinPrivateTopicForm'
-import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,14 +27,22 @@ export default async function Home(props: { searchParams: Promise<{ [key: string
         {isPublic && (
           <>
             <h2 className="text-xl font-semibold mb-4 text-gray-800">Create a Public Topic</h2>
-            <CreatePublicTopicForm user={user} initialTitle={typeof initialTitle === 'string' ? initialTitle : undefined} />
+            <CreatePublicTopicForm 
+              key={typeof initialTitle === 'string' ? initialTitle : 'default'}
+              user={user} 
+              initialTitle={typeof initialTitle === 'string' ? initialTitle : undefined} 
+            />
           </>
         )}
 
         {isCreatePrivate && (
           <div>
             <h2 className="text-xl font-semibold mb-4 text-gray-800">Create a Private Topic</h2>
-            <CreatePrivateTopicForm user={user} initialTitle={typeof initialTitle === 'string' ? initialTitle : undefined} />
+            <CreatePrivateTopicForm 
+              key={typeof initialTitle === 'string' ? initialTitle : 'default'}
+              user={user} 
+              initialTitle={typeof initialTitle === 'string' ? initialTitle : undefined} 
+            />
           </div>
         )}
         

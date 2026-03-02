@@ -2,33 +2,23 @@
 'use client'
 
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
-import { computeTreemapLayout, TreemapNode } from '../utils/treemap'
+import { computeTreemapLayout } from '../utils/treemap'
 import OpinionBlock from './OpinionBlock'
-
-interface MapOpinion {
-  id: string
-  summary: string
-  detail: string | null
-  type: 'WHY' | 'WHY_NOT'
-  author: { username: string }
-  neighborId?: string | null
-}
+import { Opinion } from '@/app/types'
 
 interface OpinionMapProps {
-  opinions: MapOpinion[]
+  opinions: Opinion[]
   selectedId?: string
   onSelect: (id: string) => void
-  currentUser?: { id: string } | null
 }
 
-export default function OpinionMap({ opinions, selectedId, onSelect, currentUser }: OpinionMapProps) {
+export default function OpinionMap({ opinions, selectedId, onSelect }: OpinionMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 })
-  const [isDragging, setIsDragging] = useState(false)
   // expandedId removed as per previous refactor to modal interaction, keeping clean state
   
   const dragStart = useRef<{ x: number, y: number } | null>(null)
@@ -184,7 +174,6 @@ export default function OpinionMap({ opinions, selectedId, onSelect, currentUser
   
   // Pan Logic
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    setIsDragging(false)
     hasDragged.current = false
     dragStart.current = { x: e.clientX, y: e.clientY }
     mouseDownPos.current = { x: transform.x, y: transform.y }
@@ -197,7 +186,6 @@ export default function OpinionMap({ opinions, selectedId, onSelect, currentUser
     const dy = e.clientY - dragStart.current.y
     
     if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
-        setIsDragging(true)
         hasDragged.current = true
     }
 
@@ -211,7 +199,6 @@ export default function OpinionMap({ opinions, selectedId, onSelect, currentUser
   const handleMouseUp = useCallback(() => {
     dragStart.current = null
     mouseDownPos.current = null
-    setTimeout(() => setIsDragging(false), 0)
   }, [])
 
   const handleContentClick = useCallback((e: React.MouseEvent) => {
@@ -307,7 +294,6 @@ export default function OpinionMap({ opinions, selectedId, onSelect, currentUser
             node={node}
             isActive={node.data.id === selectedId}
             onSelect={handleBlockSelect}
-            scale={transform.scale}
           />
         ))}
       </div>

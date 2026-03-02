@@ -32,6 +32,8 @@ model Purchase {
   tickets   Int      // Initial Tickets
   remainingTickets Int // Remaining tickets
   expiresAt DateTime // Expiration time
+  provider  String   @default("lemonsqueezy")
+  providerOrderId String? @unique
   createdAt DateTime @default(now())
 }
 

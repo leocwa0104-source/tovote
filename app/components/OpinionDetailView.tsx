@@ -2,42 +2,12 @@
 'use client'
 
 import { useState } from 'react'
+import { Opinion, CitationTarget } from '@/app/types'
 
 interface OpinionDetailViewProps {
-  opinion: {
-    id: string
-    summary: string
-    detail: string | null
-    type: 'WHY' | 'WHY_NOT'
-    author: {
-      username: string
-    }
-    neighborId?: string | null
-    faction?: {
-      name: string
-      topic?: {
-        title: string
-      }
-    }
-    citations?: {
-        id: string
-        target: {
-            id: string
-            summary: string
-            detail: string | null
-            type: 'WHY' | 'WHY_NOT'
-            author: { username: string }
-            faction?: {
-              name: string
-              topic?: {
-                title: string
-              }
-            }
-        }
-    }[]
-  }
+  opinion: Opinion
   onClose: () => void
-  onCitationClick?: (target: any) => void
+  onCitationClick?: (target: CitationTarget) => void
   canSetNeighbor?: boolean
   hasUserPosted?: boolean
   onSetNeighbor?: (id: string) => void
@@ -59,7 +29,7 @@ export default function OpinionDetailView({
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const renderDetailWithCitations = (text: string, citations: { id: string, target: any }[] = []) => {
+  const renderDetailWithCitations = (text: string, citations: { id: string, target: CitationTarget }[] = []) => {
     if (!text) return null;
     
     // Regex to match @[username: summary...]

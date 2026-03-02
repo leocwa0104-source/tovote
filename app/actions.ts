@@ -6,6 +6,10 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import bcrypt from 'bcryptjs'
 
+// BigInt JSON serialization helper
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(BigInt.prototype as any).toJSON = function () { return this.toString() }
+
 // --- User Management ---
 
 export async function login(formData: FormData) {
@@ -48,8 +52,8 @@ export async function getCurrentUser() {
 
   if (user) {
     // Calculate total valid tickets dynamically
-    // @ts-ignore: User type extension
-    user.tickets = user.purchases ? user.purchases.reduce((sum, p) => sum + p.remainingTickets, 0) : 0
+    const tickets = user.purchases ? user.purchases.reduce((sum, p) => sum + p.remainingTickets, 0) : 0
+    Object.assign(user, { tickets })
   }
 
   return user
@@ -115,7 +119,7 @@ export async function createTopic(prevState: unknown, formData: FormData) {
     
     revalidatePath('/')
     return { message: 'success' }
-  } catch (e) {
+  } catch {
     return { message: 'Failed to create topic' }
   }
 }
@@ -382,12 +386,13 @@ export async function createFaction(topicId: string, prevState: unknown, formDat
     
     revalidatePath(`/topic/${topicId}`)
     return { message: 'success' }
-  } catch (e) {
+  } catch {
     return { message: 'Failed to create faction' }
   }
 }
 
-export async function joinFaction(topicId: string, factionId: string, _formData?: FormData) {
+export async function joinFaction(topicId: string, factionId: string, formData?: FormData) {
+  void formData
   const user = await getCurrentUser()
   if (!user) throw new Error("Unauthorized")
   
@@ -443,16 +448,11 @@ export async function joinFaction(topicId: string, factionId: string, _formData?
   revalidatePath('/')
 }
 
-export async function buyPackage(packageId: 'daily' | 'weekly' | 'monthly') {
+import { PACKAGES, PackageId } from '@/lib/constants'
+
+export async function buyPackage(packageId: PackageId) {
   const user = await getCurrentUser()
   if (!user) return { success: false, error: 'Unauthorized' }
-
-  // Define packages
-  const PACKAGES = {
-    daily: { price: 2, tickets: 3, limitMs: 24 * 60 * 60 * 1000 },
-    weekly: { price: 10, tickets: 15, limitMs: 7 * 24 * 60 * 60 * 1000 },
-    monthly: { price: 30, tickets: 60, limitMs: 30 * 24 * 60 * 60 * 1000 }
-  }
 
   const pkg = PACKAGES[packageId]
   if (!pkg) return { success: false, error: 'Invalid package' }
@@ -474,24 +474,72 @@ export async function buyPackage(packageId: 'daily' | 'weekly' | 'monthly') {
     return { success: false, error: `Package limit reached. Wait ${hoursLeft.toFixed(1)} hours.` }
   }
 
-  // Mock Payment & Add Tickets
+  // --- Payment Integration (Lemon Squeezy) ---
   try {
-    await prisma.purchase.create({
-      data: {
-        userId: user.id,
-        packageId,
-        amount: pkg.price,
-        tickets: pkg.tickets,
-        remainingTickets: pkg.tickets,
-        expiresAt: new Date(Date.now() + pkg.limitMs)
-      }
-    })
+    // Lemon Squeezy Integration
+    const storeId = process.env.LEMONSQUEEZY_STORE_ID
+    const variantId = process.env[`LEMONSQUEEZY_VARIANT_ID_${packageId.toUpperCase()}`]
+    
+    if (!storeId || !variantId) {
+      return { success: false, error: 'Lemon Squeezy not configured' }
+    }
 
-    revalidatePath('/')
-    return { success: true }
+    // FALLBACK: Use API to create checkout.
+    const apiKey = process.env.LEMONSQUEEZY_API_KEY
+    if (apiKey) {
+      const response = await fetch('https://api.lemonsqueezy.com/v1/checkouts', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/vnd.api+json',
+          'Accept': 'application/vnd.api+json'
+        },
+        body: JSON.stringify({
+          data: {
+            type: 'checkouts',
+            attributes: {
+              checkout_data: {
+                custom: {
+                  userId: user.id,
+                  packageId: packageId
+                }
+              },
+              product_options: {
+                redirect_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/`
+              }
+            },
+            relationships: {
+              store: {
+                data: {
+                  type: 'stores',
+                  id: storeId
+                }
+              },
+              variant: {
+                data: {
+                  type: 'variants',
+                  id: variantId
+                }
+              }
+            }
+          }
+        })
+      })
+      
+      const data = await response.json()
+      if (data?.data?.attributes?.url) {
+        return { success: true, checkoutUrl: data.data.attributes.url }
+      } else {
+        console.error('LS API Error:', JSON.stringify(data))
+        return { success: false, error: 'Failed to create checkout' }
+      }
+    } else {
+        return { success: false, error: 'Missing API Key' }
+    }
+
   } catch (e) {
     console.error(e)
-    return { success: false, error: 'Purchase failed' }
+    return { success: false, error: 'Payment initialization failed' }
   }
 }
 
@@ -586,7 +634,8 @@ export async function rechargeFaction(topicId: string, factionId: string, ticket
   }
 }
 
-export async function leaveFaction(topicId: string, _formData?: FormData) {
+export async function leaveFaction(topicId: string, formData?: FormData) {
+  void formData
   const user = await getCurrentUser()
   if (!user) throw new Error("Unauthorized")
   
@@ -602,7 +651,7 @@ export async function leaveFaction(topicId: string, _formData?: FormData) {
         factionId: null
       }
     })
-  } catch (e) {
+  } catch {
     // Ignore if not found
   }
   
@@ -675,13 +724,6 @@ export async function getUserTopicMemberships() {
   return memberships.map(m => m.topicId)
 }
 
-async function getOrCreateNeutralFaction(topicId: string) {
-  const name = 'General'
-  const existing = await prisma.faction.findFirst({ where: { topicId, name } })
-  if (existing) return existing
-  return prisma.faction.create({ data: { name, topicId } })
-}
-
 export async function ensureTopicMembership(topicId: string) {
   const user = await getCurrentUser()
   if (!user) return
@@ -731,7 +773,7 @@ export async function leaveTopic(topicId: string) {
 
 // --- Messages ---
 
-export async function postReason(formData: FormData) {
+export async function postReason() {
   // This function is deprecated and replaced by createOpinion
   // Keeping it temporarily if needed, but the UI should now use createOpinion
   // or we can remove it entirely if we are sure no one uses it.
@@ -975,7 +1017,7 @@ export async function getOpinionById(id: string) {
       }
     })
     return opinion
-  } catch (e) {
+  } catch {
     return null
   }
 }

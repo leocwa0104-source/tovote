@@ -1,15 +1,17 @@
 
-import { useMemo, memo } from 'react'
 import { TreemapNode } from '../utils/treemap'
+import { Opinion } from '@/app/types'
 
 interface OpinionBlockProps {
-  node: TreemapNode
+  node: TreemapNode<Opinion>
   isActive: boolean
   onSelect: (id: string) => void
-  scale: number
 }
 
-function OpinionBlock({ node, isActive, onSelect, scale }: OpinionBlockProps) {
+export default function OpinionBlock({ node, isActive, onSelect }: OpinionBlockProps) {
+  const isTooSmall = node.w < 20 || node.h < 20
+  if (isTooSmall) return null
+
   const opinion = node.data
   
   // Minimalist black/white style logic
@@ -92,4 +94,3 @@ function OpinionBlock({ node, isActive, onSelect, scale }: OpinionBlockProps) {
   )
 }
 
-export default memo(OpinionBlock)
