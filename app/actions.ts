@@ -451,31 +451,31 @@ export async function joinFaction(topicId: string, factionId: string, formData?:
 import { PACKAGES, PackageId } from '@/lib/constants'
 
 export async function buyPackage(packageId: PackageId): Promise<{ success: boolean; error?: string; checkoutUrl?: string }> {
-  const user = await getCurrentUser()
-  if (!user) return { success: false, error: 'Unauthorized' }
-
-  const pkg = PACKAGES[packageId]
-  if (!pkg) return { success: false, error: 'Invalid package' }
-
-  // Check purchase limit
-  const lastPurchase = await prisma.purchase.findFirst({
-    where: {
-      userId: user.id,
-      packageId: packageId,
-      createdAt: {
-        gt: new Date(Date.now() - pkg.limitMs)
-      }
-    },
-    orderBy: { createdAt: 'desc' }
-  })
-
-  if (lastPurchase) {
-    const hoursLeft = (pkg.limitMs - (Date.now() - lastPurchase.createdAt.getTime())) / (1000 * 60 * 60)
-    return { success: false, error: `Package limit reached. Wait ${hoursLeft.toFixed(1)} hours.` }
-  }
-
-  // --- Payment Integration (Generic Wechat/Alipay) ---
   try {
+    const user = await getCurrentUser()
+    if (!user) return { success: false, error: 'Unauthorized' }
+
+    const pkg = PACKAGES[packageId]
+    if (!pkg) return { success: false, error: 'Invalid package' }
+
+    // Check purchase limit
+    const lastPurchase = await prisma.purchase.findFirst({
+      where: {
+        userId: user.id,
+        packageId: packageId,
+        createdAt: {
+          gt: new Date(Date.now() - pkg.limitMs)
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+
+    if (lastPurchase) {
+      const hoursLeft = (pkg.limitMs - (Date.now() - lastPurchase.createdAt.getTime())) / (1000 * 60 * 60)
+      return { success: false, error: `Package limit reached. Wait ${hoursLeft.toFixed(1)} hours.` }
+    }
+
+    // --- Payment Integration (Generic Wechat/Alipay) ---
     // 1. Get Payment Config from Env
     const paymentApiUrl = process.env.PAYMENT_API_URL
     const paymentAppId = process.env.PAYMENT_APP_ID
@@ -495,7 +495,7 @@ export async function buyPackage(packageId: PackageId): Promise<{ success: boole
       
       return { 
         success: false, 
-        error: "Payment provider not configured. Please configure PAYMENT_API_URL, PAYMENT_APP_ID, PAYMENT_SECRET." 
+        error: "Payment provider integration pending. Please configure API details." 
       }
     }
 
@@ -528,7 +528,7 @@ export async function buyPackage(packageId: PackageId): Promise<{ success: boole
     }
 
   } catch (e) {
-    console.error(e)
+    console.error("buyPackage error:", e)
     return { success: false, error: 'Payment initialization failed' }
   }
 }
