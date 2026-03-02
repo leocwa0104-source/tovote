@@ -62,21 +62,21 @@ export async function getCurrentUser() {
 // --- Topics ---
 
 export async function createTopic(prevState: unknown, formData: FormData) {
-  const title = formData.get('title') as string
-  const description = formData.get('description') as string | null
-  const isPrivate = formData.get('isPrivate') === 'on'
-  const password = formData.get('password') as string
-  const seekBrainstorming = formData.get('seekBrainstorming') === 'on'
-  const seekRational = formData.get('seekRational') === 'on'
-  
-  if (!seekBrainstorming && !seekRational) {
-    return { message: 'Please select at least one discussion style (Brainstorming or Rational).' }
-  }
-  
-  const user = await getCurrentUser()
-  if (!user) return { message: 'Unauthorized' }
-
   try {
+    const title = formData.get('title') as string
+    const description = formData.get('description') as string | null
+    const isPrivate = formData.get('isPrivate') === 'on'
+    const password = formData.get('password') as string
+    const seekBrainstorming = formData.get('seekBrainstorming') === 'on'
+    const seekRational = formData.get('seekRational') === 'on'
+    
+    if (!seekBrainstorming && !seekRational) {
+      return { message: 'Please select at least one discussion style (Brainstorming or Rational).' }
+    }
+    
+    const user = await getCurrentUser()
+    if (!user) return { message: 'Unauthorized' }
+
     // Only check for uniqueness if the new topic is public (isPrivate: false)
     if (!isPrivate) {
       const existingPublicTopic = await prisma.topic.findFirst({
@@ -119,41 +119,47 @@ export async function createTopic(prevState: unknown, formData: FormData) {
     
     revalidatePath('/')
     return { message: 'success' }
-  } catch {
+  } catch (e) {
+    console.error("createTopic error:", e)
     return { message: 'Failed to create topic' }
   }
 }
 
 export async function verifyTopicPassword(topicId: string, password: string) {
-  const topic = await prisma.topic.findUnique({ where: { id: topicId } })
-  if (!topic || !topic.isPrivate || !topic.password) return { success: false, error: 'Topic not found or public' }
+  try {
+    const topic = await prisma.topic.findUnique({ where: { id: topicId } })
+    if (!topic || !topic.isPrivate || !topic.password) return { success: false, error: 'Topic not found or public' }
 
-  const isValid = await bcrypt.compare(password, topic.password)
-  if (isValid) {
-    const user = await getCurrentUser()
-    const cookieStore = await cookies()
-    // Set cookie value to user ID or 'anonymous'
-    const cookieValue = user ? user.id : 'anonymous'
-    cookieStore.set(`access_topic_${topicId}`, cookieValue, { httpOnly: true, secure: process.env.NODE_ENV === 'production' })
+    const isValid = await bcrypt.compare(password, topic.password)
+    if (isValid) {
+      const user = await getCurrentUser()
+      const cookieStore = await cookies()
+      // Set cookie value to user ID or 'anonymous'
+      const cookieValue = user ? user.id : 'anonymous'
+      cookieStore.set(`access_topic_${topicId}`, cookieValue, { httpOnly: true, secure: process.env.NODE_ENV === 'production' })
 
-    // Auto-join user
-    if (user) {
-      const existing = await prisma.membership.findUnique({
-        where: { userId_topicId: { userId: user.id, topicId } }
-      })
-      if (!existing) {
-        await prisma.membership.create({
-          data: { userId: user.id, topicId }
+      // Auto-join user
+      if (user) {
+        const existing = await prisma.membership.findUnique({
+          where: { userId_topicId: { userId: user.id, topicId } }
         })
-        revalidatePath(`/topic/${topicId}`)
-        revalidatePath('/')
+        if (!existing) {
+          await prisma.membership.create({
+            data: { userId: user.id, topicId }
+          })
+          revalidatePath(`/topic/${topicId}`)
+          revalidatePath('/')
+        }
       }
+      
+      return { success: true }
     }
     
-    return { success: true }
+    return { success: false, error: 'Incorrect password' }
+  } catch (e) {
+    console.error("verifyTopicPassword error:", e)
+    return { success: false, error: 'Verification failed' }
   }
-  
-  return { success: false, error: 'Incorrect password' }
 }
 
 export async function checkTopicAccess(topicId: string) {
@@ -251,42 +257,47 @@ export async function getJoinedPrivateTopics() {
 }
 
 export async function joinPrivateTopic(title: string, creatorName: string, password: string) {
-  const user = await getCurrentUser()
-  if (!user) return { success: false, error: 'Unauthorized' }
+  try {
+    const user = await getCurrentUser()
+    if (!user) return { success: false, error: 'Unauthorized' }
 
-  const creator = await prisma.user.findUnique({ where: { username: creatorName } })
-  if (!creator) return { success: false, error: 'Topic not found' }
+    const creator = await prisma.user.findUnique({ where: { username: creatorName } })
+    if (!creator) return { success: false, error: 'Topic not found' }
 
-  const topic = await prisma.topic.findFirst({
-    where: { 
-      title,
-      creatorId: creator.id,
-      isPrivate: true
-    }
-  })
-
-  if (!topic || !topic.password) return { success: false, error: 'Topic not found' }
-
-  const isValid = await bcrypt.compare(password, topic.password)
-  if (!isValid) return { success: false, error: 'Incorrect password' }
-
-  // Set access cookie
-  const cookieStore = await cookies()
-  cookieStore.set(`access_topic_${topic.id}`, user.id, { httpOnly: true, secure: process.env.NODE_ENV === 'production' })
-
-  // Add membership if not exists
-  const existing = await prisma.membership.findUnique({
-    where: { userId_topicId: { userId: user.id, topicId: topic.id } }
-  })
-  
-  if (!existing) {
-    await prisma.membership.create({
-      data: { userId: user.id, topicId: topic.id }
+    const topic = await prisma.topic.findFirst({
+      where: { 
+        title,
+        creatorId: creator.id,
+        isPrivate: true
+      }
     })
-  }
 
-  revalidatePath('/')
-  return { success: true, topicId: topic.id }
+    if (!topic || !topic.password) return { success: false, error: 'Topic not found' }
+
+    const isValid = await bcrypt.compare(password, topic.password)
+    if (!isValid) return { success: false, error: 'Incorrect password' }
+
+    // Set access cookie
+    const cookieStore = await cookies()
+    cookieStore.set(`access_topic_${topic.id}`, user.id, { httpOnly: true, secure: process.env.NODE_ENV === 'production' })
+
+    // Add membership if not exists
+    const existing = await prisma.membership.findUnique({
+      where: { userId_topicId: { userId: user.id, topicId: topic.id } }
+    })
+    
+    if (!existing) {
+      await prisma.membership.create({
+        data: { userId: user.id, topicId: topic.id }
+      })
+    }
+
+    revalidatePath('/')
+    return { success: true, topicId: topic.id }
+  } catch (e) {
+    console.error("joinPrivateTopic error:", e)
+    return { success: false, error: 'Failed to join topic' }
+  }
 }
 
 export async function getTopic(id: string) {
@@ -393,59 +404,64 @@ export async function createFaction(topicId: string, prevState: unknown, formDat
 
 export async function joinFaction(topicId: string, factionId: string, formData?: FormData) {
   void formData
-  const user = await getCurrentUser()
-  if (!user) throw new Error("Unauthorized")
-  
-  // Check if user is already a member of a faction in this topic
-  const existingMembership = await prisma.membership.findUnique({
-    where: {
-      userId_topicId: {
-        userId: user.id,
-        topicId: topicId
+  try {
+    const user = await getCurrentUser()
+    if (!user) throw new Error("Unauthorized")
+    
+    // Check if user is already a member of a faction in this topic
+    const existingMembership = await prisma.membership.findUnique({
+      where: {
+        userId_topicId: {
+          userId: user.id,
+          topicId: topicId
+        }
       }
-    }
-  })
+    })
 
-  if (existingMembership) {
-    if (existingMembership.factionId === factionId) {
-      return; // Already in this faction
-    }
-    // Switch faction
-    await prisma.$transaction([
-      prisma.membership.update({
-        where: { id: existingMembership.id },
-        data: { factionId }
-      }),
-      // If user was not in any faction before, increment topic total value
-      ...(existingMembership.factionId === null ? [
+    if (existingMembership) {
+      if (existingMembership.factionId === factionId) {
+        return; // Already in this faction
+      }
+      // Switch faction
+      await prisma.$transaction([
+        prisma.membership.update({
+          where: { id: existingMembership.id },
+          data: { factionId }
+        }),
+        // If user was not in any faction before, increment topic total value
+        ...(existingMembership.factionId === null ? [
+          prisma.topic.update({
+            where: { id: topicId },
+            data: { totalValue: { increment: 1 } }
+          })
+        ] : [])
+      ])
+    } else {
+      // Join new
+      const hasAccess = await checkTopicAccess(topicId)
+      if (!hasAccess) throw new Error("Unauthorized")
+
+      await prisma.$transaction([
+        prisma.membership.create({
+          data: {
+            userId: user.id,
+            topicId,
+            factionId
+          }
+        }),
         prisma.topic.update({
           where: { id: topicId },
           data: { totalValue: { increment: 1 } }
         })
-      ] : [])
-    ])
-  } else {
-    // Join new
-    const hasAccess = await checkTopicAccess(topicId)
-    if (!hasAccess) throw new Error("Unauthorized")
-
-    await prisma.$transaction([
-      prisma.membership.create({
-        data: {
-          userId: user.id,
-          topicId,
-          factionId
-        }
-      }),
-      prisma.topic.update({
-        where: { id: topicId },
-        data: { totalValue: { increment: 1 } }
-      })
-    ])
+      ])
+    }
+    
+    revalidatePath(`/topic/${topicId}`)
+    revalidatePath('/')
+  } catch (e) {
+    console.error("joinFaction error:", e)
+    return { success: false, error: 'Failed to join faction' }
   }
-  
-  revalidatePath(`/topic/${topicId}`)
-  revalidatePath('/')
 }
 
 import { PACKAGES, PackageId } from '@/lib/constants'
@@ -534,43 +550,43 @@ export async function buyPackage(packageId: PackageId): Promise<{ success: boole
 }
 
 export async function rechargeFaction(topicId: string, factionId: string, ticketsNeeded: number) {
-  const user = await getCurrentUser()
-  if (!user) return { success: false, error: 'Unauthorized' }
-
-  // 1. Get all valid purchases with remaining tickets, sorted by expiration (FIFO)
-  const validPurchases = await prisma.purchase.findMany({
-    where: {
-      userId: user.id,
-      remainingTickets: { gt: 0 },
-      expiresAt: { gt: new Date() }
-    },
-    orderBy: { expiresAt: 'asc' }
-  })
-
-  const totalAvailable = validPurchases.reduce((sum, p) => sum + p.remainingTickets, 0)
-  
-  if (totalAvailable < ticketsNeeded) {
-    return { success: false, error: 'Insufficient tickets' }
-  }
-
-  // Check cooldown
-  const lastTransaction = await prisma.transaction.findFirst({
-    where: {
-      userId: user.id,
-      factionId: factionId,
-      createdAt: {
-        gt: new Date(Date.now() - 12 * 60 * 60 * 1000) // 12 hours ago
-      }
-    },
-    orderBy: { createdAt: 'desc' }
-  })
-
-  if (lastTransaction) {
-    const hoursLeft = 12 - (Date.now() - lastTransaction.createdAt.getTime()) / (1000 * 60 * 60)
-    return { success: false, error: `Cooldown active. Please wait ${hoursLeft.toFixed(1)} hours.` }
-  }
-
   try {
+    const user = await getCurrentUser()
+    if (!user) return { success: false, error: 'Unauthorized' }
+
+    // 1. Get all valid purchases with remaining tickets, sorted by expiration (FIFO)
+    const validPurchases = await prisma.purchase.findMany({
+      where: {
+        userId: user.id,
+        remainingTickets: { gt: 0 },
+        expiresAt: { gt: new Date() }
+      },
+      orderBy: { expiresAt: 'asc' }
+    })
+
+    const totalAvailable = validPurchases.reduce((sum, p) => sum + p.remainingTickets, 0)
+    
+    if (totalAvailable < ticketsNeeded) {
+      return { success: false, error: 'Insufficient tickets' }
+    }
+
+    // Check cooldown
+    const lastTransaction = await prisma.transaction.findFirst({
+      where: {
+        userId: user.id,
+        factionId: factionId,
+        createdAt: {
+          gt: new Date(Date.now() - 12 * 60 * 60 * 1000) // 12 hours ago
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+
+    if (lastTransaction) {
+      const hoursLeft = 12 - (Date.now() - lastTransaction.createdAt.getTime()) / (1000 * 60 * 60)
+      return { success: false, error: `Cooldown active. Please wait ${hoursLeft.toFixed(1)} hours.` }
+    }
+
     const votes = ticketsNeeded
     
     // Prepare updates
@@ -619,7 +635,7 @@ export async function rechargeFaction(topicId: string, factionId: string, ticket
     revalidatePath('/')
     return { success: true }
   } catch (e) {
-    console.error(e)
+    console.error("rechargeFaction error:", e)
     return { success: false, error: 'Transaction failed' }
   }
 }
