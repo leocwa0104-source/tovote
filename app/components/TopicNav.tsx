@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useMemo, useState } from 'react'
-import { Lock, Unlock } from './Icons'
+import { Lock, Unlock, ChevronsUpDown } from './Icons'
 
 interface Topic {
   id: string
@@ -27,6 +27,7 @@ export default function TopicNav({ topics, privateTopics = [], isAuthenticated }
   const [query, setQuery] = useState('')
   const [activeTab, setActiveTab] = useState<'public' | 'private'>('public')
   const [sortMode, setSortMode] = useState<'latest' | 'value'>('latest')
+  const [isSortOpen, setIsSortOpen] = useState(false)
 
   const currentList = activeTab === 'public' ? topics : privateTopics
 
@@ -108,24 +109,51 @@ export default function TopicNav({ topics, privateTopics = [], isAuthenticated }
         </div>
       )}
 
-      <div className="px-2 mb-2 flex items-center justify-between text-xs text-gray-500">
+      <div className="px-2 mb-2 flex items-center justify-between text-xs text-gray-500 relative z-20">
         <span className="font-semibold uppercase tracking-wider">
           {activeTab} Topics
         </span>
-        <div className="flex gap-2">
-           <button 
-             onClick={() => setSortMode('latest')}
-             className={sortMode === 'latest' ? 'font-bold text-blue-600 underline' : 'hover:text-gray-700'}
-           >
-             Latest
-           </button>
-           <span>|</span>
-           <button 
-             onClick={() => setSortMode('value')}
-             className={sortMode === 'value' ? 'font-bold text-amber-600 underline' : 'hover:text-gray-700'}
-           >
-             High Value
-           </button>
+        <div className="relative">
+          <button 
+            onClick={() => setIsSortOpen(!isSortOpen)}
+            className="flex items-center gap-1 hover:text-gray-900 transition-colors py-1 px-2 rounded-md hover:bg-gray-100"
+          >
+            <span className={`font-medium ${sortMode === 'value' ? 'text-amber-600' : 'text-blue-600'}`}>
+              {sortMode === 'value' ? 'High Value' : 'Latest'}
+            </span>
+            <ChevronsUpDown className="w-3 h-3 text-gray-400" />
+          </button>
+          
+          {isSortOpen && (
+            <>
+              <div 
+                className="fixed inset-0 z-10" 
+                onClick={() => setIsSortOpen(false)} 
+              />
+              <div className="absolute right-0 top-full mt-1 w-32 bg-white rounded-md shadow-lg border border-gray-100 py-1 z-20 flex flex-col overflow-hidden">
+                <button
+                  onClick={() => {
+                    setSortMode('latest')
+                    setIsSortOpen(false)
+                  }}
+                  className={`px-3 py-2 text-left hover:bg-gray-50 transition-colors flex items-center justify-between ${sortMode === 'latest' ? 'text-blue-600 font-medium bg-blue-50' : 'text-gray-600'}`}
+                >
+                  Latest
+                  {sortMode === 'latest' && <span className="text-blue-600">✓</span>}
+                </button>
+                <button
+                  onClick={() => {
+                    setSortMode('value')
+                    setIsSortOpen(false)
+                  }}
+                  className={`px-3 py-2 text-left hover:bg-gray-50 transition-colors flex items-center justify-between ${sortMode === 'value' ? 'text-amber-600 font-medium bg-amber-50' : 'text-gray-600'}`}
+                >
+                  High Value
+                  {sortMode === 'value' && <span className="text-amber-600">✓</span>}
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
 

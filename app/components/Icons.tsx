@@ -63,7 +63,7 @@ export function ShareIcon({ className }: { className?: string }) {
   );
 }
 
-export function CheckIcon({ className }: { className?: string }) {
+export function ChevronsUpDown({ className }: { className?: string }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -77,7 +77,8 @@ export function CheckIcon({ className }: { className?: string }) {
       strokeLinejoin="round"
       className={className}
     >
-      <polyline points="20 6 9 17 4 12" />
+      <path d="m7 15 5 5 5-5" />
+      <path d="m7 9 5-5 5 5" />
     </svg>
   );
 }
