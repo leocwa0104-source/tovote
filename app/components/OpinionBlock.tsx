@@ -84,7 +84,10 @@ export default function OpinionBlock({ node, isActive, onSelect }: OpinionBlockP
             className="font-serif opacity-70 leading-tight break-words mt-0.5"
             style={{ fontSize: detailFontSize, lineHeight: 1.2 }}
           >
-             {opinion.detail.slice(0, 20)}{opinion.detail.length > 20 ? '...' : ''}
+             {(() => {
+               const plainText = opinion.detail!.replace(/<[^>]+>/g, '').trim();
+               return plainText.slice(0, 20) + (plainText.length > 20 ? '...' : '');
+             })()}
           </div>
         )}
       </div>

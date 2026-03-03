@@ -188,7 +188,10 @@ export default function OpinionCard({
              {/* Detail Preview (First 20 chars) */}
              {opinion.detail && (
                <p className="text-xs text-gray-500 font-serif leading-tight break-words">
-                 {opinion.detail.slice(0, 20)}{opinion.detail.length > 20 ? '...' : ''}
+                 {(() => {
+                   const plainText = opinion.detail!.replace(/<[^>]+>/g, '').trim();
+                   return plainText.slice(0, 20) + (plainText.length > 20 ? '...' : '');
+                 })()}
                </p>
              )}
           </div>
