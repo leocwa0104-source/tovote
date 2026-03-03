@@ -203,17 +203,17 @@ export default function TopicNav({ topics, privateTopics = [], joinedTopicIds = 
                 {isScopeOpen && (
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setIsScopeOpen(false)} />
-                    <div className="absolute right-0 top-full mt-1 w-28 bg-white rounded-md shadow-lg border border-gray-100 py-1 z-20">
+                    <div className="absolute left-0 top-full bg-white rounded-md border border-gray-200 z-20 whitespace-nowrap">
                       <button
                         onClick={() => { setScope('society'); setIsScopeOpen(false) }}
-                        className={`w-full px-3 py-2 text-left hover:bg-gray-50 transition-colors text-xs ${scope === 'society' ? 'text-blue-600 font-medium bg-blue-50' : 'text-gray-700'}`}
+                        className={`w-full px-2 py-1 text-left hover:bg-gray-50 transition-colors text-xs ${scope === 'society' ? 'text-blue-600 font-medium bg-blue-50' : 'text-gray-700'}`}
                       >
                         society
                       </button>
                       <button
                         onClick={() => { if (isAuthenticated) { setScope('joined'); setIsScopeOpen(false) } }}
                         disabled={!isAuthenticated}
-                        className={`w-full px-3 py-2 text-left hover:bg-gray-50 transition-colors text-xs ${scope === 'joined' ? 'text-purple-600 font-medium bg-purple-50' : 'text-gray-700'} ${!isAuthenticated ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`w-full px-2 py-1 text-left hover:bg-gray-50 transition-colors text-xs ${scope === 'joined' ? 'text-purple-600 font-medium bg-purple-50' : 'text-gray-700'} ${!isAuthenticated ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         joined
                       </button>
