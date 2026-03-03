@@ -1,10 +1,10 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Opinion, CitationTarget, User } from '@/app/types'
 import { Eye, Trash2, Lock } from '@/app/components/Icons'
-import { toggleOpinionVote } from '@/app/actions/vote'
+import { toggleOpinionVote, getOpinionVoteStats } from '@/app/actions/vote'
 
 interface OpinionDetailViewProps {
   opinion: Opinion
@@ -30,6 +30,24 @@ export default function OpinionDetailView({
   const [trash, setTrash] = useState(opinion.trash || 0)
   const [userVote, setUserVote] = useState<'EYE' | 'TRASH' | undefined>(opinion.userVote)
 
+  const isVotingRef = useRef(false)
+
+  // Poll for vote updates
+  useEffect(() => {
+    const intervalId = setInterval(async () => {
+      // Skip update if user is currently voting to prevent optimistic UI flicker
+      if (isVotingRef.current) return
+
+      const stats = await getOpinionVoteStats(opinion.id)
+      if (stats) {
+        setEyes(stats.eyes)
+        setTrash(stats.trash)
+      }
+    }, 3000)
+
+    return () => clearInterval(intervalId)
+  }, [opinion.id])
+
   const isVoteLocked = !!(
     userVote && 
     user?.lastReplenishedAt && 
@@ -47,6 +65,8 @@ export default function OpinionDetailView({
         alert("This vote is locked from a previous cycle and cannot be changed.")
         return
     }
+
+    if (isVotingRef.current) return
 
     // Optimistic Update
     const prevEyes = eyes
@@ -76,6 +96,8 @@ export default function OpinionDetailView({
     setTrash(newTrash)
     setUserVote(newUserVote)
 
+    isVotingRef.current = true
+
     try {
         const result = await toggleOpinionVote(opinion.id, type)
         if (!result.success) {
@@ -91,6 +113,8 @@ export default function OpinionDetailView({
         setEyes(prevEyes)
         setTrash(prevTrash)
         setUserVote(prevUserVote)
+    } finally {
+        isVotingRef.current = false
     }
   }
 

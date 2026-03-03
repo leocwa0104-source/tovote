@@ -99,19 +99,20 @@ export async function toggleOpinionVote(opinionId: string, type: VoteType) {
         return { success: false, error: `Not enough ${type === 'EYE' ? 'Eyes' : 'Trash'}` }
       }
 
-      await prisma.$transaction([
+      const [, updatedUser] = await prisma.$transaction([
         prisma.opinionVote.create({
           data: {
             userId: user.id,
             opinionId: opinionId,
             type: type,
+            createdAt: new Date(),
           },
         }),
         prisma.user.update({
           where: { id: user.id },
           data: {
-            eyesCount: type === 'EYE' ? { decrement: 1 } : undefined,
-            trashCount: type === 'TRASH' ? { decrement: 1 } : undefined,
+            eyesCount: type === 'EYE' ? { increment: -1 } : undefined,
+            trashCount: type === 'TRASH' ? { increment: -1 } : undefined,
           },
         }),
         prisma.opinion.update({
@@ -124,10 +125,7 @@ export async function toggleOpinionVote(opinionId: string, type: VoteType) {
       ])
       
       // Replenish check
-      const newEyes = type === 'EYE' ? user.eyesCount - 1 : user.eyesCount
-      const newTrash = type === 'TRASH' ? user.trashCount - 1 : user.trashCount
-      
-      if (newEyes === 0 && newTrash === 0) {
+      if (updatedUser.eyesCount === 0 && updatedUser.trashCount === 0) {
         await prisma.user.update({
           where: { id: user.id },
           data: {
@@ -141,11 +139,29 @@ export async function toggleOpinionVote(opinionId: string, type: VoteType) {
       }
 
       revalidatePath('/')
-      return { success: true, action: 'voted' }
+      return { success: true, action: 'created' }
     }
+  } catch (error) {
+    console.error("Vote error:", error)
+    return { success: false, error: "Internal server error" }
+  }
+}
 
-  } catch (e) {
-    console.error("toggleOpinionVote error:", e)
-    return { success: false, error: "Failed to vote" }
+export async function getOpinionVoteStats(opinionId: string) {
+  try {
+    const opinion = await prisma.opinion.findUnique({
+      where: { id: opinionId },
+      select: { eyes: true, trash: true }
+    })
+    
+    if (!opinion) return null
+    
+    return { 
+      eyes: opinion.eyes, 
+      trash: opinion.trash 
+    }
+  } catch (error) {
+    console.error("Failed to fetch vote stats:", error)
+    return null
   }
 }
