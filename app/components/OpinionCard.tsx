@@ -176,26 +176,12 @@ export default function OpinionCard({
   if (!opinion) return null
 
   return (
-    <div className="group relative py-3 px-2 border-b border-gray-100 last:border-0 hover:bg-gray-50/50 transition-colors">
-      <div className="flex items-start gap-3">
-        {/* Minimal Avatar */}
-        <div className="w-6 h-6 rounded bg-gray-100 flex-shrink-0 flex items-center justify-center text-gray-500 font-mono text-[10px] mt-0.5">
-          {opinion.author.username[0].toUpperCase()}
-        </div>
-        
+    <div className="group relative py-2 px-2 border-b border-gray-100 last:border-0 hover:bg-gray-50/50 transition-colors">
+      <div className="flex items-start">
         <div className="flex-grow min-w-0">
-          {/* Header Row: Username + Summary */}
-          <div className="flex items-baseline gap-2 flex-wrap pr-2">
-            <span className="font-mono text-xs text-gray-400 uppercase tracking-wide">{opinion.author.username}</span>
-            <h5 className="font-medium text-gray-900 text-sm break-words leading-snug">{opinion.summary}</h5>
-          </div>
+          <h5 className="font-medium text-gray-900 text-sm break-words leading-snug">{opinion.summary}</h5>
           
-          {/* Detail Section */}
-          {opinion.detail && (
-             // Hidden by default for minimalist view
-             // TODO: Add toggle or detail view modal if needed
-             null
-          )}
+          {/* Detail Section Hidden */}
         </div>
 
         {/* Actions: Absolute positioned on hover */}
