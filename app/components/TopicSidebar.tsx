@@ -30,6 +30,8 @@ export default async function TopicSidebar() {
           <TicketBalance
             tickets={(user as unknown as { tickets?: number }).tickets ?? 0}
             purchases={(user as unknown as { purchases?: Purchase[] }).purchases ?? []}
+            eyesCount={user.eyesCount}
+            trashCount={user.trashCount}
           />
         )}
       </div>

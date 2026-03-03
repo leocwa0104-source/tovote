@@ -2,10 +2,13 @@
 'use client'
 
 import { useState } from 'react'
-import { Opinion, CitationTarget } from '@/app/types'
+import { Opinion, CitationTarget, User } from '@/app/types'
+import { Eye, Trash2, Lock } from '@/app/components/Icons'
+import { toggleOpinionVote } from '@/app/actions/vote'
 
 interface OpinionDetailViewProps {
   opinion: Opinion
+  user: User | null
   onClose: () => void
   onCitationClick?: (target: CitationTarget) => void
   canSetNeighbor?: boolean
@@ -15,16 +18,86 @@ interface OpinionDetailViewProps {
 
 export default function OpinionDetailView({ 
   opinion, 
+  user,
   onClose, 
   onCitationClick,
   canSetNeighbor,
   hasUserPosted,
   onSetNeighbor
 }: OpinionDetailViewProps) {
+
+  const [eyes, setEyes] = useState(opinion.eyes || 0)
+  const [trash, setTrash] = useState(opinion.trash || 0)
+  const [userVote, setUserVote] = useState<'EYE' | 'TRASH' | undefined>(opinion.userVote)
+
+  const isVoteLocked = !!(
+    userVote && 
+    user?.lastReplenishedAt && 
+    opinion.userVoteCreatedAt && 
+    new Date(opinion.userVoteCreatedAt) < new Date(user.lastReplenishedAt)
+  )
+
+  const handleVote = async (type: 'EYE' | 'TRASH') => {
+    if (!user) {
+        alert("Please login to vote")
+        return
+    }
+
+    if (isVoteLocked) {
+        alert("This vote is locked from a previous cycle and cannot be changed.")
+        return
+    }
+
+    // Optimistic Update
+    const prevEyes = eyes
+    const prevTrash = trash
+    const prevUserVote = userVote
+
+    let newEyes = eyes
+    let newTrash = trash
+    let newUserVote: 'EYE' | 'TRASH' | undefined = userVote
+
+    if (userVote === type) {
+        // Retract
+        newUserVote = undefined
+        if (type === 'EYE') newEyes--
+        else newTrash--
+    } else {
+        // Switch or New
+        if (userVote === 'EYE') newEyes--
+        if (userVote === 'TRASH') newTrash--
+        
+        newUserVote = type
+        if (type === 'EYE') newEyes++
+        else newTrash++
+    }
+
+    setEyes(newEyes)
+    setTrash(newTrash)
+    setUserVote(newUserVote)
+
+    try {
+        const result = await toggleOpinionVote(opinion.id, type)
+        if (!result.success) {
+            // Revert
+            setEyes(prevEyes)
+            setTrash(prevTrash)
+            setUserVote(prevUserVote)
+            alert(result.error)
+        }
+    } catch (e) {
+        console.error(e)
+        // Revert
+        setEyes(prevEyes)
+        setTrash(prevTrash)
+        setUserVote(prevUserVote)
+    }
+  }
+
   const [copied, setCopied] = useState(false)
 
-  const handleCopyId = () => {
-    navigator.clipboard.writeText(opinion.id)
+  const handleCopyId = async () => {
+    await navigator.clipboard.writeText(opinion.id)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -127,7 +200,40 @@ export default function OpinionDetailView({
             
             <div className="flex items-center gap-2">
                 <button 
-                    onClick={handleCopyId}
+                    onClick={(e) => { e.stopPropagation(); handleVote('EYE'); }}
+                    disabled={isVoteLocked}
+                    className={`transition-all duration-300 rounded-full p-2 flex items-center justify-center border border-gray-100 gap-1
+                        ${userVote === 'EYE' 
+                        ? 'bg-gray-100 text-gray-900 border-gray-300 font-bold' 
+                        : isVoteLocked ? 'bg-white text-gray-300 cursor-not-allowed' : 'bg-white text-gray-400 hover:text-gray-700 hover:bg-gray-50'
+                        }`}
+                    title={isVoteLocked ? "Vote locked" : "I see you (Eye)"}
+                >
+                    {isVoteLocked && userVote === 'EYE' ? <Lock className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    <span className="text-xs font-mono">{eyes}</span>
+                </button>
+                
+                <button 
+                    onClick={(e) => { e.stopPropagation(); handleVote('TRASH'); }}
+                    disabled={isVoteLocked}
+                    className={`transition-all duration-300 rounded-full p-2 flex items-center justify-center border border-gray-100 gap-1
+                        ${userVote === 'TRASH' 
+                        ? 'bg-gray-100 text-gray-900 border-gray-300 font-bold' 
+                        : isVoteLocked ? 'bg-white text-gray-300 cursor-not-allowed' : 'bg-white text-gray-400 hover:text-gray-700 hover:bg-gray-50'
+                        }`}
+                    title={isVoteLocked ? "Vote locked" : "Rubbish (Trash)"}
+                >
+                    {isVoteLocked && userVote === 'TRASH' ? <Lock className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
+                    <span className="text-xs font-mono">{trash}</span>
+                </button>
+
+                <div className="w-px h-6 bg-gray-100 mx-1"></div>
+
+                <button 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleCopyId()
+                    }}
                     className={`transition-all duration-300 rounded-full p-2 flex items-center justify-center border border-gray-100
                         ${copied 
                         ? 'bg-green-50 text-green-600 border-green-200' 

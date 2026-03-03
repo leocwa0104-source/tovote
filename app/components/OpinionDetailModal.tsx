@@ -1,14 +1,15 @@
 'use client'
 
-import { Opinion } from '@/app/types'
+import { Opinion, User } from '@/app/types'
 import OpinionDetailView from './OpinionDetailView'
 
 interface OpinionDetailModalProps {
   opinion: Opinion
+  user?: User | null
   onClose: () => void
 }
 
-export default function OpinionDetailModal({ opinion, onClose }: OpinionDetailModalProps) {
+export default function OpinionDetailModal({ opinion, user = null, onClose }: OpinionDetailModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col relative">
@@ -24,6 +25,7 @@ export default function OpinionDetailModal({ opinion, onClose }: OpinionDetailMo
         <div className="flex-1 overflow-hidden p-6">
             <OpinionDetailView 
                 opinion={opinion} 
+                user={user}
                 onClose={onClose} 
             />
         </div>

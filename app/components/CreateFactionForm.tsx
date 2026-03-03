@@ -49,9 +49,7 @@ export default function CreateFactionForm({ topicId, user, initialName }: { topi
     }
 
     const result = await createFaction(topicId, null, formData)
-    // @ts-ignore
     if (result && !result.success) {
-      // @ts-ignore
       alert(result.error || 'Failed to create faction')
     }
   }

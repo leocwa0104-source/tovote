@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { buyPackage } from '@/app/actions'
 import { PACKAGES, PackageId } from '@/lib/constants'
 
+import { Eye, Trash2 } from '@/app/components/Icons'
+
 interface Purchase {
   packageId: string
   createdAt: Date
@@ -11,7 +13,17 @@ interface Purchase {
   expiresAt: Date
 }
 
-export default function TicketBalance({ tickets, purchases }: { tickets: number, purchases: Purchase[] }) {
+export default function TicketBalance({ 
+  tickets, 
+  purchases, 
+  eyesCount, 
+  trashCount 
+}: { 
+  tickets: number, 
+  purchases: Purchase[],
+  eyesCount?: number,
+  trashCount?: number
+}) {
   const [showStore, setShowStore] = useState(false)
   const [loading, setLoading] = useState(false)
 
@@ -37,20 +49,36 @@ export default function TicketBalance({ tickets, purchases }: { tickets: number,
   // Remove old PACKAGES definition
 
   return (
-    <div className="flex items-center justify-between bg-amber-50 rounded px-2 py-1 border border-amber-100 relative">
-      <div className="text-xs font-bold text-amber-700 flex items-center gap-1">
-        <span>🎟️</span>
-        <span>{tickets} Tickets</span>
+    <div className="flex flex-col gap-2">
+      {/* Eye & Trash Balance */}
+      <div className="flex items-center justify-between bg-gray-50 rounded px-2 py-1 border border-gray-100">
+          <div className="flex items-center gap-1 text-xs text-gray-500 font-mono" title="Eyes Remaining">
+              <Eye className="w-3.5 h-3.5" />
+              <span>{eyesCount ?? 10}</span>
+          </div>
+          <div className="w-px h-3 bg-gray-200"></div>
+          <div className="flex items-center gap-1 text-xs text-gray-500 font-mono" title="Trash Remaining">
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>{trashCount ?? 10}</span>
+          </div>
       </div>
-      <button 
-        onClick={() => setShowStore(!showStore)}
-        className="text-[10px] bg-amber-200 hover:bg-amber-300 text-amber-800 px-1.5 py-0.5 rounded font-bold transition-colors"
-      >
-        + Add
-      </button>
+
+      {/* Ticket Balance */}
+      <div className="flex items-center justify-between bg-amber-50 rounded px-2 py-1 border border-amber-100 relative">
+        <div className="text-xs font-bold text-amber-700 flex items-center gap-1">
+          <span>🎟️</span>
+          <span>{tickets} Tickets</span>
+        </div>
+        <button 
+          onClick={() => setShowStore(!showStore)}
+          className="text-[10px] bg-amber-200 hover:bg-amber-300 text-amber-800 px-1.5 py-0.5 rounded font-bold transition-colors"
+        >
+          + Add
+        </button>
+      </div>
 
       {showStore && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowStore(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setShowStore(false)}>
           <div className="bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="bg-amber-50 p-4 border-b border-amber-100 flex justify-between items-center">
               <h3 className="font-bold text-amber-900">Ticket Store</h3>
@@ -98,9 +126,6 @@ export default function TicketBalance({ tickets, purchases }: { tickets: number,
                   </div>
                 )
               })}
-            </div>
-            <div className="p-3 bg-gray-50 text-xs text-center text-gray-500 border-t border-gray-100">
-              Wechat / Alipay supported.
             </div>
           </div>
         </div>

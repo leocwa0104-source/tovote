@@ -7,7 +7,6 @@ import OpinionCard from './OpinionCard'
 import OpinionMap from './OpinionMap'
 import OpinionDetailView from './OpinionDetailView'
 import { Opinion, CitationTarget, FactionWithOpinions, User } from '@/app/types'
-import { Eye, Trash2 } from '@/app/components/Icons'
 
 interface FactionContentProps {
   faction: FactionWithOpinions
@@ -122,17 +121,6 @@ export default function FactionContent({ faction, user, isPrivateTopic }: Factio
             {/* Action Button */}
             {user ? (
               <div className="flex items-center gap-3">
-                 <div className="flex items-center gap-2 bg-gray-50 px-2 py-1 rounded border border-gray-100">
-                    <div className="flex items-center gap-1 text-xs text-gray-500 font-mono" title="Eyes Remaining">
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>{user.eyesCount ?? 10}</span>
-                    </div>
-                    <div className="w-px h-3 bg-gray-200"></div>
-                    <div className="flex items-center gap-1 text-xs text-gray-500 font-mono" title="Trash Remaining">
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>{user.trashCount ?? 10}</span>
-                    </div>
-                 </div>
                  <button
                    onClick={() => setShowCreateModal(true)}
                    className="text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors"
@@ -179,6 +167,7 @@ export default function FactionContent({ faction, user, isPrivateTopic }: Factio
              <div className="p-6 h-full">
                <OpinionDetailView 
                  opinion={opinion} 
+                 user={user}
                  onClose={closeTopModal}
                  onCitationClick={handleCitationClick}
                  canSetNeighbor={index === 0 && !!user && opinion.authorId !== user.id} // Can set if logged in, not own opinion, and is the primary view (not a citation popup)

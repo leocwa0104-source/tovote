@@ -572,26 +572,6 @@ export async function buyPackage(packageId: PackageId): Promise<{ success: boole
       }
     }
 
-    // 3. Construct Payment Request (Generic Structure)
-    // This is a common structure for many 3rd party payment APIs (EasyPay, Jeepay, etc.)
-    // You will need to adjust fields based on the specific provider you choose later.
-    const orderId = `${user.id}_${Date.now()}`
-    const amount = pkg.price // Use CNY for Wechat/Alipay
-    const notifyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/webhook/payment`
-    const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL}/`
-    
-    // Example Payload (adjust to your provider)
-    const payload = {
-      pid: paymentAppId,
-      type: 'alipay', // or 'wxpay', usually passed from frontend choice
-      out_trade_no: orderId,
-      notify_url: notifyUrl,
-      return_url: returnUrl,
-      name: `Ticket Package ${pkg.label}`,
-      money: amount,
-      // sign: generateSign(...) // You would need a signing function here
-    }
-
     // For now, since we don't have a real provider, we just return error to prompt config.
     // If you have a specific provider doc, we can implement the exact signature.
     
