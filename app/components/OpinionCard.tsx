@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import { createOpinion, deleteOpinion } from '@/app/actions'
 import OpinionDetailModal from './OpinionDetailModal'
 import MentionTextarea from './MentionTextarea'
+import TiptapEditor from './TiptapEditor'
 import { Opinion, CitationTarget, User } from '@/app/types'
 
 interface OpinionCardProps {
@@ -192,19 +193,18 @@ export default function OpinionCard({
             
             {/* Detail Input */}
             <div className="relative min-h-[100px]">
-              <MentionTextarea
+              <TiptapEditor
                 ref={detailRef}
                 name="detail"
                 defaultValue={opinion?.detail || ''}
                 placeholder="Elaborate on your point..."
-                className="w-full p-2 bg-gray-50 border-b border-gray-200 focus:border-gray-800 focus:bg-white text-sm text-gray-700 placeholder-gray-400 focus:outline-none resize-none min-h-[100px] transition-colors rounded-none"
+                className="w-full"
                 onCitationAdd={(citation) => {
                   setMentionedCitations(prev => {
                     if (prev.find(c => c.id === citation.id)) return prev
                     return [...prev, citation]
                   })
                 }}
-                onKeyDown={handleDetailKeyDown}
               />
             </div>
           </div>

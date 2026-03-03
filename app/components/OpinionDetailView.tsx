@@ -128,7 +128,55 @@ export default function OpinionDetailView({
 
   const renderDetailWithCitations = (text: string, citations: { id: string, target: CitationTarget }[] = []) => {
     if (!text) return null;
+
+    // Check if text is HTML (contains tags)
+    const isHtml = /<[a-z][\s\S]*>/i.test(text);
+
+    if (isHtml) {
+         // Simplified HTML renderer with click handler for mentions
+         return (
+             <div 
+                 className="prose prose-sm max-w-none text-gray-700 font-serif leading-relaxed"
+                 dangerouslySetInnerHTML={{ __html: text }}
+                 onClick={(e) => {
+                     const target = e.target as HTMLElement;
+                     const mentionNode = target.closest('[data-type="mention"]');
+                     
+                     if (mentionNode && onCitationClick) {
+                         e.preventDefault();
+                         e.stopPropagation();
+                         
+                         const id = mentionNode.getAttribute('data-id');
+                         const label = mentionNode.getAttribute('data-label');
+                         
+                         // Try finding by ID first
+                         let citation = citations.find(c => c.target.id === id);
+                         
+                         // Fallback to label matching
+                         if (!citation && label) {
+                             const parts = label.split(':');
+                             if (parts.length >= 2) {
+                                 const username = parts[0].trim();
+                                 const summarySnippet = parts.slice(1).join(':').trim();
+                                 const cleanSnippet = summarySnippet.endsWith('...') ? summarySnippet.slice(0, -3) : summarySnippet;
+                                 
+                                 citation = citations.find(c => 
+                                     c.target.author.username === username && 
+                                     (c.target.summary.includes(cleanSnippet) || c.target.summary.startsWith(cleanSnippet))
+                                 );
+                             }
+                         }
+                         
+                         if (citation) {
+                             onCitationClick(citation.target);
+                         }
+                     }
+                 }}
+             />
+         );
+    }
     
+    // Legacy text handling
     // Regex to match @[username: summary...]
     const regex = /@\[([^:]+): (.*?)\]/g;
     const parts = [];
