@@ -142,7 +142,11 @@ export default function FactionList({
               
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between text-xs text-gray-400">
-                  <span>{faction._count.members + (faction.paidVoteCount || 0)} votes</span>
+                  <div className="flex gap-2">
+                    <span className="font-medium text-gray-600">{faction._count.members + (faction.paidVoteCount || 0)} votes</span>
+                    <span>·</span>
+                    <span>{faction._count.members} members</span>
+                  </div>
                   
                   <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1">
                     {user && (

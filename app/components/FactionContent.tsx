@@ -111,8 +111,10 @@ export default function FactionContent({ faction, user, isPrivateTopic }: Factio
           {/* Tab Navigation & Actions */}
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-center gap-4">
-              <div className="text-xs text-gray-400 font-mono">
-                {currentOpinions.length} territories
+              <div className="text-xs text-gray-400 font-mono flex items-center gap-2">
+                <span>{faction._count.members} members</span>
+                <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                <span>{currentOpinions.length} territories</span>
               </div>
             </div>
 
