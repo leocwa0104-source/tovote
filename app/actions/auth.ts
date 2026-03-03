@@ -12,9 +12,11 @@ export async function sendOtp(email: string) {
     return { success: false, error: "Invalid email address" }
   }
   
+  const normalizedEmail = email.toLowerCase()
+  
   try {
-    const token = await generateVerificationToken(email)
-    await sendVerificationEmail(email, token.token)
+    const token = await generateVerificationToken(normalizedEmail)
+    await sendVerificationEmail(normalizedEmail, token.token)
     return { success: true }
   } catch (error) {
     console.error("Failed to send OTP:", error)
@@ -25,7 +27,8 @@ export async function sendOtp(email: string) {
 
 export async function register(prevState: any, formData: FormData) {
   try {
-    const email = formData.get('email') as string
+    const emailRaw = formData.get('email') as string
+    const email = emailRaw ? emailRaw.toLowerCase() : ''
     const otp = formData.get('otp') as string
     const username = formData.get('username') as string
     const password = formData.get('password') as string
@@ -82,7 +85,8 @@ export async function register(prevState: any, formData: FormData) {
 
 export async function loginWithPassword(prevState: any, formData: FormData) {
   try {
-    const email = formData.get('email') as string
+    const emailRaw = formData.get('email') as string
+    const email = emailRaw ? emailRaw.toLowerCase() : ''
     const password = formData.get('password') as string
 
     if (!email || !password) {
