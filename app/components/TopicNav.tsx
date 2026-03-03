@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useRef } from 'react'
 import { Lock, Unlock, ChevronsUpDown, ArrowUp, ArrowDown } from './Icons'
 
 interface Topic {
@@ -32,6 +32,7 @@ export default function TopicNav({ topics, privateTopics = [], joinedTopicIds = 
   const [isSortOpen, setIsSortOpen] = useState(false)
   const [scope, setScope] = useState<'society' | 'joined'>('society')
   const [isScopeOpen, setIsScopeOpen] = useState(false)
+  const scopeBtnRef = useRef<HTMLButtonElement>(null)
 
   const currentList = activeTab === 'public' 
     ? (scope === 'society' ? topics : topics.filter(t => joinedTopicIds.includes(t.id)))
@@ -193,6 +194,7 @@ export default function TopicNav({ topics, privateTopics = [], joinedTopicIds = 
             <div className="absolute inset-y-0 right-2 flex items-center">
               <div className="relative">
                 <button 
+                  ref={scopeBtnRef}
                   onClick={() => setIsScopeOpen(!isScopeOpen)}
                   className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs transition-colors ${scope === 'joined' ? 'text-purple-600' : 'text-gray-600'} hover:bg-gray-100`}
                   title="Select scope"
@@ -203,7 +205,10 @@ export default function TopicNav({ topics, privateTopics = [], joinedTopicIds = 
                 {isScopeOpen && (
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setIsScopeOpen(false)} />
-                    <div className="absolute left-0 top-full bg-white rounded-md border border-gray-200 z-20 whitespace-nowrap">
+                    <div 
+                      className="absolute left-0 top-full bg-white rounded-md border border-gray-200 z-20 whitespace-nowrap"
+                      style={{ width: scopeBtnRef.current ? scopeBtnRef.current.offsetWidth : undefined }}
+                    >
                       <button
                         onClick={() => { setScope('society'); setIsScopeOpen(false) }}
                         className={`w-full px-2 py-1 text-left hover:bg-gray-50 transition-colors text-xs ${scope === 'society' ? 'text-blue-600 font-medium bg-blue-50' : 'text-gray-700'}`}
@@ -213,7 +218,7 @@ export default function TopicNav({ topics, privateTopics = [], joinedTopicIds = 
                       <button
                         onClick={() => { if (isAuthenticated) { setScope('joined'); setIsScopeOpen(false) } }}
                         disabled={!isAuthenticated}
-                        className={`w-full px-2 py-1 text-left hover:bg-gray-50 transition-colors text-xs ${scope === 'joined' ? 'text-purple-600 font-medium bg-purple-50' : 'text-gray-700'} ${!isAuthenticated ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`w-full px-2 py-1 text-left hover:bg-gray-50 transition-colors text-xs ${scope === 'joined' ? 'text-purple-600 font-medium bg-purple-50' : 'text-gray-700'} ${!isAuthenticated ? 'opacity-60 cursor-not-allowed' : ''}`}
                       >
                         joined
                       </button>
