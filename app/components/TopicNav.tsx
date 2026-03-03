@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useMemo, useState } from 'react'
-import { Lock, Unlock, ChevronsUpDown } from './Icons'
+import { Lock, Unlock, ChevronsUpDown, ArrowUp, ArrowDown } from './Icons'
 
 interface Topic {
   id: string
@@ -27,6 +27,7 @@ export default function TopicNav({ topics, privateTopics = [], isAuthenticated }
   const [query, setQuery] = useState('')
   const [activeTab, setActiveTab] = useState<'public' | 'private'>('public')
   const [sortMode, setSortMode] = useState<'latest' | 'value'>('latest')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   const [isSortOpen, setIsSortOpen] = useState(false)
 
   const currentList = activeTab === 'public' ? topics : privateTopics
@@ -36,12 +37,17 @@ export default function TopicNav({ topics, privateTopics = [], isAuthenticated }
     if (!normalizedQuery) {
       // Sort by selected mode when no search query
       return [...currentList].sort((a, b) => {
+        const modifier = sortDirection === 'asc' ? 1 : -1
+        
         if (sortMode === 'value') {
           // Sort by totalValue desc, then by id (stable)
-          return (b.totalValue || 0) - (a.totalValue || 0)
+          return ((a.totalValue || 0) - (b.totalValue || 0)) * modifier * -1
         }
+        
         // 'latest' relies on server order (createdAt desc)
-        return 0
+        // Since we don't have createdAt in the client model, we assume the list is already sorted by latest desc
+        // So we just reverse if asc
+        return sortDirection === 'asc' ? 1 : 0
       })
     }
 
@@ -113,47 +119,57 @@ export default function TopicNav({ topics, privateTopics = [], isAuthenticated }
         <span className="font-semibold uppercase tracking-wider">
           {activeTab} Topics
         </span>
-        <div className="relative">
+        <div className="flex items-center gap-1">
           <button 
-            onClick={() => setIsSortOpen(!isSortOpen)}
-            className="flex items-center gap-1 hover:text-gray-900 transition-colors py-1 px-2 rounded-md hover:bg-gray-100"
+            onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
+            className="p-1 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-900 transition-colors"
+            title={sortDirection === 'asc' ? 'Ascending' : 'Descending'}
           >
-            <span className={`font-medium ${sortMode === 'value' ? 'text-amber-600' : 'text-blue-600'}`}>
-              {sortMode === 'value' ? 'High Value' : 'Latest'}
-            </span>
-            <ChevronsUpDown className="w-3 h-3 text-gray-400" />
+            {sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
           </button>
           
-          {isSortOpen && (
-            <>
-              <div 
-                className="fixed inset-0 z-10" 
-                onClick={() => setIsSortOpen(false)} 
-              />
-              <div className="absolute right-0 top-full mt-1 w-32 bg-white rounded-md shadow-lg border border-gray-100 py-1 z-20 flex flex-col overflow-hidden">
-                <button
-                  onClick={() => {
-                    setSortMode('latest')
-                    setIsSortOpen(false)
-                  }}
-                  className={`px-3 py-2 text-left hover:bg-gray-50 transition-colors flex items-center justify-between ${sortMode === 'latest' ? 'text-blue-600 font-medium bg-blue-50' : 'text-gray-600'}`}
-                >
-                  Latest
-                  {sortMode === 'latest' && <span className="text-blue-600">✓</span>}
-                </button>
-                <button
-                  onClick={() => {
-                    setSortMode('value')
-                    setIsSortOpen(false)
-                  }}
-                  className={`px-3 py-2 text-left hover:bg-gray-50 transition-colors flex items-center justify-between ${sortMode === 'value' ? 'text-amber-600 font-medium bg-amber-50' : 'text-gray-600'}`}
-                >
-                  High Value
-                  {sortMode === 'value' && <span className="text-amber-600">✓</span>}
-                </button>
-              </div>
-            </>
-          )}
+          <div className="relative">
+            <button 
+              onClick={() => setIsSortOpen(!isSortOpen)}
+              className="flex items-center gap-1 hover:text-gray-900 transition-colors py-1 px-2 rounded-md hover:bg-gray-100"
+            >
+              <span className={`font-medium ${sortMode === 'value' ? 'text-amber-600' : 'text-blue-600'}`}>
+                {sortMode === 'value' ? 'High Value' : 'Latest'}
+              </span>
+              <ChevronsUpDown className="w-3 h-3 text-gray-400" />
+            </button>
+            
+            {isSortOpen && (
+              <>
+                <div 
+                  className="fixed inset-0 z-10" 
+                  onClick={() => setIsSortOpen(false)} 
+                />
+                <div className="absolute right-0 top-full mt-1 w-32 bg-white rounded-md shadow-lg border border-gray-100 py-1 z-20 flex flex-col overflow-hidden">
+                  <button
+                    onClick={() => {
+                      setSortMode('latest')
+                      setIsSortOpen(false)
+                    }}
+                    className={`px-3 py-2 text-left hover:bg-gray-50 transition-colors flex items-center justify-between ${sortMode === 'latest' ? 'text-blue-600 font-medium bg-blue-50' : 'text-gray-600'}`}
+                  >
+                    Latest
+                    {sortMode === 'latest' && <span className="text-blue-600">✓</span>}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSortMode('value')
+                      setIsSortOpen(false)
+                    }}
+                    className={`px-3 py-2 text-left hover:bg-gray-50 transition-colors flex items-center justify-between ${sortMode === 'value' ? 'text-amber-600 font-medium bg-amber-50' : 'text-gray-600'}`}
+                  >
+                    High Value
+                    {sortMode === 'value' && <span className="text-amber-600">✓</span>}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
