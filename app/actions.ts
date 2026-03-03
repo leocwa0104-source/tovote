@@ -801,7 +801,10 @@ export async function getUserTopicMemberships() {
     const user = await getCurrentUser()
     if (!user) return []
     const memberships = await prisma.membership.findMany({
-      where: { userId: user.id },
+      where: { 
+        userId: user.id,
+        factionId: { not: null }
+      },
       select: { topicId: true }
     })
     return memberships.map(m => m.topicId)
