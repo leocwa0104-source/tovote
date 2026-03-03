@@ -340,6 +340,7 @@ export async function getTopic(id: string) {
   try {
     const user = await getCurrentUser()
 
+    // 1. Fetch topic and factions first (without opinions to avoid crash on data inconsistency)
     const topic = await prisma.topic.findUnique({
       where: { id },
       include: {
@@ -357,39 +358,6 @@ export async function getTopic(id: string) {
               include: {
                 user: true
               }
-            },
-            opinions: {
-              orderBy: { createdAt: 'desc' },
-              include: { 
-                author: true,
-                votes: user ? {
-            where: { userId: user.id },
-            select: { type: true, createdAt: true }
-          } : false,
-                citations: {
-                  include: {
-                    target: {
-                      include: { 
-                        author: true,
-                        faction: {
-                          include: {
-                            topic: true
-                          }
-                        }
-                      }
-                    }
-                  }
-                },
-                citedBy: {
-                  include: {
-                    source: {
-                      include: {
-                        author: true
-                      }
-                    }
-                  }
-                }
-              }
             }
           }
         }
@@ -397,19 +365,68 @@ export async function getTopic(id: string) {
     })
     
     if (!topic) return null
+
+    // 2. Safely fetch opinions separately
+    // If fetching opinions fails (e.g. missing author relation), we catch it and return empty opinions
+    // to prevent the whole page from crashing (404).
+    let opinions: any[] = []
+    try {
+      const factionIds = topic.factions.map(f => f.id)
+      opinions = await prisma.opinion.findMany({
+        where: { factionId: { in: factionIds } },
+        orderBy: { createdAt: 'desc' },
+        include: { 
+          author: true,
+          votes: user ? {
+            where: { userId: user.id },
+            select: { type: true, createdAt: true }
+          } : false,
+          citations: {
+            include: {
+              target: {
+                include: { 
+                  author: true,
+                  faction: {
+                    include: {
+                      topic: true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          citedBy: {
+            include: {
+              source: {
+                include: {
+                  author: true
+                }
+              }
+            }
+          }
+        }
+      })
+    } catch (e) {
+      console.error("getTopic opinions fetch error (data inconsistency?):", e)
+      // Return empty opinions as fallback
+      opinions = []
+    }
     
     // Sort factions by total votes (members + paid votes) descending
     topic.factions.sort((a, b) => (b._count.members + b.paidVoteCount) - (a._count.members + a.paidVoteCount))
     
-    // Enhance opinions with userVote
-    const enhancedFactions = topic.factions.map(faction => ({
-      ...faction,
-      opinions: faction.opinions.map(op => ({
-        ...op,
-        userVote: op.votes?.[0]?.type as 'EYE' | 'TRASH' | undefined,
-        userVoteCreatedAt: op.votes?.[0]?.createdAt
-      }))
-    }))
+    // Enhance opinions with userVote and map to factions
+    const enhancedFactions = topic.factions.map(faction => {
+      const factionOpinions = opinions.filter(o => o.factionId === faction.id)
+      return {
+        ...faction,
+        opinions: factionOpinions.map(op => ({
+          ...op,
+          userVote: op.votes?.[0]?.type as 'EYE' | 'TRASH' | undefined,
+          userVoteCreatedAt: op.votes?.[0]?.createdAt
+        }))
+      }
+    })
 
     return {
       ...topic,
