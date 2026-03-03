@@ -3,7 +3,6 @@ import TopicNav from './TopicNav'
 import Link from 'next/link'
 import AuthControl from './AuthControl'
 import TicketBalance from './TicketBalance'
-import { TokenBalance } from './TokenBalance'
 
 type Purchase = {
   packageId: string
@@ -28,16 +27,10 @@ export default async function TopicSidebar() {
           <AuthControl user={user ? { username: user.username } : null} />
         </div>
         {user && (
-          <div className="flex flex-col gap-2">
-            <TicketBalance
-              tickets={(user as unknown as { tickets?: number }).tickets ?? 0}
-              purchases={(user as unknown as { purchases?: Purchase[] }).purchases ?? []}
-            />
-            <TokenBalance 
-              eyes={user.eyesCount ?? 10} 
-              trash={user.trashCount ?? 10} 
-            />
-          </div>
+          <TicketBalance
+            tickets={(user as unknown as { tickets?: number }).tickets ?? 0}
+            purchases={(user as unknown as { purchases?: Purchase[] }).purchases ?? []}
+          />
         )}
       </div>
 

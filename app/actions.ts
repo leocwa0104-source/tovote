@@ -333,6 +333,8 @@ export async function joinPrivateTopic(title: string, creatorName: string, passw
 
 export async function getTopic(id: string) {
   try {
+    const user = await getCurrentUser()
+
     const topic = await prisma.topic.findUnique({
       where: { id },
       include: {
@@ -355,6 +357,10 @@ export async function getTopic(id: string) {
               orderBy: { createdAt: 'desc' },
               include: { 
                 author: true,
+                votes: user ? {
+            where: { userId: user.id },
+            select: { type: true, createdAt: true }
+          } : false,
                 citations: {
                   include: {
                     target: {
@@ -390,7 +396,20 @@ export async function getTopic(id: string) {
     // Sort factions by total votes (members + paid votes) descending
     topic.factions.sort((a, b) => (b._count.members + b.paidVoteCount) - (a._count.members + a.paidVoteCount))
     
-    return topic
+    // Enhance opinions with userVote
+    const enhancedFactions = topic.factions.map(faction => ({
+      ...faction,
+      opinions: faction.opinions.map(op => ({
+        ...op,
+        userVote: op.votes?.[0]?.type as 'EYE' | 'TRASH' | undefined,
+        userVoteCreatedAt: op.votes?.[0]?.createdAt
+      }))
+    }))
+
+    return {
+      ...topic,
+      factions: enhancedFactions
+    }
   } catch (e) {
     console.error("getTopic error:", e)
     return null
@@ -715,6 +734,7 @@ export async function leaveFaction(topicId: string, formData?: FormData) {
 export async function getFaction(factionId: string) {
   try {
     const user = await getCurrentUser()
+
     const faction = await prisma.faction.findUnique({
       where: { id: factionId },
       include: {
@@ -726,10 +746,10 @@ export async function getFaction(factionId: string) {
           orderBy: { createdAt: 'desc' },
           include: {
             author: true,
-            votes: {
-              where: { userId: user?.id ?? '' },
+            votes: user ? {
+              where: { userId: user.id },
               select: { type: true }
-            },
+            } : false,
             citations: {
               include: {
                 target: {
@@ -757,7 +777,20 @@ export async function getFaction(factionId: string) {
         }
       }
     })
-    return faction
+
+    if (!faction) return null
+
+    // Transform to include userVote
+    const enhancedOpinions = faction.opinions.map(op => ({
+      ...op,
+      userVote: op.votes?.[0]?.type as 'EYE' | 'TRASH' | undefined,
+      userVoteCreatedAt: op.votes?.[0]?.createdAt
+    }))
+
+    return {
+      ...faction,
+      opinions: enhancedOpinions
+    }
   } catch (e) {
     console.error("getFaction error:", e)
     return null
@@ -871,11 +904,24 @@ export async function postReason() {
 
 export async function getFactionOpinions(factionId: string) {
   try {
-    return await prisma.opinion.findMany({
+    const user = await getCurrentUser()
+    const opinions = await prisma.opinion.findMany({
       where: { factionId },
       orderBy: { createdAt: 'desc' },
-      include: { author: true }
+      include: { 
+        author: true,
+        votes: user ? {
+          where: { userId: user.id },
+          select: { type: true, createdAt: true }
+        } : false,
+      }
     })
+
+    return opinions.map(op => ({
+      ...op,
+      userVote: op.votes?.[0]?.type as 'EYE' | 'TRASH' | undefined,
+      userVoteCreatedAt: op.votes?.[0]?.createdAt
+    }))
   } catch (e) {
     console.error("getFactionOpinions error:", e)
     return []

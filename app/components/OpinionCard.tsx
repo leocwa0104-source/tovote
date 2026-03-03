@@ -1,19 +1,18 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { createOpinion, deleteOpinion } from '@/app/actions'
-import { voteOpinion } from '@/app/actions/opinion'
-import { useRouter } from 'next/navigation'
+import { toggleOpinionVote } from '@/app/actions/vote'
 import OpinionDetailModal from './OpinionDetailModal'
 import MentionTextarea from './MentionTextarea'
-import { Opinion, CitationTarget } from '@/app/types'
-import { Eye, Trash } from './Icons'
+import { Opinion, CitationTarget, User } from '@/app/types'
+import { Eye, Trash2, Lock } from '@/app/components/Icons'
 
 interface OpinionCardProps {
   opinion?: Opinion
   factionId: string
   type: 'WHY' | 'WHY_NOT'
-  currentUser: { id: string } | null
+  currentUser: User | null
   isPrivateTopic?: boolean
   onSuccess?: () => void
   initialIsEditing?: boolean
@@ -39,70 +38,77 @@ export default function OpinionCard({
   const [mentionedCitations, setMentionedCitations] = useState<CitationTarget[]>([])
   const [selectedNeighborId] = useState<string | null>(opinion?.neighborId || initialNeighborId || null)
   
-  const router = useRouter()
+  // Voting State
   const [eyes, setEyes] = useState(opinion?.eyes || 0)
   const [trash, setTrash] = useState(opinion?.trash || 0)
-  const [userVoteType, setUserVoteType] = useState<'EYE' | 'TRASH' | null>(
-    (opinion?.votes?.[0]?.type as 'EYE' | 'TRASH' | null) || null
+  const [userVote, setUserVote] = useState<'EYE' | 'TRASH' | undefined>(opinion?.userVote)
+
+  const isOwner = currentUser && opinion?.authorId === currentUser.id
+  
+  // Calculate if vote is locked
+  const isVoteLocked = !!(
+    userVote && 
+    currentUser?.lastReplenishedAt && 
+    opinion?.userVoteCreatedAt && 
+    new Date(opinion.userVoteCreatedAt) < new Date(currentUser.lastReplenishedAt)
   )
 
-  useEffect(() => {
-    if (opinion) {
-      setEyes(opinion.eyes)
-      setTrash(opinion.trash)
-      setUserVoteType((opinion.votes?.[0]?.type as 'EYE' | 'TRASH' | null) || null)
-    }
-  }, [opinion])
-
   const handleVote = async (type: 'EYE' | 'TRASH') => {
-    if (!opinion) return
-    
+    if (!currentUser) {
+        alert("Please login to vote")
+        return
+    }
+
+    if (isVoteLocked) {
+        alert("This vote is locked from a previous cycle and cannot be changed.")
+        return
+    }
+
     // Optimistic Update
     const prevEyes = eyes
     const prevTrash = trash
-    const prevVote = userVoteType
-    
-    if (userVoteType === type) {
-      // Retract
-      setUserVoteType(null)
-      if (type === 'EYE') setEyes(prev => Math.max(0, prev - 1))
-      else setTrash(prev => Math.max(0, prev - 1))
+    const prevUserVote = userVote
+
+    let newEyes = eyes
+    let newTrash = trash
+    let newUserVote: 'EYE' | 'TRASH' | undefined = userVote
+
+    if (userVote === type) {
+        // Retract
+        newUserVote = undefined
+        if (type === 'EYE') newEyes--
+        else newTrash--
     } else {
-      // New Vote or Switch
-      setUserVoteType(type)
-      if (type === 'EYE') {
-        setEyes(prev => prev + 1)
-        if (prevVote === 'TRASH') setTrash(prev => Math.max(0, prev - 1))
-      } else {
-        setTrash(prev => prev + 1)
-        if (prevVote === 'EYE') setEyes(prev => Math.max(0, prev - 1))
-      }
+        // Switch or New
+        if (userVote === 'EYE') newEyes--
+        if (userVote === 'TRASH') newTrash--
+        
+        newUserVote = type
+        if (type === 'EYE') newEyes++
+        else newTrash++
     }
 
+    setEyes(newEyes)
+    setTrash(newTrash)
+    setUserVote(newUserVote)
+
     try {
-      const result = await voteOpinion(opinion.id, type)
-      if (result.error) {
+        const result = await toggleOpinionVote(opinion!.id, type)
+        if (!result.success) {
+            // Revert
+            setEyes(prevEyes)
+            setTrash(prevTrash)
+            setUserVote(prevUserVote)
+            alert(result.error)
+        }
+    } catch (e) {
+        console.error(e)
         // Revert
         setEyes(prevEyes)
         setTrash(prevTrash)
-        setUserVoteType(prevVote)
-        alert(result.error)
-      } else {
-        if (result.replenished) {
-          alert("Your voting tokens (Eyes & Trash) have been replenished!")
-        }
-        router.refresh()
-      }
-    } catch (e) {
-      console.error(e)
-      // Revert
-      setEyes(prevEyes)
-      setTrash(prevTrash)
-      setUserVoteType(prevVote)
+        setUserVote(prevUserVote)
     }
   }
-
-  const isOwner = currentUser && opinion?.authorId === currentUser.id
 
   const handleSubmit = async (formData: FormData) => {
     setLoading(true)
@@ -369,41 +375,36 @@ export default function OpinionCard({
               )}
             </div>
           )}
-        </div>
 
-        {/* Vote Buttons */}
-        <div className="flex flex-col justify-center items-center gap-1.5 border-l border-gray-100 pl-3 ml-1">
-           <button 
-             onClick={(e) => {
-               e.stopPropagation()
-               handleVote('EYE')
-             }}
-             className={`flex flex-col items-center gap-0.5 transition-all ${
-               userVoteType === 'EYE' 
-                 ? 'text-blue-600 scale-110' 
-                 : 'text-gray-300 hover:text-blue-500 hover:scale-105'
-             }`}
-             title="Worth seeing (Cost: 1 Eye)"
-           >
-             <Eye className="w-4 h-4" />
-             <span className="text-[10px] font-bold font-mono">{eyes}</span>
-           </button>
-
-           <button 
-             onClick={(e) => {
-               e.stopPropagation()
-               handleVote('TRASH')
-             }}
-             className={`flex flex-col items-center gap-0.5 transition-all ${
-               userVoteType === 'TRASH' 
-                 ? 'text-red-600 scale-110' 
-                 : 'text-gray-300 hover:text-red-500 hover:scale-105'
-             }`}
-             title="Garbage (Cost: 1 Trash)"
-           >
-             <Trash className="w-4 h-4" />
-             <span className="text-[10px] font-bold font-mono">{trash}</span>
-           </button>
+          {/* Voting Actions */}
+          <div className="flex items-center gap-4 mt-2">
+            <button 
+                onClick={(e) => { e.stopPropagation(); handleVote('EYE'); }}
+                disabled={isVoteLocked}
+                className={`flex items-center gap-1.5 text-xs font-mono transition-colors ${
+                    userVote === 'EYE' 
+                    ? 'text-gray-900 font-bold' 
+                    : isVoteLocked ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 hover:text-gray-600'
+                }`}
+                title={isVoteLocked ? "Vote locked" : "I see you (Eye)"}
+            >
+                {isVoteLocked && userVote === 'EYE' ? <Lock className="w-3 h-3" /> : <Eye className="w-3.5 h-3.5" />}
+                <span>{eyes}</span>
+            </button>
+            <button 
+                onClick={(e) => { e.stopPropagation(); handleVote('TRASH'); }}
+                disabled={isVoteLocked}
+                className={`flex items-center gap-1.5 text-xs font-mono transition-colors ${
+                    userVote === 'TRASH' 
+                    ? 'text-gray-900 font-bold' 
+                    : isVoteLocked ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 hover:text-gray-600'
+                }`}
+                title={isVoteLocked ? "Vote locked" : "Rubbish (Trash)"}
+            >
+                {isVoteLocked && userVote === 'TRASH' ? <Lock className="w-3 h-3" /> : <Trash2 className="w-3.5 h-3.5" />}
+                <span>{trash}</span>
+            </button>
+          </div>
         </div>
 
         {/* Actions: Absolute positioned on hover */}

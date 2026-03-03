@@ -25,8 +25,8 @@ model User {
   eyesCount         Int      @default(10)
   trashCount        Int      @default(10)
   lastReplenishedAt DateTime @default(now())
-
-  opinionVotes OpinionVote[]
+  
+  opinionVotes      OpinionVote[]
 }
 
 model Purchase {
@@ -128,29 +128,11 @@ model Opinion {
   neighbor   Opinion?   @relation("OpinionNeighbors", fields: [neighborId], references: [id])
   neighbors  Opinion[]  @relation("OpinionNeighbors")
 
-  eyes      Int      @default(0)
-  trash     Int      @default(0)
-  
-  votes     OpinionVote[]
+  eyes       Int      @default(0)
+  trash      Int      @default(0)
+  votes      OpinionVote[]
 
   @@unique([authorId, factionId, type]) // Ensures one opinion per type per faction for a user
-}
-
-model OpinionVote {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  opinionId String
-  opinion   Opinion  @relation(fields: [opinionId], references: [id], onDelete: Cascade)
-  type      VoteType
-  createdAt DateTime @default(now())
-
-  @@unique([userId, opinionId])
-}
-
-enum VoteType {
-  EYE
-  TRASH
 }
 
 model Citation {
@@ -169,4 +151,21 @@ model Citation {
 enum ReasonType {
   WHY
   WHY_NOT
+}
+
+model OpinionVote {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  opinionId String
+  opinion   Opinion  @relation(fields: [opinionId], references: [id], onDelete: Cascade)
+  type      VoteType
+  createdAt DateTime @default(now())
+
+  @@unique([userId, opinionId])
+}
+
+enum VoteType {
+  EYE
+  TRASH
 }

@@ -45,11 +45,10 @@ export interface Opinion {
     }
   }
   neighborId?: string | null
-  
-  // New fields
   eyes: number
   trash: number
-  votes?: { type: 'EYE' | 'TRASH' }[]
+  userVote?: 'EYE' | 'TRASH'
+  userVoteCreatedAt?: Date
 }
 
 export interface FactionWithOpinions {
@@ -62,7 +61,8 @@ export interface FactionWithOpinions {
 
 export type User = { 
   id: string; 
-  username: string;
-  eyesCount?: number;
+  username: string; 
+  eyesCount?: number; 
   trashCount?: number;
+  lastReplenishedAt?: Date;
 } | null
