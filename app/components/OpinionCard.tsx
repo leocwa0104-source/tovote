@@ -1,10 +1,13 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { createOpinion, deleteOpinion } from '@/app/actions'
+import { voteOpinion } from '@/app/actions/opinion'
+import { useRouter } from 'next/navigation'
 import OpinionDetailModal from './OpinionDetailModal'
 import MentionTextarea from './MentionTextarea'
 import { Opinion, CitationTarget } from '@/app/types'
+import { Eye, Trash } from './Icons'
 
 interface OpinionCardProps {
   opinion?: Opinion
@@ -35,6 +38,69 @@ export default function OpinionCard({
   const [selectedCitation, setSelectedCitation] = useState<CitationTarget | null>(null)
   const [mentionedCitations, setMentionedCitations] = useState<CitationTarget[]>([])
   const [selectedNeighborId] = useState<string | null>(opinion?.neighborId || initialNeighborId || null)
+  
+  const router = useRouter()
+  const [eyes, setEyes] = useState(opinion?.eyes || 0)
+  const [trash, setTrash] = useState(opinion?.trash || 0)
+  const [userVoteType, setUserVoteType] = useState<'EYE' | 'TRASH' | null>(
+    (opinion?.votes?.[0]?.type as 'EYE' | 'TRASH' | null) || null
+  )
+
+  useEffect(() => {
+    if (opinion) {
+      setEyes(opinion.eyes)
+      setTrash(opinion.trash)
+      setUserVoteType((opinion.votes?.[0]?.type as 'EYE' | 'TRASH' | null) || null)
+    }
+  }, [opinion])
+
+  const handleVote = async (type: 'EYE' | 'TRASH') => {
+    if (!opinion) return
+    
+    // Optimistic Update
+    const prevEyes = eyes
+    const prevTrash = trash
+    const prevVote = userVoteType
+    
+    if (userVoteType === type) {
+      // Retract
+      setUserVoteType(null)
+      if (type === 'EYE') setEyes(prev => Math.max(0, prev - 1))
+      else setTrash(prev => Math.max(0, prev - 1))
+    } else {
+      // New Vote or Switch
+      setUserVoteType(type)
+      if (type === 'EYE') {
+        setEyes(prev => prev + 1)
+        if (prevVote === 'TRASH') setTrash(prev => Math.max(0, prev - 1))
+      } else {
+        setTrash(prev => prev + 1)
+        if (prevVote === 'EYE') setEyes(prev => Math.max(0, prev - 1))
+      }
+    }
+
+    try {
+      const result = await voteOpinion(opinion.id, type)
+      if (result.error) {
+        // Revert
+        setEyes(prevEyes)
+        setTrash(prevTrash)
+        setUserVoteType(prevVote)
+        alert(result.error)
+      } else {
+        if (result.replenished) {
+          alert("Your voting tokens (Eyes & Trash) have been replenished!")
+        }
+        router.refresh()
+      }
+    } catch (e) {
+      console.error(e)
+      // Revert
+      setEyes(prevEyes)
+      setTrash(prevTrash)
+      setUserVoteType(prevVote)
+    }
+  }
 
   const isOwner = currentUser && opinion?.authorId === currentUser.id
 
@@ -303,6 +369,41 @@ export default function OpinionCard({
               )}
             </div>
           )}
+        </div>
+
+        {/* Vote Buttons */}
+        <div className="flex flex-col justify-center items-center gap-1.5 border-l border-gray-100 pl-3 ml-1">
+           <button 
+             onClick={(e) => {
+               e.stopPropagation()
+               handleVote('EYE')
+             }}
+             className={`flex flex-col items-center gap-0.5 transition-all ${
+               userVoteType === 'EYE' 
+                 ? 'text-blue-600 scale-110' 
+                 : 'text-gray-300 hover:text-blue-500 hover:scale-105'
+             }`}
+             title="Worth seeing (Cost: 1 Eye)"
+           >
+             <Eye className="w-4 h-4" />
+             <span className="text-[10px] font-bold font-mono">{eyes}</span>
+           </button>
+
+           <button 
+             onClick={(e) => {
+               e.stopPropagation()
+               handleVote('TRASH')
+             }}
+             className={`flex flex-col items-center gap-0.5 transition-all ${
+               userVoteType === 'TRASH' 
+                 ? 'text-red-600 scale-110' 
+                 : 'text-gray-300 hover:text-red-500 hover:scale-105'
+             }`}
+             title="Garbage (Cost: 1 Trash)"
+           >
+             <Trash className="w-4 h-4" />
+             <span className="text-[10px] font-bold font-mono">{trash}</span>
+           </button>
         </div>
 
         {/* Actions: Absolute positioned on hover */}

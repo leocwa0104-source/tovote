@@ -714,6 +714,7 @@ export async function leaveFaction(topicId: string, formData?: FormData) {
 
 export async function getFaction(factionId: string) {
   try {
+    const user = await getCurrentUser()
     const faction = await prisma.faction.findUnique({
       where: { id: factionId },
       include: {
@@ -725,6 +726,10 @@ export async function getFaction(factionId: string) {
           orderBy: { createdAt: 'desc' },
           include: {
             author: true,
+            votes: {
+              where: { userId: user?.id ?? '' },
+              select: { type: true }
+            },
             citations: {
               include: {
                 target: {
