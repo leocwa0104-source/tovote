@@ -36,19 +36,21 @@ export default function TopicNav({ topics, privateTopics = [], isAuthenticated }
   const filteredTopics = useMemo(() => {
     if (!normalizedQuery) {
       // Sort by selected mode when no search query
-      return [...currentList].sort((a, b) => {
-        const modifier = sortDirection === 'asc' ? 1 : -1
-        
-        if (sortMode === 'value') {
-          // Sort by totalValue desc, then by id (stable)
-          return ((a.totalValue || 0) - (b.totalValue || 0)) * modifier * -1
-        }
-        
-        // 'latest' relies on server order (createdAt desc)
-        // Since we don't have createdAt in the client model, we assume the list is already sorted by latest desc
-        // So we just reverse if asc
-        return sortDirection === 'asc' ? 1 : 0
-      })
+      const sorted = [...currentList]
+      
+      if (sortMode === 'value') {
+        // Sort by totalValue desc (default)
+        sorted.sort((a, b) => (b.totalValue || 0) - (a.totalValue || 0))
+      }
+      // 'latest' relies on server order (createdAt desc)
+      // We assume currentList is already sorted by latest desc from the server
+      
+      // If asc, reverse the list
+      if (sortDirection === 'asc') {
+        sorted.reverse()
+      }
+      
+      return sorted
     }
 
     const keywords = normalizedQuery.split(/[\s,，.。;；]+/).filter(Boolean)
@@ -80,7 +82,7 @@ export default function TopicNav({ topics, privateTopics = [], isAuthenticated }
       .filter(item => item.matchCount > 0)
       .sort((a, b) => b.matchCount - a.matchCount)
       .map(item => item.topic)
-  }, [normalizedQuery, currentList, sortMode])
+  }, [normalizedQuery, currentList, sortMode, sortDirection])
   
   const hasExact = useMemo(() => {
     const nq = normalizedQuery
