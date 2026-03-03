@@ -23,7 +23,7 @@ export interface Opinion {
   author: {
     username: string
   }
-  createdAt: string
+  createdAt: Date
   citations?: {
     id: string
     target: CitationTarget
@@ -48,7 +48,7 @@ export interface Opinion {
   eyes: number
   trash: number
   userVote?: 'EYE' | 'TRASH'
-  userVoteCreatedAt?: string
+  userVoteCreatedAt?: Date
 }
 
 export interface FactionWithOpinions {
@@ -64,5 +64,5 @@ export type User = {
   username: string; 
   eyesCount?: number; 
   trashCount?: number;
-  lastReplenishedAt?: string;
+  lastReplenishedAt?: Date;
 } | null

@@ -252,7 +252,7 @@ export default function OpinionCard({
             type: selectedCitation.type,
             authorId: '',
             author: { username: selectedCitation.author.username },
-            createdAt: new Date().toISOString(),
+            createdAt: new Date(),
             citations: [],
             citedBy: [],
             factionId: '',
