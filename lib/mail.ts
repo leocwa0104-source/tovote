@@ -18,6 +18,7 @@ export const sendVerificationEmail = async (email: string, token: string) => {
     return { success: true };
   } catch (error) {
     console.error("Failed to send email:", error);
-    return { success: false, error: "Failed to send email" };
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return { success: false, error: errorMessage };
   }
 };

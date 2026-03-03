@@ -16,7 +16,12 @@ export async function sendOtp(email: string) {
   
   try {
     const token = await generateVerificationToken(normalizedEmail)
-    await sendVerificationEmail(normalizedEmail, token.token)
+    const emailResult = await sendVerificationEmail(normalizedEmail, token.token)
+    
+    if (!emailResult.success) {
+      return { success: false, error: emailResult.error || "Failed to send email" }
+    }
+    
     return { success: true }
   } catch (error) {
     console.error("Failed to send OTP:", error)
