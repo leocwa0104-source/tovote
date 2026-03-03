@@ -32,14 +32,10 @@ export default function OpinionBlock({ node, isActive, onSelect }: OpinionBlockP
   // However, if we change DOM content based on zoom, we might get layout shifts if CSS changes.
   // Let's stick to fixed layout based on node dimensions.
   
-  const showAvatar = minDim > 40
-  const showSummary = minDim > 60
-  const showDetail = minDim > 120
-
+  const showSummary = minDim > 40
+  
   // Fixed font sizing based on node dimensions
-  const headerFontSize = Math.max(9, Math.min(minDim / 10, 14))
   const summaryFontSize = Math.max(10, Math.min(minDim / 8, 24))
-  const detailFontSize = Math.max(9, Math.min(minDim / 12, 16))
 
   return (
     <div
@@ -59,34 +55,15 @@ export default function OpinionBlock({ node, isActive, onSelect }: OpinionBlockP
       title={`${opinion.author.username}: ${opinion.summary}`}
     >
       {/* Content Container */}
-      <div className="text-black w-full h-full flex flex-col gap-1 overflow-hidden select-none pointer-events-none">
-        
-        {/* Header: Avatar + Username */}
-        {showAvatar && (
-          <div className="flex items-center gap-1 min-h-[12px] flex-shrink-0" style={{ fontSize: headerFontSize }}>
-            <span className="font-mono truncate leading-none opacity-60">
-              @{opinion.author.username}
-            </span>
-          </div>
-        )}
+      <div className="text-black w-full h-full flex flex-col gap-1 overflow-hidden select-none pointer-events-none justify-center">
         
         {/* Summary (Headline) */}
         {showSummary && (
           <div 
-            className="font-bold leading-tight break-words flex-shrink-0 line-clamp-2"
+            className="font-bold leading-tight break-words flex-shrink-0 line-clamp-3 text-center"
             style={{ fontSize: summaryFontSize, lineHeight: 1.2 }}
           >
             {opinion.summary}
-          </div>
-        )}
-
-        {/* Detail (Content) - First 3 lines */}
-        {showDetail && opinion.detail && (
-          <div 
-            className="font-serif opacity-80 leading-tight break-words line-clamp-3 mt-0.5"
-            style={{ fontSize: detailFontSize, lineHeight: 1.3 }}
-          >
-            {opinion.detail}
           </div>
         )}
       </div>
