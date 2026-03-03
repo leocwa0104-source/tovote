@@ -31,6 +31,7 @@ export default function TopicNav({ topics, privateTopics = [], joinedTopicIds = 
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   const [isSortOpen, setIsSortOpen] = useState(false)
   const [scope, setScope] = useState<'society' | 'joined'>('society')
+  const [isScopeOpen, setIsScopeOpen] = useState(false)
 
   const currentList = activeTab === 'public' 
     ? (scope === 'society' ? topics : topics.filter(t => joinedTopicIds.includes(t.id)))
@@ -181,37 +182,44 @@ export default function TopicNav({ topics, privateTopics = [], joinedTopicIds = 
 
       <div className="px-2 mb-2">
         {activeTab === 'public' ? (
-          <div className="flex items-center gap-2">
+          <div className="relative">
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={`Search ${scope === 'society' ? 'public' : 'joined'} topics...`}
-              className="flex-1 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-md border border-gray-200 bg-white pl-3 pr-24 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               autoComplete="off"
             />
-            <div className="relative">
-              <button 
-                onClick={() => setIsSortOpen(false)}
-                className={`flex items-center gap-1 py-2 px-2 rounded-md border border-gray-200 bg-white hover:bg-gray-50 transition-colors ${scope === 'joined' ? 'text-purple-600' : 'text-gray-700'}`}
-                title="Select scope"
-              >
-                <span className="text-xs font-medium">{scope === 'society' ? 'society' : 'joined'}</span>
-                <ChevronsUpDown className="w-3 h-3 text-gray-400" />
-              </button>
-              <div className="absolute right-0 top-full mt-1 w-28 bg-white rounded-md shadow-lg border border-gray-100 py-1 z-20">
-                <button
-                  onClick={() => setScope('society')}
-                  className={`w-full px-3 py-2 text-left hover:bg-gray-50 transition-colors text-xs ${scope === 'society' ? 'text-blue-600 font-medium bg-blue-50' : 'text-gray-600'}`}
+            <div className="absolute inset-y-0 right-2 flex items-center">
+              <div className="relative">
+                <button 
+                  onClick={() => setIsScopeOpen(!isScopeOpen)}
+                  className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs transition-colors ${scope === 'joined' ? 'text-purple-600' : 'text-gray-600'} hover:bg-gray-100`}
+                  title="Select scope"
                 >
-                  society
+                  <span className="font-medium">{scope === 'society' ? 'society' : 'joined'}</span>
+                  <ChevronsUpDown className="w-3 h-3 text-gray-400" />
                 </button>
-                <button
-                  onClick={() => isAuthenticated && setScope('joined')}
-                  disabled={!isAuthenticated}
-                  className={`w-full px-3 py-2 text-left hover:bg-gray-50 transition-colors text-xs ${scope === 'joined' ? 'text-purple-600 font-medium bg-purple-50' : 'text-gray-600'} ${!isAuthenticated ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  joined
-                </button>
+                {isScopeOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setIsScopeOpen(false)} />
+                    <div className="absolute right-0 top-full mt-1 w-28 bg-white rounded-md shadow-lg border border-gray-100 py-1 z-20">
+                      <button
+                        onClick={() => { setScope('society'); setIsScopeOpen(false) }}
+                        className={`w-full px-3 py-2 text-left hover:bg-gray-50 transition-colors text-xs ${scope === 'society' ? 'text-blue-600 font-medium bg-blue-50' : 'text-gray-700'}`}
+                      >
+                        society
+                      </button>
+                      <button
+                        onClick={() => { if (isAuthenticated) { setScope('joined'); setIsScopeOpen(false) } }}
+                        disabled={!isAuthenticated}
+                        className={`w-full px-3 py-2 text-left hover:bg-gray-50 transition-colors text-xs ${scope === 'joined' ? 'text-purple-600 font-medium bg-purple-50' : 'text-gray-700'} ${!isAuthenticated ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        joined
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
