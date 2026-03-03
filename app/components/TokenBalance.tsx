@@ -7,7 +7,7 @@ interface TokenBalanceProps {
   trash: number
 }
 
-export default function TokenBalance({ eyes, trash }: TokenBalanceProps) {
+export function TokenBalance({ eyes, trash }: TokenBalanceProps) {
   return (
     <div className="flex items-center justify-between bg-slate-100 rounded px-2 py-1 border border-slate-200 mt-1">
       <div className="flex items-center gap-1.5" title="Eyes">

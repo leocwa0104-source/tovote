@@ -3,7 +3,7 @@ import TopicNav from './TopicNav'
 import Link from 'next/link'
 import AuthControl from './AuthControl'
 import TicketBalance from './TicketBalance'
-import TokenBalance from './TokenBalance'
+import { TokenBalance } from './TokenBalance'
 
 type Purchase = {
   packageId: string
