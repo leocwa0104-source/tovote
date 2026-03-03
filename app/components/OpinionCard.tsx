@@ -31,7 +31,6 @@ export default function OpinionCard({
   initialNeighborId = null
 }: OpinionCardProps) {
   const [isEditing, setIsEditing] = useState(initialIsEditing)
-  const [isExpanded, setIsExpanded] = useState(false)
   const [loading, setLoading] = useState(false)
   const [selectedCitation, setSelectedCitation] = useState<CitationTarget | null>(null)
   const [mentionedCitations, setMentionedCitations] = useState<CitationTarget[]>([])
@@ -86,92 +85,11 @@ export default function OpinionCard({
   }
 
   const summaryRef = useRef<HTMLInputElement>(null)
-  const detailRef = useRef<HTMLDivElement>(null)
-
-  const handleSummaryKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      detailRef.current?.focus()
-    }
-  }
-
-  const handleDetailKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    // Check if the content is empty or only whitespace
-    const isEmpty = !detailRef.current?.innerText || detailRef.current.innerText.trim() === '';
-    
-    if (e.key === 'Backspace' && isEmpty) {
-      e.preventDefault()
-      summaryRef.current?.focus()
-    }
-  }
-
-  const renderDetailWithCitations = (text: string, citations: { id: string, target: CitationTarget }[]) => {
-    if (!text) return null;
-    
-    // Regex to match @[username: summary...]
-    const regex = /@\[([^:]+): (.*?)\]/g;
-    const parts = [];
-    let lastIndex = 0;
-    let match;
-
-    while ((match = regex.exec(text)) !== null) {
-      // Add text before the match
-      if (match.index > lastIndex) {
-        parts.push(text.substring(lastIndex, match.index));
-      }
-
-      const fullMatch = match[0];
-      const username = match[1];
-      const summarySnippet = match[2]; 
-      
-      const cleanSnippet = summarySnippet.endsWith('...') 
-        ? summarySnippet.slice(0, -3) 
-        : summarySnippet;
-
-      // Find corresponding citation
-      const citation = citations.find(c => 
-        c.target.author.username === username && 
-        (c.target.summary.includes(cleanSnippet) || c.target.summary.startsWith(cleanSnippet))
-      );
-
-      if (citation) {
-        parts.push(
-          <button
-            key={match.index}
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setSelectedCitation(citation.target);
-            }}
-            className="bg-gray-100 hover:bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded text-xs font-mono inline-flex items-center gap-1 mx-1 transition-colors"
-          >
-            <span className="opacity-50">@</span>{citation.target.summary}
-          </button>
-        );
-      } else {
-        parts.push(<span key={match.index} className="text-gray-400 font-mono text-xs bg-gray-50 px-1 rounded">{fullMatch}</span>);
-      }
-
-      lastIndex = regex.lastIndex;
-    }
-
-    // Add remaining text
-    if (lastIndex < text.length) {
-      parts.push(text.substring(lastIndex));
-    }
-
-    return parts.length > 0 ? parts : text;
-  };
 
   // If editing or no opinion yet (and user is logged in), show form
   if (isEditing || (!opinion && currentUser)) {
     return (
       <div className="mb-6 bg-white border border-gray-100 p-5 transition-all">
-        <h4 className="font-mono text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-          <span className="w-2 h-2 bg-gray-900 rounded-full"></span>
-          {opinion ? 'Edit Territory' : 'Claim Territory'}
-        </h4>
-        
         <form action={handleSubmit} className="flex flex-col gap-4">
           <input type="hidden" name="factionId" value={factionId} />
           <input type="hidden" name="type" value={type} />
@@ -187,14 +105,12 @@ export default function OpinionCard({
               className="w-full p-2 bg-gray-50 border-b border-gray-200 focus:border-gray-800 focus:bg-white text-sm font-medium text-gray-900 placeholder-gray-400 focus:outline-none transition-colors rounded-none"
               required
               maxLength={100}
-              onKeyDown={handleSummaryKeyDown}
               autoComplete="off"
             />
             
             {/* Detail Input */}
             <div className="relative min-h-[100px]">
               <TiptapEditor
-                ref={detailRef}
                 name="detail"
                 defaultValue={opinion?.detail || ''}
                 placeholder="Elaborate on your point..."
@@ -276,32 +192,9 @@ export default function OpinionCard({
           
           {/* Detail Section */}
           {opinion.detail && (
-            <div className="mt-1.5 pl-0">
-              {isExpanded ? (
-                <div className="text-sm text-gray-600 whitespace-pre-wrap break-words leading-relaxed font-light">
-                  {renderDetailWithCitations(opinion.detail, opinion.citations ?? [])}
-                  <button 
-                    onClick={() => setIsExpanded(false)}
-                    className="inline-flex items-center justify-center w-full mt-2 text-gray-300 hover:text-gray-500 py-1 transition-colors"
-                    title="Collapse"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="18 15 12 9 6 15"></polyline>
-                    </svg>
-                  </button>
-                </div>
-              ) : (
-                <button 
-                  onClick={() => setIsExpanded(true)}
-                  className="inline-flex items-center gap-1 text-xs text-gray-300 hover:text-gray-500 mt-1 transition-colors"
-                  title="Expand"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                  </svg>
-                </button>
-              )}
-            </div>
+             // Hidden by default for minimalist view
+             // TODO: Add toggle or detail view modal if needed
+             null
           )}
         </div>
 
