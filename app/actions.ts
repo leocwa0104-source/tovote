@@ -65,10 +65,15 @@ export async function getCurrentUser() {
     if (user) {
       // Calculate total valid tickets dynamically
       const tickets = user.purchases ? user.purchases.reduce((sum, p) => sum + p.remainingTickets, 0) : 0
-      Object.assign(user, { tickets })
+      
+      // Let's create a plain object to return to ensure serialization safety
+      return {
+        ...user,
+        tickets
+      }
     }
 
-    return user
+    return null
   } catch (e) {
     console.error("getCurrentUser error:", e)
     return null

@@ -57,3 +57,8 @@ Author: garfline <leocwa0104@gmail.com>
 Date:   Mon Mar 2 18:54:36 2026 +0800
 
     fix:_wrap_leaveFaction_and_leaveTopic_in_try_catch_to_prevent_internal_error
+[33mcommit 755ef1b833ec59e21fc5489a4a3aeae11541ca60[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: garfline <leocwa0104@gmail.com>
+Date:   Mon Mar 2 20:26:26 2026 +0800
+
+    fix:_enhance_prisma_initialization_and_search_action_error_handling
