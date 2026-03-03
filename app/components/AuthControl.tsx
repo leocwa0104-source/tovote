@@ -1,8 +1,7 @@
 'use client'
-
-import Link from 'next/link'
 import { login, logout } from '@/app/actions'
 import { useState } from 'react'
+
 
 export default function AuthControl({ user }: { user: { username: string } | null }) {
   const [loading, setLoading] = useState(false)
@@ -10,9 +9,9 @@ export default function AuthControl({ user }: { user: { username: string } | nul
   if (user) {
     return (
       <div className="flex items-center gap-4 text-sm">
-        <Link href="/dashboard" className="font-medium text-gray-700 hover:text-blue-600 transition-colors">
+        <span className="font-medium text-gray-700">
           Hi, {user.username}
-        </Link>
+        </span>
         <button 
           onClick={async () => {
             setLoading(true)

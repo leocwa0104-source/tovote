@@ -1,4 +1,4 @@
-import { getTopics, getCurrentUser, getJoinedPrivateTopics } from '@/app/actions'
+import { getTopics, getCurrentUser, getJoinedPrivateTopics, getUserTopicMemberships } from '@/app/actions'
 import TopicNav from './TopicNav'
 import Link from 'next/link'
 import AuthControl from './AuthControl'
@@ -15,6 +15,7 @@ export default async function TopicSidebar() {
   const topics = await getTopics()
   const user = await getCurrentUser()
   const privateTopics = user ? await getJoinedPrivateTopics() : []
+  const joinedTopicIds = user ? await getUserTopicMemberships() : []
 
   return (
     <div className="w-64 flex-shrink-0 bg-gray-50 border-r border-gray-200 h-full flex flex-col">
@@ -59,6 +60,7 @@ export default async function TopicSidebar() {
             memberCount: t._count.memberships,
             totalValue: t.totalValue
           }))}
+          joinedTopicIds={joinedTopicIds}
           isAuthenticated={!!user}
         />
       </div>
