@@ -50,6 +50,15 @@ export default async function TopicPage(props: {
 
   const user = await getCurrentUser()
 
+  // Serialize user for Client Components
+  const serializedUser = user ? {
+    ...user,
+    lastReplenishedAt: user.lastReplenishedAt?.toISOString(),
+    emailVerified: undefined, // Don't pass sensitive/unused Date
+    createdAt: undefined, // Don't pass sensitive/unused Date
+    updatedAt: undefined // Don't pass sensitive/unused Date
+  } : null
+
   // Ensure membership for private topics (fixes issue where unlocked topics disappear from list)
   if (user && topic.isPrivate) {
     await ensureTopicMembership(params.id)
@@ -66,6 +75,19 @@ export default async function TopicPage(props: {
   const factionIdParam = searchParams?.factionId;
   const selectedFactionId = isCreatingFaction ? undefined : (Array.isArray(factionIdParam) ? factionIdParam[0] : factionIdParam || topic.factions[0]?.id)
   const selectedFaction = isCreatingFaction ? undefined : topic.factions.find(f => f.id === selectedFactionId)
+  
+  // Serialize selected faction for Client Components
+  const serializedSelectedFaction = selectedFaction ? {
+    ...selectedFaction,
+    createdAt: selectedFaction.createdAt.toISOString(),
+    opinions: selectedFaction.opinions.map(o => ({
+      ...o,
+      createdAt: o.createdAt.toISOString(),
+      userVoteCreatedAt: o.userVoteCreatedAt?.toISOString(),
+      updatedAt: undefined // Remove unused Date
+    }))
+  } : undefined
+
   const initialFactionName = (() => {
     const nameParam = searchParams?.factionName
     if (!nameParam) return undefined
@@ -90,10 +112,13 @@ export default async function TopicPage(props: {
         <div className="w-80 flex-shrink-0 border-r border-gray-200 bg-white overflow-y-auto p-4 flex flex-col gap-6">
           <FactionList 
             topicId={topic.id} 
-            factions={topic.factions} 
+            factions={topic.factions.map(f => ({
+              ...f,
+              createdAt: undefined // Strip Date
+            }))} 
             currentFactionId={currentFactionId}
             selectedFactionId={selectedFactionId}
-            user={user}
+            user={serializedUser}
           />
         </div>
 
@@ -104,19 +129,19 @@ export default async function TopicPage(props: {
             <CreateFactionForm 
               key={initialFactionName ?? 'new'} 
               topicId={topic.id} 
-              user={user} 
+              user={serializedUser} 
               initialName={initialFactionName} 
             />
           </div>
-        ) : selectedFaction ? (
+        ) : serializedSelectedFaction ? (
           <div className="h-full overflow-y-auto">
             <FactionContent 
-              faction={selectedFaction}
-              user={user}
+              faction={serializedSelectedFaction}
+              user={serializedUser}
               userMembership={userMembership}
               topicId={topic.id}
-              isMember={currentFactionId === selectedFaction.id}
-              isOtherMember={!!(currentFactionId && currentFactionId !== selectedFaction.id)}
+              isMember={currentFactionId === serializedSelectedFaction.id}
+              isOtherMember={!!(currentFactionId && currentFactionId !== serializedSelectedFaction.id)}
               isPrivateTopic={topic.isPrivate}
             />
           </div>

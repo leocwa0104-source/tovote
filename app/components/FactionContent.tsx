@@ -54,7 +54,7 @@ export default function FactionContent({ faction, user, isPrivateTopic }: Factio
         const partialOpinion = {
             ...target,
             authorId: '', // placeholder
-            createdAt: new Date(),
+            createdAt: new Date().toISOString(),
             citations: [],
             citedBy: [],
             factionId: '', // placeholder
