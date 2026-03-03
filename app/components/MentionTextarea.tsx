@@ -61,10 +61,11 @@ const htmlToText = (element: HTMLElement) => {
         text += el.getAttribute('data-full-text') || '';
       } else if (el.tagName === 'BR') {
         text += '\n';
-      } else if (el.tagName === 'DIV') {
-         // Divs usually imply newlines in contentEditable
+      } else if (el.tagName === 'DIV' || el.tagName === 'P') {
+         // Block elements: ensure newline before and after
          if (text.length > 0 && !text.endsWith('\n')) text += '\n';
          el.childNodes.forEach(traverse);
+         if (text.length > 0 && !text.endsWith('\n')) text += '\n';
       } else {
         el.childNodes.forEach(traverse);
       }
@@ -72,7 +73,7 @@ const htmlToText = (element: HTMLElement) => {
   }
   
   element.childNodes.forEach(traverse);
-  return text;
+  return text.trim();
 }
 
 export default function MentionTextarea({ 
