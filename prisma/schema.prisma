@@ -13,6 +13,9 @@ datasource db {
 model User {
   id        String   @id @default(uuid())
   username  String   @unique
+  email     String?  @unique
+  password  String?
+  emailVerified DateTime?
   createdAt DateTime @default(now())
 
   topics      Topic[]
@@ -168,4 +171,12 @@ model OpinionVote {
 enum VoteType {
   EYE
   TRASH
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
 }

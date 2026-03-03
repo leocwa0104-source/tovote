@@ -1,16 +1,17 @@
 'use client'
-import { login, logout } from '@/app/actions'
+import { logout } from '@/app/actions'
 import { useState } from 'react'
-
+import AuthForm from './AuthForm'
 
 export default function AuthControl({ user }: { user: { username: string } | null }) {
+  const [showLogin, setShowLogin] = useState(false)
   const [loading, setLoading] = useState(false)
 
   if (user) {
     return (
-      <div className="flex items-center gap-4 text-sm">
-        <span className="font-medium text-gray-700">
-          Hi, {user.username}
+      <div className="flex items-center gap-2 text-xs">
+        <span className="font-medium text-gray-700 truncate max-w-[80px]" title={user.username}>
+          {user.username}
         </span>
         <button 
           onClick={async () => {
@@ -21,26 +22,35 @@ export default function AuthControl({ user }: { user: { username: string } | nul
           disabled={loading}
           className="text-red-600 hover:text-red-800 disabled:opacity-50"
         >
-          {loading ? '...' : 'Logout'}
+          {loading ? '...' : 'Exit'}
         </button>
       </div>
     )
   }
 
   return (
-    <form action={login} className="flex gap-2 items-center">
-      <input 
-        name="username" 
-        placeholder="Username" 
-        className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" 
-        required 
-      />
+    <>
       <button 
-        type="submit" 
-        className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors"
+        onClick={() => setShowLogin(true)}
+        className="text-xs bg-black text-white px-3 py-1.5 rounded hover:bg-gray-800 font-medium transition-colors"
       >
-        Enter
+        Login / Register
       </button>
-    </form>
+
+      {showLogin && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="relative w-full max-w-sm animate-in zoom-in-95 duration-200">
+            <button 
+              onClick={() => setShowLogin(false)}
+              className="absolute -top-10 right-0 text-white/80 hover:text-white w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors text-xl"
+            >
+              ×
+            </button>
+            {/* AuthForm has its own card styling */}
+            <AuthForm />
+          </div>
+        </div>
+      )}
+    </>
   )
 }
