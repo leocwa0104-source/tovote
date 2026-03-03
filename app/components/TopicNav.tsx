@@ -206,8 +206,8 @@ export default function TopicNav({ topics, privateTopics = [], joinedTopicIds = 
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setIsScopeOpen(false)} />
                     <div 
-                      className="absolute left-0 top-full bg-white rounded-md border border-gray-200 z-20 whitespace-nowrap"
-                      style={{ width: scopeBtnRef.current ? scopeBtnRef.current.offsetWidth : undefined }}
+                      className="absolute left-0 top-full mt-0.5 bg-white rounded-md border border-gray-200 z-20"
+                      style={{ width: scopeBtnRef.current?.offsetWidth }}
                     >
                       <button
                         onClick={() => { setScope('society'); setIsScopeOpen(false) }}
@@ -218,7 +218,7 @@ export default function TopicNav({ topics, privateTopics = [], joinedTopicIds = 
                       <button
                         onClick={() => { if (isAuthenticated) { setScope('joined'); setIsScopeOpen(false) } }}
                         disabled={!isAuthenticated}
-                        className={`w-full px-2 py-1 text-left hover:bg-gray-50 transition-colors text-xs ${scope === 'joined' ? 'text-purple-600 font-medium bg-purple-50' : 'text-gray-700'} ${!isAuthenticated ? 'opacity-60 cursor-not-allowed' : ''}`}
+                        className={`w-full px-2 py-1 text-left hover:bg-gray-50 transition-colors text-xs ${scope === 'joined' ? 'text-purple-600 font-medium bg-purple-50' : 'text-gray-700'} ${!isAuthenticated ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         joined
                       </button>
