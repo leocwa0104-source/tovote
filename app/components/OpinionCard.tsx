@@ -179,9 +179,19 @@ export default function OpinionCard({
     <div className="group relative py-2 px-2 border-b border-gray-100 last:border-0 hover:bg-gray-50/50 transition-colors">
       <div className="flex items-start">
         <div className="flex-grow min-w-0">
-          <h5 className="font-medium text-gray-900 text-sm break-words leading-snug">{opinion.summary}</h5>
-          
-          {/* Detail Section Hidden */}
+          <div className="flex flex-col gap-1">
+             <div className="flex items-baseline gap-2">
+                <h5 className="font-medium text-gray-900 text-sm break-words leading-snug">{opinion.summary}</h5>
+                <span className="text-[10px] text-gray-400 font-mono uppercase tracking-wide">@{opinion.author.username}</span>
+             </div>
+             
+             {/* Detail Preview (First 20 chars) */}
+             {opinion.detail && (
+               <p className="text-xs text-gray-500 font-serif leading-tight break-words">
+                 {opinion.detail.slice(0, 20)}{opinion.detail.length > 20 ? '...' : ''}
+               </p>
+             )}
+          </div>
         </div>
 
         {/* Actions: Absolute positioned on hover */}
