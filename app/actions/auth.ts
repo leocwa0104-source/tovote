@@ -18,7 +18,8 @@ export async function sendOtp(email: string) {
     return { success: true }
   } catch (error) {
     console.error("Failed to send OTP:", error)
-    return { success: false, error: "Failed to send verification code" }
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    return { success: false, error: `Failed to send verification code: ${errorMessage}` }
   }
 }
 

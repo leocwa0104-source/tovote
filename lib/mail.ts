@@ -3,7 +3,7 @@ import { resend } from './resend';
 export const sendVerificationEmail = async (email: string, token: string) => {
   try {
     await resend.emails.send({
-      from: 'Tou App <onboarding@resend.dev>', // TODO: Update with your domain
+      from: 'Tou App <onboarding@tovote.top>', 
       to: email,
       subject: 'Verify your email for Tou',
       html: `
