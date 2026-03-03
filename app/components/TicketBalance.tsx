@@ -8,9 +8,9 @@ import { Eye, Trash2 } from '@/app/components/Icons'
 
 interface Purchase {
   packageId: string
-  createdAt: Date
+  createdAt: string
   remainingTickets: number
-  expiresAt: Date
+  expiresAt: string
 }
 
 export default function TicketBalance({ 

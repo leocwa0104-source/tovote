@@ -30,7 +30,11 @@ export default async function TopicSidebar() {
         {user && (
           <TicketBalance
             tickets={(user as unknown as { tickets?: number }).tickets ?? 0}
-            purchases={(user as unknown as { purchases?: Purchase[] }).purchases ?? []}
+            purchases={((user as unknown as { purchases?: Purchase[] }).purchases ?? []).map(p => ({
+              ...p,
+              createdAt: p.createdAt.toISOString(),
+              expiresAt: p.expiresAt.toISOString()
+            }))}
             eyesCount={user.eyesCount}
             trashCount={user.trashCount}
           />
