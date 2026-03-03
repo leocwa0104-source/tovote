@@ -2,7 +2,7 @@ import { resend } from './resend';
 
 export const sendVerificationEmail = async (email: string, token: string) => {
   try {
-    await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: 'Tou App <onboarding@tovote.top>', 
       to: email,
       subject: 'Verify your email for Tou',
@@ -15,7 +15,13 @@ export const sendVerificationEmail = async (email: string, token: string) => {
         </div>
       `
     });
-    return { success: true };
+
+    if (error) {
+      console.error("Resend API Error:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
   } catch (error) {
     console.error("Failed to send email:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
