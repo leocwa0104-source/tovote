@@ -1,30 +1,35 @@
-import { resend } from './resend';
+import { sesClient } from './tencent';
 
 export const sendVerificationEmail = async (email: string, token: string) => {
-  try {
-    const { data, error } = await resend.emails.send({
-      from: 'Tou App <onboarding@tovote.top>', 
-      to: email,
-      subject: 'Verify your email for Tou',
-      html: `
-        <div style="font-family: sans-serif; padding: 20px;">
-          <h2>Verify your email</h2>
-          <p>Your verification code is:</p>
-          <h1 style="font-size: 32px; letter-spacing: 5px;">${token}</h1>
-          <p>This code will expire in 15 minutes.</p>
-        </div>
-      `
-    });
+  // Use environment variable for sender address or fallback
+  // Note: This address MUST be verified in Tencent Cloud SES Console
+  const fromAddress = process.env.TENCENT_EMAIL_FROM || 'onboarding@tovote.top';
 
-    if (error) {
-      console.error("Resend API Error:", error);
-      return { success: false, error: error.message };
-    }
+  try {
+    const params = {
+      FromEmailAddress: fromAddress,
+      Destination: [email],
+      Subject: 'Verify your email for Tou',
+      Simple: {
+        Html: `
+          <div style="font-family: sans-serif; padding: 20px;">
+            <h2>Verify your email</h2>
+            <p>Your verification code is:</p>
+            <h1 style="font-size: 32px; letter-spacing: 5px;">${token}</h1>
+            <p>This code will expire in 15 minutes.</p>
+          </div>
+        `,
+        // Plain text fallback
+        Text: `Verify your email for Tou. Your verification code is: ${token}. This code will expire in 15 minutes.`
+      }
+    };
+
+    const data = await sesClient.SendEmail(params);
 
     return { success: true, data };
-  } catch (error) {
-    console.error("Failed to send email:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+  } catch (error: any) {
+    console.error("Tencent Cloud SES Error:", error);
+    const errorMessage = error.message || String(error);
     return { success: false, error: errorMessage };
   }
 };

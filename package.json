@@ -25,6 +25,7 @@
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "resend": "^6.9.3",
+    "tencentcloud-sdk-nodejs": "^4.1.189",
     "use-debounce": "^10.1.0"
   },
   "devDependencies": {
