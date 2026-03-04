@@ -11,16 +11,16 @@ export const sendVerificationEmail = async (email: string, token: string) => {
       Destination: [email],
       Subject: 'Verify your email for Tou',
       Simple: {
-        Html: `
+        Html: Buffer.from(`
           <div style="font-family: sans-serif; padding: 20px;">
             <h2>Verify your email</h2>
             <p>Your verification code is:</p>
             <h1 style="font-size: 32px; letter-spacing: 5px;">${token}</h1>
             <p>This code will expire in 15 minutes.</p>
           </div>
-        `,
+        `).toString('base64'),
         // Plain text fallback
-        Text: `Verify your email for Tou. Your verification code is: ${token}. This code will expire in 15 minutes.`
+        Text: Buffer.from(`Verify your email for Tou. Your verification code is: ${token}. This code will expire in 15 minutes.`).toString('base64')
       }
     };
 
