@@ -85,6 +85,5 @@ export default function JoinPrivateTopicForm() {
         </div>
       </form>
     </div>
-    </div>
   )
 }
