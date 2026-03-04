@@ -13,18 +13,17 @@ export default function JoinPrivateTopicForm() {
     setLoading(true)
     setError(null)
 
-    const title = formData.get('title') as string
-    const creatorName = formData.get('creatorName') as string
+    const roomCode = formData.get('roomCode') as string
     const password = formData.get('password') as string
 
-    if (!title || !creatorName || !password) {
+    if (!roomCode || !password) {
       setError('All fields are required')
       setLoading(false)
       return
     }
 
     try {
-      const result = await joinPrivateTopic(title, creatorName, password)
+      const result = await joinPrivateTopic(roomCode, password)
       if (result.success) {
         if (result.topicId) {
           router.push(`/topic/${result.topicId}`)
@@ -52,28 +51,16 @@ export default function JoinPrivateTopicForm() {
 
       <form action={handleSubmit} className="flex flex-col gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Topic Name</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Room Code</label>
           <input 
-            name="title" 
+            name="roomCode" 
             type="text" 
-            placeholder="Enter topic name..."
-            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+            placeholder="Enter 6-digit room code..."
+            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm tracking-widest font-mono"
             required
+            maxLength={6}
           />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Creator Username</label>
-          <div className="relative">
-            <span className="absolute left-3 top-2 text-gray-400 text-sm">@</span>
-            <input 
-              name="creatorName" 
-              type="text" 
-              placeholder="username"
-              className="w-full p-2 pl-7 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-              required
-            />
-          </div>
+          <p className="text-xs text-gray-500 mt-1">Ask the topic creator for the room code.</p>
         </div>
 
         <div>
@@ -87,16 +74,17 @@ export default function JoinPrivateTopicForm() {
           />
         </div>
 
-        <div className="mt-4 flex justify-end gap-3">
+        <div className="mt-2">
           <button
             type="submit"
-            className="w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm font-medium transition-colors disabled:opacity-50 flex justify-center items-center gap-2"
+            className="w-full px-4 py-2 bg-black text-white rounded hover:bg-gray-800 text-sm font-medium transition-colors disabled:opacity-50 flex justify-center items-center gap-2"
             disabled={loading}
           >
-            {loading ? 'Joining...' : 'Join Private Topic'}
+            {loading ? 'Joining...' : 'Join Topic'}
           </button>
         </div>
       </form>
+    </div>
     </div>
   )
 }

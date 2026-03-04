@@ -76,3 +76,13 @@ warning: in the working copy of 'tsconfig.json', LF will be replaced by CRLF the
      "incremental": true,[m
      "plugins": [[m
        {[m
+[33mcommit c39c5587b38fc5c4aef861e43cad747d9e535f50[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: garfline <leocwa0104@gmail.com>
+Date:   Tue Mar 3 23:23:04 2026 +0800
+
+    chore:_update_project_config_and_dev_scripts
+
+ ... alias is not enabled, try to fix it now.\357\200\242" | 15 [32m+++++++++++++++[m
+ ... alias is not enabled, try to fix it now.\357\200\242" | 14 [32m++++++++++++++[m
+ package.json                                              |  1 [32m+[m
+ 3 files changed, 30 insertions(+)

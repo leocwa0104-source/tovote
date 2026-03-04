@@ -48,19 +48,15 @@ export async function register(prevState: any, formData: FormData) {
       return { success: false, error: verification.error || "Invalid verification code" }
     }
 
-    // 2. Check username/email uniqueness
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { username },
-          { email }
-        ]
-      }
-    })
+    // 2. Check email uniqueness (username can be duplicate)
+    if (email) {
+      const existingUser = await prisma.user.findFirst({
+        where: { email }
+      })
 
-    if (existingUser) {
-      if (existingUser.email === email) return { success: false, error: "Email already registered" }
-      if (existingUser.username === username) return { success: false, error: "Username already taken" }
+      if (existingUser) {
+        return { success: false, error: "Email already registered" }
+      }
     }
 
     // 3. Hash password

@@ -12,7 +12,7 @@ datasource db {
 
 model User {
   id        String   @id @default(uuid())
-  username  String   @unique
+  username  String
   email     String?  @unique
   password  String?
   emailVerified DateTime?
@@ -56,6 +56,7 @@ model Topic {
   
   isPrivate   Boolean  @default(false)
   password    String?
+  roomCode    String?  @unique // Unique code for private topics (e.g., "839201")
 
   seekBrainstorming Boolean @default(false)
   seekRational      Boolean @default(false)

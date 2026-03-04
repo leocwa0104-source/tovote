@@ -17,7 +17,8 @@ export async function login(formData: FormData) {
     const username = formData.get('username') as string
     if (!username) throw new Error("Username required")
     
-    let user = await prisma.user.findUnique({ where: { username } })
+    // Use findFirst since username is not unique anymore
+    let user = await prisma.user.findFirst({ where: { username } })
     if (!user) {
       user = await prisma.user.create({ data: { username } })
     }
@@ -75,6 +76,30 @@ export async function getCurrentUser() {
   }
 }
 
+// Helper to generate a unique 6-digit room code
+async function generateUniqueRoomCode(): Promise<string> {
+  const characters = '0123456789'
+  const length = 6
+  let isUnique = false
+  let code = ''
+
+  while (!isUnique) {
+    code = ''
+    for (let i = 0; i < length; i++) {
+      code += characters.charAt(Math.floor(Math.random() * characters.length))
+    }
+
+    const existing = await prisma.topic.findUnique({
+      where: { roomCode: code }
+    })
+    
+    if (!existing) {
+      isUnique = true
+    }
+  }
+  return code
+}
+
 // --- Topics ---
 
 export async function createTopic(prevState: unknown, formData: FormData) {
@@ -108,8 +133,13 @@ export async function createTopic(prevState: unknown, formData: FormData) {
     }
 
     let hashedPassword = null
-    if (isPrivate && password) {
-      hashedPassword = await bcrypt.hash(password, 10)
+    let roomCode = null
+
+    if (isPrivate) {
+      if (password) {
+        hashedPassword = await bcrypt.hash(password, 10)
+      }
+      roomCode = await generateUniqueRoomCode()
     }
 
     const newTopic = await prisma.topic.create({
@@ -119,6 +149,7 @@ export async function createTopic(prevState: unknown, formData: FormData) {
         creatorId: user.id,
         isPrivate,
         password: hashedPassword,
+        roomCode,
         seekBrainstorming,
         seekRational
       }
@@ -287,41 +318,42 @@ export async function getJoinedPrivateTopics() {
   }
 }
 
-export async function joinPrivateTopic(title: string, creatorName: string, password: string) {
+export async function joinPrivateTopic(roomCode: string, password: string) {
   try {
     const user = await getCurrentUser()
     if (!user) return { success: false, error: 'Unauthorized' }
 
-    const creator = await prisma.user.findUnique({ where: { username: creatorName } })
-    if (!creator) return { success: false, error: 'Topic not found' }
-
-    const topic = await prisma.topic.findFirst({
+    const topic = await prisma.topic.findUnique({
       where: { 
-        title,
-        creatorId: creator.id,
-        isPrivate: true
+        roomCode
       }
     })
 
-    if (!topic || !topic.password) return { success: false, error: 'Topic not found' }
+    if (!topic || !topic.isPrivate) return { success: false, error: 'Topic not found or invalid room code' }
 
-    const isValid = await bcrypt.compare(password, topic.password)
-    if (!isValid) return { success: false, error: 'Incorrect password' }
+    // Check if user is already a member
+    const existing = await prisma.membership.findUnique({
+      where: { userId_topicId: { userId: user.id, topicId: topic.id } }
+    })
+    
+    if (existing) {
+      return { success: true, topicId: topic.id }
+    }
+
+    // Verify password if set
+    if (topic.password) {
+      const isValid = await bcrypt.compare(password, topic.password)
+      if (!isValid) return { success: false, error: 'Incorrect password' }
+    }
 
     // Set access cookie
     const cookieStore = await cookies()
     cookieStore.set(`access_topic_${topic.id}`, user.id, { httpOnly: true, secure: process.env.NODE_ENV === 'production' })
 
-    // Add membership if not exists
-    const existing = await prisma.membership.findUnique({
-      where: { userId_topicId: { userId: user.id, topicId: topic.id } }
+    // Add membership
+    await prisma.membership.create({
+      data: { userId: user.id, topicId: topic.id }
     })
-    
-    if (!existing) {
-      await prisma.membership.create({
-        data: { userId: user.id, topicId: topic.id }
-      })
-    }
 
     revalidatePath('/')
     return { success: true, topicId: topic.id }

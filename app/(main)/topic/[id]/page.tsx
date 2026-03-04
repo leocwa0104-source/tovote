@@ -78,6 +78,12 @@ export default async function TopicPage(props: {
       <div className="flex-shrink-0 z-10 w-full flex items-center justify-between font-mono text-sm px-6 py-4 bg-white border-b border-gray-200">
         <div className="flex items-center gap-4">
           <h1 className="text-lg font-bold text-gray-800 truncate max-w-md" title={topic.title}>{topic.title}</h1>
+          {topic.isPrivate && topic.roomCode && (
+            <div className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full text-xs">
+              <span className="text-gray-500">Room Code:</span>
+              <span className="font-mono font-bold tracking-wider select-all">{topic.roomCode}</span>
+            </div>
+          )}
           <ShareButton title={topic.title} text={topic.description || "Join the debate!"} />
         </div>
         <div className="flex items-center gap-4">
