@@ -39,7 +39,7 @@ export async function sendOtp(email: string) {
   }
 }
 
-export async function register(prevState: any, formData: FormData) {
+export async function register(_prevState: unknown, formData: FormData) {
   try {
     const emailRaw = formData.get('email') as string
     const email = emailRaw ? emailRaw.toLowerCase() : ''
@@ -93,7 +93,7 @@ export async function register(prevState: any, formData: FormData) {
   }
 }
 
-export async function loginWithPassword(prevState: any, formData: FormData) {
+export async function loginWithPassword(_prevState: unknown, formData: FormData) {
   try {
     const emailRaw = formData.get('email') as string
     const email = emailRaw ? emailRaw.toLowerCase() : ''

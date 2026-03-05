@@ -3,7 +3,6 @@
 import { useState, useRef } from 'react'
 import { createOpinion, deleteOpinion } from '@/app/actions'
 import OpinionDetailModal from './OpinionDetailModal'
-import MentionTextarea from './MentionTextarea'
 import TiptapEditor from './TiptapEditor'
 import { Opinion, CitationTarget, User } from '@/app/types'
 

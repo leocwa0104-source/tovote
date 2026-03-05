@@ -8,9 +8,10 @@ export const sendVerificationEmail = async (email: string, token: string) => {
   const templateId = process.env.TENCENT_TEMPLATE_ID;
 
   try {
+    type SendEmailParams = Parameters<(typeof sesClient)['SendEmail']>[0]
     // If we have a template ID, use Template mode
     // Otherwise try Simple mode (which might fail if no permission)
-    const params: any = {
+    const params: SendEmailParams = {
       FromEmailAddress: fromAddress,
       Destination: [email],
       Subject: 'Verify your email for Tou',
@@ -43,9 +44,9 @@ export const sendVerificationEmail = async (email: string, token: string) => {
     const data = await sesClient.SendEmail(params);
 
     return { success: true, data };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Tencent Cloud SES Error:", error);
-    const errorMessage = error.message || String(error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return { success: false, error: errorMessage };
   }
 };

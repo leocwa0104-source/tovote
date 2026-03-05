@@ -26,7 +26,12 @@ interface TiptapEditorProps {
   onCitationAdd?: (citation: CitationTarget) => void
 }
 
-const TiptapEditor = forwardRef<any, TiptapEditorProps>(({
+export interface TiptapEditorHandle {
+  insertMention: (opinion: CitationTarget) => void
+  clear: () => void
+}
+
+const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(({
   name,
   placeholder = 'Write something...',
   defaultValue = '',
@@ -99,17 +104,17 @@ const TiptapEditor = forwardRef<any, TiptapEditorProps>(({
       }),
       CustomMention.configure({
         suggestion: {
-            items: async ({ query }) => {
-                return []
-            },
-            render: () => {
-                return {
-                    onStart: () => {},
-                    onUpdate: () => {},
-                    onKeyDown: () => false,
-                    onExit: () => {},
-                }
+          items: async () => {
+            return []
+          },
+          render: () => {
+            return {
+              onStart: () => {},
+              onUpdate: () => {},
+              onKeyDown: () => false,
+              onExit: () => {},
             }
+          }
         }
       }),
     ],
@@ -118,7 +123,7 @@ const TiptapEditor = forwardRef<any, TiptapEditorProps>(({
       attributes: {
         class: `prose prose-sm max-w-none focus:outline-none min-h-[150px] p-4 ${className || ''}`,
       },
-      handlePaste: (view, event, slice) => {
+      handlePaste: (view, event) => {
         const text = event.clipboardData?.getData('text/plain').trim()
         if (!text) return false
 
@@ -153,41 +158,6 @@ const TiptapEditor = forwardRef<any, TiptapEditorProps>(({
       }
     },
     onUpdate: ({ editor }) => {
-      // Serialize to our custom format or HTML
-      // For backward compatibility, we might want to convert mentions back to @[username: summary] text?
-      // OR, we just switch to storing HTML/JSON.
-      // The current backend likely stores plain text with @[...] tags.
-      
-      // Let's try to maintain the text-based format for now to avoid migration.
-      // Traverse the doc and build string.
-      let text = ''
-      editor.state.doc.descendants((node, pos) => {
-          if (node.type.name === 'text') {
-              text += node.text
-          } else if (node.type.name === 'customMention') {
-              text += `@[${node.attrs.label.split(':')[0].replace('@', '')}: ${node.attrs.label.split(': ')[1].replace('...', '')}]`
-          } else if (node.type.name === 'paragraph') {
-              text += '\n' // Add newline for paragraphs
-          } else if (node.type.name === 'hardBreak') {
-              text += '\n'
-          }
-          // What about bold/italic? The current backend is plain text.
-          // If we want "Word-like", we should probably start storing HTML.
-          // For this task, let's stick to HTML if the backend supports it, 
-          // OR degrade to plain text but give the user a nice editing experience.
-          // 
-          // The prompt asked for "Word-like experience". 
-          // Storing as HTML is the right way forward for "Word-like".
-          // BUT, we need to check if existing display logic handles HTML.
-          // Existing OpinionDetailView uses `renderDetailWithCitations`.
-          // We might need to update that to support HTML rendering or keep using the text format.
-      })
-      
-      // Let's stick to HTML for the input value to support rich text.
-      // We will need to update the display component to render HTML safely.
-      // For now, let's just use editor.getHTML() and see if it works with the backend.
-      // The backend stores `detail` as String.
-      
       setContent(editor.getHTML())
     }
   })
