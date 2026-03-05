@@ -55,6 +55,43 @@ export async function logout() {
   }
 }
 
+export async function updateUsername(newUsername: string) {
+  try {
+    const cookieStore = await cookies()
+    const userId = cookieStore.get('userId')?.value
+    if (!userId) return { success: false, error: "Not authenticated" }
+
+    if (!newUsername || newUsername.trim().length < 3) {
+      return { success: false, error: "Username must be at least 3 characters long" }
+    }
+
+    const trimmedUsername = newUsername.trim()
+
+    // Check if username is taken by another user
+    const existingUser = await prisma.user.findFirst({
+      where: { 
+        username: trimmedUsername,
+        NOT: { id: userId }
+      }
+    })
+
+    if (existingUser) {
+      return { success: false, error: "Username already taken" }
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { username: trimmedUsername }
+    })
+
+    revalidatePath('/', 'layout')
+    return { success: true }
+  } catch (e) {
+    console.error("updateUsername error:", e)
+    return { success: false, error: "Failed to update username" }
+  }
+}
+
 export async function getCurrentUser() {
   try {
     const cookieStore = await cookies()
