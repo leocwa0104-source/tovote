@@ -14,6 +14,15 @@ export async function sendOtp(email: string) {
   
   const normalizedEmail = email.toLowerCase()
   
+  // Check if email already registered
+  const existingUser = await prisma.user.findFirst({
+    where: { email: normalizedEmail }
+  })
+
+  if (existingUser) {
+    return { success: false, error: "该邮箱已注册，请直接登录" }
+  }
+
   try {
     const token = await generateVerificationToken(normalizedEmail)
     const emailResult = await sendVerificationEmail(normalizedEmail, token.token)
