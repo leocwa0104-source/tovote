@@ -6,8 +6,6 @@ import JoinPrivateTopicForm from '@/app/components/JoinPrivateTopicForm'
 export const dynamic = 'force-dynamic'
 
 export default async function Home(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
-  // Added timestamp to force rebuild
-  const timestamp = Date.now()
   const searchParams = await props.searchParams
   const user = await getCurrentUser()
   const initialTitle = Array.isArray(searchParams?.title) ? searchParams?.title?.[0] : searchParams?.title

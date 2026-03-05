@@ -115,7 +115,9 @@ export async function getCurrentUser() {
       const tickets = user.purchases ? user.purchases.reduce((sum, p) => sum + p.remainingTickets, 0) : 0
       
       // Ensure role is valid (default to USER if null/undefined in DB for some reason)
-      const role = user.role || 'USER'
+      // Check environment variable override
+      const adminEmails = process.env.ADMIN_EMAILS?.split(',').map(e => e.trim().toLowerCase()) || []
+      const role = (user.email && adminEmails.includes(user.email.toLowerCase())) ? 'ADMIN' : (user.role || 'USER')
       
       return {
         ...user,

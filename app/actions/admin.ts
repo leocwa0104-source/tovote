@@ -11,6 +11,12 @@ export async function isAdmin() {
   const user = await getCurrentUser()
   if (!user) return false
   
+  // Check environment variable for admin email override
+  const adminEmails = process.env.ADMIN_EMAILS?.split(',').map(e => e.trim().toLowerCase()) || []
+  if (user.email && adminEmails.includes(user.email.toLowerCase())) {
+    return true
+  }
+
   // We need to fetch the user again to get the role, as getCurrentUser might not include it
   // or the type definition might not be updated yet in the runtime
   const dbUser = await prisma.user.findUnique({
@@ -101,34 +107,3 @@ export async function deleteTicketPackage(id: string) {
     return { success: false, error: "Failed to delete package. It might be in use." }
   }
 }
-
-export async function setUserAsAdmin(email: string) {
-  // This function is intended to be called manually or via a secure script initially
-  // In a real app, you might want a super-admin dashboard
-  
-  try {
-    const user = await prisma.user.findFirst({
-      where: { email } // Assuming user has email, but schema says email is optional?
-    })
-    
-    // Fallback: If no email in DB (since we use username login), maybe we search by username if provided?
-    // But user asked for "leocwa0104@gmail.com". Let's assume email field is populated.
-    
-    if (!user) {
-        // If user login via username only, maybe they don't have email set?
-        // Let's try to find by username if email looks like username (unlikely for gmail)
-        return { success: false, error: "User not found" }
-    }
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { role: 'ADMIN' }
-    })
-    
-    return { success: true }
-  } catch (e) {
-    console.error("setUserAsAdmin error:", e)
-    return { success: false, error: "Failed to set admin" }
-  }
-}
-
