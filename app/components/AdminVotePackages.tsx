@@ -1,52 +1,52 @@
 'use client'
 
 import { useState } from 'react'
-import { VoteOption } from '@/app/types'
-import { createVoteOption, updateVoteOption, deleteVoteOption } from '@/app/actions/admin'
+import { VotePackage } from '@/app/types'
+import { createVotePackage, updateVotePackage, deleteVotePackage } from '@/app/actions/admin'
 
-interface AdminVoteOptionsProps {
-  options: VoteOption[]
+interface AdminVotePackagesProps {
+  packages: VotePackage[]
 }
 
-export default function AdminVoteOptions({ options }: AdminVoteOptionsProps) {
+export default function AdminVotePackages({ packages }: AdminVotePackagesProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState({
     label: '',
-    ticketCost: 1,
-    voteValue: 10
+    cost: 1,
+    value: 10
   })
 
   const resetForm = () => {
     setForm({
       label: '',
-      ticketCost: 1,
-      voteValue: 10
+      cost: 1,
+      value: 10
     })
     setEditingId(null)
   }
 
-  const handleEdit = (opt: VoteOption) => {
-    setEditingId(opt.id)
+  const handleEdit = (pkg: VotePackage) => {
+    setEditingId(pkg.id)
     setForm({
-      label: opt.label,
-      ticketCost: opt.ticketCost,
-      voteValue: opt.voteValue
+      label: pkg.label,
+      cost: pkg.cost,
+      value: pkg.value
     })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (editingId) {
-      await updateVoteOption(editingId, form)
+      await updateVotePackage(editingId, form)
     } else {
-      await createVoteOption(form)
+      await createVotePackage(form)
     }
     resetForm()
   }
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mt-8">
-      <h2 className="text-xl font-bold mb-4">Vote Options</h2>
+      <h2 className="text-xl font-bold mb-4">Vote Packages (Use Tickets to Vote)</h2>
       
       {/* Form */}
       <form onSubmit={handleSubmit} className="mb-8 p-4 bg-gray-50 rounded border border-gray-200 grid grid-cols-3 gap-4">
@@ -55,7 +55,7 @@ export default function AdminVoteOptions({ options }: AdminVoteOptionsProps) {
           <input 
             type="text" 
             required 
-            placeholder="e.g. Standard Vote"
+            placeholder="e.g. Basic Vote"
             value={form.label}
             onChange={e => setForm({...form, label: e.target.value})}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2 border"
@@ -68,8 +68,8 @@ export default function AdminVoteOptions({ options }: AdminVoteOptionsProps) {
             type="number" 
             required 
             min="1"
-            value={form.ticketCost}
-            onChange={e => setForm({...form, ticketCost: parseInt(e.target.value)})}
+            value={form.cost}
+            onChange={e => setForm({...form, cost: parseInt(e.target.value)})}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2 border"
           />
         </div>
@@ -80,8 +80,8 @@ export default function AdminVoteOptions({ options }: AdminVoteOptionsProps) {
             type="number" 
             required 
             min="1"
-            value={form.voteValue}
-            onChange={e => setForm({...form, voteValue: parseInt(e.target.value)})}
+            value={form.value}
+            onChange={e => setForm({...form, value: parseInt(e.target.value)})}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2 border"
           />
         </div>
@@ -117,20 +117,20 @@ export default function AdminVoteOptions({ options }: AdminVoteOptionsProps) {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {options.map((opt) => (
-              <tr key={opt.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{opt.label}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{opt.ticketCost}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{opt.voteValue}</td>
+            {packages.map((pkg) => (
+              <tr key={pkg.id}>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{pkg.label}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{pkg.cost}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{pkg.value}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex gap-2">
                   <button 
-                    onClick={() => handleEdit(opt)}
+                    onClick={() => handleEdit(pkg)}
                     className="text-indigo-600 hover:text-indigo-900"
                   >
                     Edit
                   </button>
                   <button 
-                    onClick={() => deleteVoteOption(opt.id)}
+                    onClick={() => deleteVotePackage(pkg.id)}
                     className="text-red-600 hover:text-red-900"
                   >
                     Delete
@@ -138,7 +138,7 @@ export default function AdminVoteOptions({ options }: AdminVoteOptionsProps) {
                 </td>
               </tr>
             ))}
-            {options.length === 0 && (
+            {packages.length === 0 && (
               <tr>
                 <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">
                   No vote options found. Create one above.

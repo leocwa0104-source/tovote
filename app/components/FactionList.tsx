@@ -3,6 +3,7 @@
 import { joinFaction, leaveFaction, rechargeFaction } from '@/app/actions'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
+import { VotePackage } from '@/app/types'
 
 interface FactionListItem {
   id: string
@@ -19,6 +20,7 @@ interface FactionListProps {
   currentFactionId?: string | null
   selectedFactionId?: string | null
   user: { id: string } | null
+  votePackages?: VotePackage[]
 }
 
 export default function FactionList({ 
@@ -26,18 +28,19 @@ export default function FactionList({
   factions, 
   currentFactionId, 
   selectedFactionId,
-  user
+  user,
+  votePackages = []
 }: FactionListProps) {
   const router = useRouter()
   const [query, setQuery] = useState('')
   const [rechargingFactionId, setRechargingFactionId] = useState<string | null>(null)
   const [isRecharging, setIsRecharging] = useState(false)
 
-  const handleRecharge = async (factionId: string, tickets: number) => {
+  const handleRecharge = async (factionId: string, votePackageId: string) => {
     if (!user) return
     setIsRecharging(true)
     try {
-      const res = await rechargeFaction(topicId, factionId, tickets)
+      const res = await rechargeFaction(topicId, factionId, votePackageId)
       if (res.success) {
         setRechargingFactionId(null)
         // Optionally show success message
@@ -210,24 +213,25 @@ export default function FactionList({
                       <span>Use Tickets to Vote</span>
                       <button onClick={() => setRechargingFactionId(null)} className="text-amber-400 hover:text-amber-600">✕</button>
                     </div>
-                    <div className="flex gap-2 mb-2">
-                      <button 
-                        onClick={() => handleRecharge(faction.id, 1)}
-                        disabled={isRecharging}
-                        className="flex-1 py-1 px-2 bg-white border border-amber-300 rounded text-amber-700 hover:bg-amber-100 disabled:opacity-50 transition-colors"
-                      >
-                        1 Vote (1 Ticket)
-                      </button>
-                      <button 
-                        onClick={() => handleRecharge(faction.id, 2)}
-                        disabled={isRecharging}
-                        className="flex-1 py-1 px-2 bg-white border border-amber-300 rounded text-amber-700 hover:bg-amber-100 disabled:opacity-50 transition-colors"
-                      >
-                        2 Votes (2 Tickets)
-                      </button>
+                    <div className="flex flex-col gap-2 mb-2">
+                      {votePackages.length > 0 ? (
+                        votePackages.map(pkg => (
+                          <button 
+                            key={pkg.id}
+                            onClick={() => handleRecharge(faction.id, pkg.id)}
+                            disabled={isRecharging}
+                            className="w-full py-1 px-2 bg-white border border-amber-300 rounded text-amber-700 hover:bg-amber-100 disabled:opacity-50 transition-colors text-left flex justify-between"
+                          >
+                            <span>{pkg.label}</span>
+                            <span className="opacity-75">{pkg.cost} Ticket{pkg.cost > 1 ? 's' : ''}</span>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="text-center text-gray-400 py-2">No voting options available</div>
+                      )}
                     </div>
                     <div className="text-[10px] text-amber-600 text-center">
-                      * Can support once every 12 hours
+                      * Can support once per cooldown period
                     </div>
                   </div>
                 )}

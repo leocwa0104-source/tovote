@@ -1,8 +1,8 @@
-import { ensureAdmin, getTicketPackages, getSystemSettings, getVoteOptions } from '@/app/actions/admin'
+import { ensureAdmin, getTicketPackages, getSystemSettings, getVotePackages } from '@/app/actions/admin'
 import AdminTicketPackages from '@/app/components/AdminTicketPackages'
 import AdminSystemSettings from '@/app/components/AdminSystemSettings'
-import AdminVoteOptions from '@/app/components/AdminVoteOptions'
 import AdminDangerZone from '@/app/components/AdminDangerZone'
+import AdminVotePackages from '@/app/components/AdminVotePackages'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
@@ -10,8 +10,8 @@ export const dynamic = 'force-dynamic'
 export default async function AdminPage() {
   await ensureAdmin()
   const packages = await getTicketPackages()
+  const votePackages = await getVotePackages()
   const settings = await getSystemSettings()
-  const voteOptions = await getVoteOptions()
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -34,10 +34,10 @@ export default async function AdminPage() {
             
             <AdminSystemSettings settings={settings} />
             <div className="mt-8">
-              <AdminVoteOptions options={voteOptions} />
+              <AdminTicketPackages packages={packages} />
             </div>
             <div className="mt-8">
-              <AdminTicketPackages packages={packages} />
+              <AdminVotePackages packages={votePackages} />
             </div>
             <div className="mt-8">
               <AdminDangerZone />

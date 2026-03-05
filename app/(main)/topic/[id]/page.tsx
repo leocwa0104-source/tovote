@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { getTopic, getUserMembership, getCurrentUser, checkTopicAccess, ensureTopicMembership } from '@/app/actions'
+import { getVotePackages } from '@/app/actions/admin'
 import TopicGate from '@/app/components/TopicGate'
 import ShareButton from '@/app/components/ShareButton'
 import CreateFactionForm from '@/app/components/CreateFactionForm'
@@ -57,6 +58,7 @@ export default async function TopicPage(props: {
 
   const userMembership = await getUserMembership(params.id)
   const currentFactionId = userMembership?.factionId
+  const votePackages = await getVotePackages()
   
   // Get selected faction from query params or default to the first one
   const searchParams = await props.searchParams;
@@ -100,6 +102,7 @@ export default async function TopicPage(props: {
             currentFactionId={currentFactionId}
             selectedFactionId={selectedFactionId}
             user={user}
+            votePackages={votePackages}
           />
         </div>
 

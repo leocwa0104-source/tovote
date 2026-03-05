@@ -809,36 +809,22 @@ export async function buyPackage(packageId: string): Promise<{ success: boolean;
   }
 }
 
-export async function getActiveVoteOptions() {
-  try {
-    return await prisma.voteOption.findMany({
-      where: { isActive: true },
-      orderBy: { ticketCost: 'asc' }
-    })
-  } catch (e) {
-    console.error("getActiveVoteOptions error:", e)
-    return []
-  }
-}
-
-export async function rechargeFaction(topicId: string, factionId: string, voteOptionId: string) {
+export async function rechargeFaction(topicId: string, factionId: string, votePackageId: string) {
   try {
     const user = await getCurrentUser()
     if (!user) return { success: false, error: 'Unauthorized' }
 
-    // 1. Validate Vote Option
-    const voteOption = await prisma.voteOption.findUnique({
-      where: { id: voteOptionId }
+    // Get vote package
+    const votePackage = await prisma.votePackage.findUnique({
+      where: { id: votePackageId }
     })
     
-    if (!voteOption || !voteOption.isActive) {
-      return { success: false, error: 'Invalid vote option' }
-    }
+    if (!votePackage) return { success: false, error: 'Invalid vote option' }
+    
+    const ticketsNeeded = votePackage.cost
+    const votes = votePackage.value
 
-    const ticketsNeeded = voteOption.ticketCost
-    const votesToAdd = voteOption.voteValue
-
-    // 2. Get all valid purchases with remaining tickets, sorted by expiration (FIFO)
+    // 1. Get all valid purchases with remaining tickets, sorted by expiration (FIFO)
     const validPurchases = await prisma.purchase.findMany({
       where: {
         userId: user.id,
@@ -855,11 +841,11 @@ export async function rechargeFaction(topicId: string, factionId: string, voteOp
     }
 
     // Check cooldown
-    // Get dynamic cooldown setting (default 12 hours)
+    // Get dynamic cooldown setting (default to 12h if not set)
     const setting = await prisma.systemSetting.findUnique({
       where: { key: 'faction_vote_cooldown_hours' }
     })
-    const cooldownHours = setting ? parseFloat(setting.value) : 12
+    const cooldownHours = setting ? parseFloat(setting.value) : 12.0
 
     if (cooldownHours > 0) {
       const lastTransaction = await prisma.transaction.findFirst({
@@ -874,11 +860,11 @@ export async function rechargeFaction(topicId: string, factionId: string, voteOp
       })
 
       if (lastTransaction) {
-        const hoursLeft = (cooldownHours * 60 * 60 * 1000 - (Date.now() - lastTransaction.createdAt.getTime())) / (1000 * 60 * 60)
-        return { success: false, error: `Cooldown active. Wait ${hoursLeft.toFixed(1)} hours.` }
+        const hoursLeft = cooldownHours - (Date.now() - lastTransaction.createdAt.getTime()) / (1000 * 60 * 60)
+        return { success: false, error: `Cooldown active. Please wait ${hoursLeft.toFixed(1)} hours.` }
       }
     }
-
+    
     // Prepare updates
     const purchaseUpdates = []
     let remainingToDeduct = ticketsNeeded
@@ -906,18 +892,18 @@ export async function rechargeFaction(topicId: string, factionId: string, voteOp
           userId: user.id,
           factionId,
           amount: 0, // No direct money spent here
-          votes: votesToAdd
+          votes
         }
       }),
       // Update faction
       prisma.faction.update({
         where: { id: factionId },
-        data: { paidVoteCount: { increment: votesToAdd } }
+        data: { paidVoteCount: { increment: votes } }
       }),
       // Update topic value
       prisma.topic.update({
         where: { id: topicId },
-        data: { totalValue: { increment: votesToAdd } }
+        data: { totalValue: { increment: votes } }
       })
     ])
 

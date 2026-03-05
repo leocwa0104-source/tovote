@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import { setOpinionNeighbor, rechargeFaction, getActiveVoteOptions } from '@/app/actions'
+import { setOpinionNeighbor } from '@/app/actions'
 import OpinionCard from './OpinionCard'
 import OpinionMap from './OpinionMap'
 import OpinionDetailView from './OpinionDetailView'
-import { Opinion, CitationTarget, FactionWithOpinions, User, VoteOption } from '@/app/types'
+import { Opinion, CitationTarget, FactionWithOpinions, User } from '@/app/types'
 
 interface FactionContentProps {
   faction: FactionWithOpinions
@@ -25,30 +25,8 @@ export default function FactionContent({ faction, user, isPrivateTopic }: Factio
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [modalStack, setModalStack] = useState<Opinion[]>([])
   const [initialNeighborId, setInitialNeighborId] = useState<string | null>(null)
-  const [showVoteModal, setShowVoteModal] = useState(false)
-  const [voteLoading, setVoteLoading] = useState(false)
-  const [voteOptions, setVoteOptions] = useState<VoteOption[]>([])
-
-  useEffect(() => {
-    getActiveVoteOptions().then(setVoteOptions)
-  }, [])
-
-  const handleVote = async (optionId: string) => {
-    if (!user || !faction.topicId) return
-    setVoteLoading(true)
-    try {
-      const res = await rechargeFaction(faction.topicId, faction.id, optionId)
-      if (res.success) {
-        setShowVoteModal(false)
-      } else {
-        alert(res.error || 'Vote failed')
-      }
-    } catch {
-      alert('Vote failed')
-    } finally {
-      setVoteLoading(false)
-    }
-  }
+  
+  const userOpinion = user ? currentOpinions.find((o: Opinion) => o.authorId === user.id) : undefined
 
   // Auto-select removed to avoid popup on load
   // useEffect(() => {
@@ -144,12 +122,6 @@ export default function FactionContent({ faction, user, isPrivateTopic }: Factio
             {user ? (
               <div className="flex items-center gap-3">
                  <button
-                   onClick={() => setShowVoteModal(true)}
-                   className="text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded bg-black text-white hover:bg-gray-800 transition-colors shadow-sm flex items-center gap-1"
-                 >
-                   <span>Use Tickets</span>
-                 </button>
-                 <button
                    onClick={() => setShowCreateModal(true)}
                    className="text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors"
                  >
@@ -182,48 +154,6 @@ export default function FactionContent({ faction, user, isPrivateTopic }: Factio
            }}
          />
       </div>
-
-      {/* Vote Modal */}
-      {showVoteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 relative">
-            <button 
-              onClick={() => setShowVoteModal(false)}
-              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100"
-            >
-              ✕
-            </button>
-            
-            <div className="p-6">
-              <h3 className="text-lg font-bold mb-2">Vote for Faction</h3>
-              <p className="text-sm text-gray-500 mb-6">
-                Use your tickets to boost this faction&apos;s influence.
-              </p>
-              
-              <div className="space-y-3">
-                {voteOptions.map((opt) => (
-                  <button
-                    key={opt.id}
-                    onClick={() => handleVote(opt.id)}
-                    disabled={voteLoading}
-                    className="w-full flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed group"
-                  >
-                    <span className="font-medium text-gray-900 group-hover:text-indigo-700">{opt.label}</span>
-                    <div className="flex items-center gap-3 text-sm">
-                      <span className="text-gray-500">{opt.ticketCost} 🎟️</span>
-                      <span className="text-indigo-600 font-bold">+{opt.voteValue}</span>
-                    </div>
-                  </button>
-                ))}
-                
-                {voteOptions.length === 0 && (
-                  <p className="text-center text-gray-500 text-sm py-4">No voting options available.</p>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* View Detail Modal (Stacked) */}
       {modalStack.map((opinion, index) => (

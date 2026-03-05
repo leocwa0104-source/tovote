@@ -180,48 +180,48 @@ export async function resetAllUserData() {
   }
 }
 
-// --- Vote Options ---
+// --- Vote Package Management ---
 
-export async function getVoteOptions() {
+export async function getVotePackages() {
   await ensureAdmin()
-  return await prisma.voteOption.findMany({
-    orderBy: { ticketCost: 'asc' }
+  return await prisma.votePackage.findMany({
+    orderBy: { cost: 'asc' }
   })
 }
 
-export async function createVoteOption(data: {
+export async function createVotePackage(data: {
   label: string
-  ticketCost: number
-  voteValue: number
+  cost: number
+  value: number
 }) {
   await ensureAdmin()
   
   try {
-    await prisma.voteOption.create({
+    await prisma.votePackage.create({
       data: {
         ...data,
         isActive: true
       }
     })
     revalidatePath('/admin')
-    revalidatePath('/')
+    revalidatePath('/') // Affects vote UI
     return { success: true }
   } catch (e) {
-    console.error("Failed to create vote option:", e)
-    return { success: false, error: "Failed to create vote option" }
+    console.error("Failed to create vote package:", e)
+    return { success: false, error: "Failed to create package" }
   }
 }
 
-export async function updateVoteOption(id: string, data: {
+export async function updateVotePackage(id: string, data: {
   label?: string
-  ticketCost?: number
-  voteValue?: number
+  cost?: number
+  value?: number
   isActive?: boolean
 }) {
   await ensureAdmin()
   
   try {
-    await prisma.voteOption.update({
+    await prisma.votePackage.update({
       where: { id },
       data
     })
@@ -229,23 +229,23 @@ export async function updateVoteOption(id: string, data: {
     revalidatePath('/')
     return { success: true }
   } catch (e) {
-    console.error("Failed to update vote option:", e)
-    return { success: false, error: "Failed to update vote option" }
+    console.error("Failed to update vote package:", e)
+    return { success: false, error: "Failed to update package" }
   }
 }
 
-export async function deleteVoteOption(id: string) {
+export async function deleteVotePackage(id: string) {
   await ensureAdmin()
   
   try {
-    await prisma.voteOption.delete({
+    await prisma.votePackage.delete({
       where: { id }
     })
     revalidatePath('/admin')
     revalidatePath('/')
     return { success: true }
   } catch (e) {
-    console.error("Failed to delete vote option:", e)
-    return { success: false, error: "Failed to delete vote option" }
+    console.error("Failed to delete vote package:", e)
+    return { success: false, error: "Failed to delete package" }
   }
 }
