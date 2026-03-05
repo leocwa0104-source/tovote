@@ -1,4 +1,4 @@
-import { getTopics, getCurrentUser, getJoinedPrivateTopics, getUserTopicMemberships } from '@/app/actions'
+import { getTopics, getCurrentUser, getJoinedPrivateTopics, getUserTopicMemberships, getActiveTicketPackages } from '@/app/actions'
 import TopicNav from './TopicNav'
 import Link from 'next/link'
 import AuthControl from './AuthControl'
@@ -16,6 +16,7 @@ export default async function TopicSidebar() {
   const user = await getCurrentUser()
   const privateTopics = user ? await getJoinedPrivateTopics() : []
   const joinedTopicIds = user ? await getUserTopicMemberships() : []
+  const activePackages = user ? await getActiveTicketPackages() : []
 
   return (
     <div className="w-64 flex-shrink-0 bg-gray-50 border-r border-gray-200 h-full flex flex-col">
@@ -25,7 +26,7 @@ export default async function TopicSidebar() {
           <Link href="/" className="font-bold text-lg text-gray-800 tracking-tight">
             ToVote
           </Link>
-          <AuthControl user={user ? { username: user.username } : null} />
+          <AuthControl user={user ? { username: user.username, role: user.role } : null} />
         </div>
         {user && (
           <TicketBalance
@@ -33,6 +34,7 @@ export default async function TopicSidebar() {
             purchases={(user as unknown as { purchases?: Purchase[] }).purchases ?? []}
             eyesCount={user.eyesCount}
             trashCount={user.trashCount}
+            packages={activePackages}
           />
         )}
       </div>

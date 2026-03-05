@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { buyPackage } from '@/app/actions'
-import { PACKAGES, PackageId } from '@/lib/constants'
+import { TicketPackage } from '@/app/types'
 
 import { Eye, Trash2 } from '@/app/components/Icons'
 
@@ -17,12 +17,14 @@ export default function TicketBalance({
   tickets, 
   purchases, 
   eyesCount, 
-  trashCount 
+  trashCount,
+  packages = []
 }: { 
   tickets: number, 
   purchases: Purchase[],
   eyesCount?: number,
-  trashCount?: number
+  trashCount?: number,
+  packages?: TicketPackage[]
 }) {
   const [showStore, setShowStore] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -30,12 +32,17 @@ export default function TicketBalance({
   // Filter only active purchases for display
   const activePurchases = purchases.filter(p => p.remainingTickets > 0 && new Date(p.expiresAt) > new Date())
 
-  const handleBuy = async (pkgId: PackageId) => {
+  const handleBuy = async (pkgId: string) => {
     setLoading(true)
     try {
       const res = await buyPackage(pkgId)
-      if (res.success && res.checkoutUrl) {
-        window.location.href = res.checkoutUrl
+      if (res.success) {
+        if (res.checkoutUrl) {
+           window.location.href = res.checkoutUrl
+        } else {
+           // Mock success for now, or successful free purchase
+           setShowStore(false)
+        }
       } else {
         alert(res.error || 'Purchase failed')
       }
@@ -98,20 +105,21 @@ export default function TicketBalance({
                 </div>
               )}
 
-              {Object.values(PACKAGES).map(pkg => {
+              {packages.map(pkg => {
                 const lastPurchase = purchases.find(p => p.packageId === pkg.id)
-                const isCooldown = lastPurchase && (Date.now() - new Date(lastPurchase.createdAt).getTime() < pkg.limitMs)
+                // Check cooldown if last purchase exists
+                const isCooldown = lastPurchase && pkg.cooldown > 0 && (Date.now() - new Date(lastPurchase.createdAt).getTime() < pkg.cooldown * 60 * 60 * 1000)
                 
                 return (
                   <div key={pkg.id} className={`border rounded-lg p-3 flex justify-between items-center ${isCooldown ? 'bg-gray-50 border-gray-200 opacity-70' : 'bg-white border-amber-200'}`}>
                     <div>
-                      <div className="font-bold text-gray-800">{pkg.label} Pack</div>
+                      <div className="font-bold text-gray-800">{pkg.name}</div>
                       <div className="text-xs text-gray-500">
-                        {pkg.tickets} Tickets • ¥{pkg.price}
+                        {pkg.ticketCount} Tickets • ${pkg.price}
                       </div>
                     </div>
                     <button
-                      onClick={() => handleBuy(pkg.id as PackageId)}
+                      onClick={() => handleBuy(pkg.id)}
                       disabled={loading || !!isCooldown}
                       className={`px-3 py-1.5 rounded text-sm font-bold ${
                         isCooldown 
@@ -124,6 +132,12 @@ export default function TicketBalance({
                   </div>
                 )
               })}
+              
+              {packages.length === 0 && (
+                 <div className="text-center text-gray-500 py-4 text-sm">
+                   No ticket packages available.
+                 </div>
+              )}
             </div>
           </div>
         </div>

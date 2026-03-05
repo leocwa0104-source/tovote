@@ -65,4 +65,17 @@ export type User = {
   eyesCount?: number; 
   trashCount?: number;
   lastReplenishedAt?: Date;
+  role?: 'USER' | 'ADMIN';
 } | null
+
+export interface TicketPackage {
+  id: string
+  name: string
+  description: string | null
+  ticketCount: number
+  price: number
+  duration: number
+  cooldown: number
+  isActive: boolean
+  createdAt: Date
+}

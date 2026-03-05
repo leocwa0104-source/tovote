@@ -113,10 +113,18 @@ export async function getCurrentUser() {
     if (user) {
       // Calculate total valid tickets dynamically
       const tickets = user.purchases ? user.purchases.reduce((sum, p) => sum + p.remainingTickets, 0) : 0
-      Object.assign(user, { tickets })
+      
+      // Ensure role is valid (default to USER if null/undefined in DB for some reason)
+      const role = user.role || 'USER'
+      
+      return {
+        ...user,
+        tickets,
+        role
+      }
     }
 
-    return user
+    return null
   } catch (e) {
     console.error("getCurrentUser error:", e)
     return null
@@ -692,31 +700,48 @@ export async function joinFaction(topicId: string, factionId: string, formData?:
   }
 }
 
-import { PACKAGES, PackageId } from '@/lib/constants'
+import { TicketPackage } from '@/app/types'
 
-export async function buyPackage(packageId: PackageId): Promise<{ success: boolean; error?: string; checkoutUrl?: string }> {
+export async function getActiveTicketPackages() {
+  try {
+    return await prisma.ticketPackage.findMany({
+      where: { isActive: true },
+      orderBy: { price: 'asc' }
+    })
+  } catch (e) {
+    console.error("getActiveTicketPackages error:", e)
+    return []
+  }
+}
+
+export async function buyPackage(packageId: string): Promise<{ success: boolean; error?: string; checkoutUrl?: string }> {
   try {
     const user = await getCurrentUser()
     if (!user) return { success: false, error: 'Unauthorized' }
 
-    const pkg = PACKAGES[packageId]
-    if (!pkg) return { success: false, error: 'Invalid package' }
-
-    // Check purchase limit
-    const lastPurchase = await prisma.purchase.findFirst({
-      where: {
-        userId: user.id,
-        packageId: packageId,
-        createdAt: {
-          gt: new Date(Date.now() - pkg.limitMs)
-        }
-      },
-      orderBy: { createdAt: 'desc' }
+    const pkg = await prisma.ticketPackage.findUnique({
+      where: { id: packageId }
     })
+    
+    if (!pkg || !pkg.isActive) return { success: false, error: 'Invalid or inactive package' }
 
-    if (lastPurchase) {
-      const hoursLeft = (pkg.limitMs - (Date.now() - lastPurchase.createdAt.getTime())) / (1000 * 60 * 60)
-      return { success: false, error: `Package limit reached. Wait ${hoursLeft.toFixed(1)} hours.` }
+    // Check purchase cooldown
+    if (pkg.cooldown > 0) {
+      const lastPurchase = await prisma.purchase.findFirst({
+        where: {
+          userId: user.id,
+          packageId: packageId,
+          createdAt: {
+            gt: new Date(Date.now() - pkg.cooldown * 60 * 60 * 1000)
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      })
+
+      if (lastPurchase) {
+        const hoursLeft = (pkg.cooldown * 60 * 60 * 1000 - (Date.now() - lastPurchase.createdAt.getTime())) / (1000 * 60 * 60)
+        return { success: false, error: `Package limit reached. Wait ${hoursLeft.toFixed(1)} hours.` }
+      }
     }
 
     // --- Payment Integration (Generic Wechat/Alipay) ---
@@ -734,12 +759,23 @@ export async function buyPackage(packageId: PackageId): Promise<{ success: boole
       // Since user said "leave Wechat and Alipay", we can't really generate a real payment link without a provider.
       // We will simulate a "Checkout Page" that would exist.
       
-      // TODO: Replace this with actual API call to your chosen payment provider (e.g. Jeepay, Xunhu, etc.)
-      console.warn("Payment env vars missing. Using mock checkout.")
+      // MOCK PURCHASE SUCCESS
+      await prisma.purchase.create({
+        data: {
+          userId: user.id,
+          packageId: pkg.id,
+          amount: pkg.price,
+          tickets: pkg.ticketCount,
+          remainingTickets: pkg.ticketCount,
+          expiresAt: new Date(Date.now() + pkg.duration * 60 * 60 * 1000),
+          provider: 'mock'
+        }
+      })
       
+      revalidatePath('/', 'layout')
       return { 
-        success: false, 
-        error: "Payment provider integration pending. Please configure API details." 
+        success: true, 
+        // error: "Payment provider integration pending. Please configure API details." 
       }
     }
 
