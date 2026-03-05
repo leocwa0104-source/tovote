@@ -103,16 +103,30 @@ async function generateUniqueRoomCode(): Promise<string> {
 // --- Topics ---
 
 export async function createTopic(prevState: unknown, formData: FormData) {
+  void prevState
   try {
-    const title = formData.get('title') as string
-    const description = formData.get('description') as string | null
-    const isPrivate = formData.get('isPrivate') === 'on'
-    const password = formData.get('password') as string
+    const rawTitle = formData.get('title')
+    const title = typeof rawTitle === 'string' ? rawTitle.trim() : ''
+    if (!title) return { success: false, error: 'Topic title is required.' }
+
+    const rawDescription = formData.get('description')
+    const description = typeof rawDescription === 'string' ? rawDescription.trim() : null
+
+    const isPrivateValue = formData.get('isPrivate')
+    const isPrivate = typeof isPrivateValue === 'string'
+      ? ['on', 'true', '1', 'yes'].includes(isPrivateValue.toLowerCase())
+      : false
+
+    const rawPassword = formData.get('password')
+    const password = typeof rawPassword === 'string' ? rawPassword : ''
     const seekBrainstorming = formData.get('seekBrainstorming') === 'on'
     const seekRational = formData.get('seekRational') === 'on'
     
     if (!seekBrainstorming && !seekRational) {
       return { success: false, error: 'Please select at least one discussion style (Brainstorming or Rational).' }
+    }
+    if (isPrivate && !password.trim()) {
+      return { success: false, error: 'Password is required for private topics.' }
     }
     
     const user = await getCurrentUser()
@@ -133,27 +147,62 @@ export async function createTopic(prevState: unknown, formData: FormData) {
     }
 
     let hashedPassword = null
-    let roomCode = null
+    let roomCode: string | null = null
 
     if (isPrivate) {
-      if (password) {
-        hashedPassword = await bcrypt.hash(password, 10)
-      }
-      roomCode = await generateUniqueRoomCode()
+      hashedPassword = await bcrypt.hash(password, 10)
     }
 
-    const newTopic = await prisma.topic.create({
-      data: {
-        title,
-        description: description || null,
-        creatorId: user.id,
-        isPrivate,
-        password: hashedPassword,
-        roomCode,
-        seekBrainstorming,
-        seekRational
+    let newTopic: { id: string } | null = null
+    const maxAttempts = isPrivate ? 5 : 1
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      if (isPrivate) {
+        roomCode = await generateUniqueRoomCode()
       }
-    })
+      try {
+        newTopic = await prisma.topic.create({
+          data: {
+            title,
+            description: description || null,
+            creatorId: user.id,
+            isPrivate,
+            password: hashedPassword,
+            roomCode,
+            seekBrainstorming,
+            seekRational
+          },
+          select: { id: true }
+        })
+        break
+      } catch (e) {
+        const target = typeof e === 'object' && e && 'meta' in e
+          ? (e as { meta?: { target?: unknown } }).meta?.target
+          : undefined
+
+        const targets = Array.isArray(target)
+          ? target.map(String)
+          : typeof target === 'string'
+            ? [target]
+            : []
+
+        const hasTarget = (needle: string) => targets.some(t => t.toLowerCase().includes(needle.toLowerCase()))
+
+        const isUniqueViolation = typeof e === 'object' && e !== null && 'code' in e && (e as { code?: unknown }).code === 'P2002'
+
+        if (isUniqueViolation) {
+          if (hasTarget('roomCode') && isPrivate && attempt < maxAttempts - 1) {
+            continue
+          }
+          if (hasTarget('title')) {
+            return { success: false, error: 'A topic with this title already exists. Please choose a different title.' }
+          }
+        }
+
+        throw e
+      }
+    }
+
+    if (!newTopic) return { success: false, error: 'Failed to create topic' }
 
     if (isPrivate) {
       await prisma.membership.create({
@@ -168,6 +217,12 @@ export async function createTopic(prevState: unknown, formData: FormData) {
     return { success: true }
   } catch (e) {
     console.error("createTopic error:", e)
+    if (typeof e === 'object' && e !== null && 'name' in e) {
+      const name = String((e as { name?: unknown }).name ?? '')
+      if (name === 'PrismaClientInitializationError') {
+        return { success: false, error: 'Database connection failed. Please try again later.' }
+      }
+    }
     return { success: false, error: 'Failed to create topic' }
   }
 }

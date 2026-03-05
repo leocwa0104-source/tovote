@@ -29,9 +29,14 @@ export default function CreatePrivateTopicForm({ user, initialTitle }: { user: U
       return
     }
 
-    const result = await createTopic(null, formData)
-    if (result && !result.success) {
-      alert(result.error || 'Failed to create topic')
+    try {
+      const result = await createTopic(null, formData)
+      if (!result?.success) {
+        alert(result?.error || 'Failed to create topic')
+      }
+    } catch (e) {
+      console.error('createTopic failed', e)
+      alert('Failed to create topic')
     }
   }
 
