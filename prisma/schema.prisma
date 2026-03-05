@@ -52,6 +52,13 @@ model TicketPackage {
   updatedAt   DateTime @updatedAt
 }
 
+model SystemSetting {
+  key         String   @id
+  value       String   // Store values as string (parse as needed)
+  description String?
+  updatedAt   DateTime @updatedAt
+}
+
 model Purchase {
   id        String   @id @default(uuid())
   userId    String

@@ -107,3 +107,36 @@ export async function deleteTicketPackage(id: string) {
     return { success: false, error: "Failed to delete package. It might be in use." }
   }
 }
+
+// --- System Settings ---
+
+export async function getSystemSettings() {
+  await ensureAdmin()
+  const settings = await prisma.systemSetting.findMany()
+  
+  // Transform to object for easier consumption
+  const settingsMap: Record<string, string> = {}
+  settings.forEach(s => {
+    settingsMap[s.key] = s.value
+  })
+  
+  return settingsMap
+}
+
+export async function updateSystemSetting(key: string, value: string) {
+  await ensureAdmin()
+  
+  try {
+    await prisma.systemSetting.upsert({
+      where: { key },
+      update: { value },
+      create: { key, value }
+    })
+    revalidatePath('/admin')
+    revalidatePath('/') // Global settings might affect home page actions
+    return { success: true }
+  } catch (e) {
+    console.error("Failed to update system setting:", e)
+    return { success: false, error: "Failed to update setting" }
+  }
+}

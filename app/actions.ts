@@ -189,6 +189,37 @@ export async function createTopic(prevState: unknown, formData: FormData) {
     const user = await getCurrentUser()
     if (!user) return { success: false, error: 'Unauthorized' }
 
+    // Check public topic creation cooldown
+    if (!isPrivate) {
+      // 1. Get cooldown setting (default to 0 if not set)
+      const setting = await prisma.systemSetting.findUnique({
+        where: { key: 'public_topic_cooldown_minutes' }
+      })
+      const cooldownMinutes = setting ? parseInt(setting.value) : 0
+
+      if (cooldownMinutes > 0) {
+        // 2. Find last public topic created by this user
+        const lastPublicTopic = await prisma.topic.findFirst({
+          where: {
+            creatorId: user.id,
+            isPrivate: false
+          },
+          orderBy: { createdAt: 'desc' }
+        })
+
+        if (lastPublicTopic) {
+          const elapsedMinutes = (Date.now() - lastPublicTopic.createdAt.getTime()) / (1000 * 60)
+          if (elapsedMinutes < cooldownMinutes) {
+            const remainingMinutes = Math.ceil(cooldownMinutes - elapsedMinutes)
+            return { 
+              success: false, 
+              error: `Please wait ${remainingMinutes} minutes before creating another public topic.` 
+            }
+          }
+        }
+      }
+    }
+
     // Only check for uniqueness if the new topic is public (isPrivate: false)
     if (!isPrivate) {
       const existingPublicTopic = await prisma.topic.findFirst({

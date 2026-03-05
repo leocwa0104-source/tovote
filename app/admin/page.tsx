@@ -1,5 +1,6 @@
-import { ensureAdmin, getTicketPackages } from '@/app/actions/admin'
+import { ensureAdmin, getTicketPackages, getSystemSettings } from '@/app/actions/admin'
 import AdminTicketPackages from '@/app/components/AdminTicketPackages'
+import AdminSystemSettings from '@/app/components/AdminSystemSettings'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
@@ -7,6 +8,7 @@ export const dynamic = 'force-dynamic'
 export default async function AdminPage() {
   await ensureAdmin()
   const packages = await getTicketPackages()
+  const settings = await getSystemSettings()
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -27,7 +29,10 @@ export default async function AdminPage() {
               </p>
             </div>
             
-            <AdminTicketPackages packages={packages} />
+            <AdminSystemSettings settings={settings} />
+            <div className="mt-8">
+              <AdminTicketPackages packages={packages} />
+            </div>
           </section>
         </div>
       </div>
