@@ -6,9 +6,19 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import bcrypt from 'bcryptjs'
 
-// BigInt JSON serialization helper
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(BigInt.prototype as any).toJSON = function () { return this.toString() }
+try {
+  const bigIntProto = BigInt.prototype as unknown as { toJSON?: unknown }
+  if (typeof bigIntProto.toJSON !== 'function') {
+    Object.defineProperty(BigInt.prototype, 'toJSON', {
+      value: function () {
+        return this.toString()
+      },
+      configurable: true,
+    })
+  }
+} catch {
+  void 0
+}
 
 // --- User Management ---
 
@@ -217,13 +227,36 @@ export async function createTopic(prevState: unknown, formData: FormData) {
     return { success: true }
   } catch (e) {
     console.error("createTopic error:", e)
-    if (typeof e === 'object' && e !== null && 'name' in e) {
-      const name = String((e as { name?: unknown }).name ?? '')
-      if (name === 'PrismaClientInitializationError') {
-        return { success: false, error: 'Database connection failed. Please try again later.' }
-      }
+    const name = typeof e === 'object' && e !== null && 'name' in e
+      ? String((e as { name?: unknown }).name ?? '')
+      : ''
+
+    const code = typeof e === 'object' && e !== null && 'code' in e
+      ? String((e as { code?: unknown }).code ?? '')
+      : ''
+
+    if (name === 'PrismaClientInitializationError') {
+      return { success: false, error: '数据库连接失败，请稍后重试。' }
     }
-    return { success: false, error: 'Failed to create topic' }
+
+    if (name === 'PrismaClientValidationError') {
+      return { success: false, error: '服务端数据库客户端不匹配：请重新生成 Prisma Client 后再试。' }
+    }
+
+    if (code === 'P2021') {
+      return { success: false, error: '数据库表不存在：请先初始化/同步数据库结构（prisma db push / migrate）。' }
+    }
+
+    if (code === 'P2022') {
+      return { success: false, error: '数据库字段不存在：请先同步数据库结构（prisma db push / migrate）。' }
+    }
+
+    if (code === 'P2002') {
+      return { success: false, error: '数据冲突（唯一约束）：请换个标题或重试。' }
+    }
+
+    const errorMessage = e instanceof Error ? e.message : String(e)
+    return { success: false, error: `Failed to create topic: ${errorMessage}` }
   }
 }
 
