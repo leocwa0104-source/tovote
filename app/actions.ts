@@ -243,12 +243,26 @@ export async function createTopic(prevState: unknown, formData: FormData) {
       return { success: false, error: '服务端数据库客户端不匹配：请重新生成 Prisma Client 后再试。' }
     }
 
+    const meta = typeof e === 'object' && e !== null && 'meta' in e
+      ? (e as { meta?: unknown }).meta
+      : undefined
+
+    const metaTable = typeof meta === 'object' && meta !== null && 'table' in meta
+      ? String((meta as { table?: unknown }).table ?? '')
+      : ''
+
+    const metaColumn = typeof meta === 'object' && meta !== null && 'column' in meta
+      ? String((meta as { column?: unknown }).column ?? '')
+      : ''
+
     if (code === 'P2021') {
-      return { success: false, error: '数据库表不存在：请先初始化/同步数据库结构（prisma db push / migrate）。' }
+      const suffix = metaTable ? `（缺表：${metaTable}）` : ''
+      return { success: false, error: `数据库表不存在${suffix}：请先初始化/同步数据库结构（prisma db push / migrate）。` }
     }
 
     if (code === 'P2022') {
-      return { success: false, error: '数据库字段不存在：请先同步数据库结构（prisma db push / migrate）。' }
+      const suffix = metaColumn ? `（缺字段：${metaColumn}）` : ''
+      return { success: false, error: `数据库字段不存在${suffix}：请先同步数据库结构（prisma db push / migrate）。` }
     }
 
     if (code === 'P2002') {
