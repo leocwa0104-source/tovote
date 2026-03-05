@@ -190,7 +190,6 @@ export async function getVotePackages() {
 }
 
 export async function createVotePackage(data: {
-  label: string
   cost: number
   value: number
 }) {
@@ -213,7 +212,6 @@ export async function createVotePackage(data: {
 }
 
 export async function updateVotePackage(id: string, data: {
-  label?: string
   cost?: number
   value?: number
   isActive?: boolean

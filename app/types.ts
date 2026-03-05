@@ -82,7 +82,6 @@ export interface TicketPackage {
 
 export interface VotePackage {
   id: string
-  label: string
   cost: number
   value: number
   isActive: boolean

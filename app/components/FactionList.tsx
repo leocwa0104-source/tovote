@@ -222,7 +222,7 @@ export default function FactionList({
                             disabled={isRecharging}
                             className="w-full py-1 px-2 bg-white border border-amber-300 rounded text-amber-700 hover:bg-amber-100 disabled:opacity-50 transition-colors text-left flex justify-between"
                           >
-                            <span>{pkg.label}</span>
+                            <span>{pkg.value} Votes</span>
                             <span className="opacity-75">{pkg.cost} Ticket{pkg.cost > 1 ? 's' : ''}</span>
                           </button>
                         ))

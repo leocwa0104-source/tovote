@@ -54,7 +54,6 @@ model TicketPackage {
 
 model VotePackage {
   id          String   @id @default(uuid())
-  label       String   // e.g., "Basic Vote", "Super Vote"
   cost        Int      // Tickets needed
   value       Int      // Votes added
   isActive    Boolean  @default(true)
