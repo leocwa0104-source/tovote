@@ -59,6 +59,16 @@ model SystemSetting {
   updatedAt   DateTime @updatedAt
 }
 
+model VoteOption {
+  id          String   @id @default(uuid())
+  label       String   // e.g., "Standard Vote"
+  ticketCost  Int      // e.g., 1
+  voteValue   Int      // e.g., 10
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model Purchase {
   id        String   @id @default(uuid())
   userId    String

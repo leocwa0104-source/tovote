@@ -79,3 +79,12 @@ export interface TicketPackage {
   isActive: boolean
   createdAt: Date
 }
+
+export interface VoteOption {
+  id: string
+  label: string
+  ticketCost: number
+  voteValue: number
+  isActive: boolean
+  createdAt: Date
+}

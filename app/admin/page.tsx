@@ -1,6 +1,7 @@
-import { ensureAdmin, getTicketPackages, getSystemSettings } from '@/app/actions/admin'
+import { ensureAdmin, getTicketPackages, getSystemSettings, getVoteOptions } from '@/app/actions/admin'
 import AdminTicketPackages from '@/app/components/AdminTicketPackages'
 import AdminSystemSettings from '@/app/components/AdminSystemSettings'
+import AdminVoteOptions from '@/app/components/AdminVoteOptions'
 import AdminDangerZone from '@/app/components/AdminDangerZone'
 import Link from 'next/link'
 
@@ -10,6 +11,7 @@ export default async function AdminPage() {
   await ensureAdmin()
   const packages = await getTicketPackages()
   const settings = await getSystemSettings()
+  const voteOptions = await getVoteOptions()
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -31,6 +33,9 @@ export default async function AdminPage() {
             </div>
             
             <AdminSystemSettings settings={settings} />
+            <div className="mt-8">
+              <AdminVoteOptions options={voteOptions} />
+            </div>
             <div className="mt-8">
               <AdminTicketPackages packages={packages} />
             </div>

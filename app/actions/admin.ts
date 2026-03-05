@@ -179,3 +179,73 @@ export async function resetAllUserData() {
     return { success: false, error: "Failed to reset data" }
   }
 }
+
+// --- Vote Options ---
+
+export async function getVoteOptions() {
+  await ensureAdmin()
+  return await prisma.voteOption.findMany({
+    orderBy: { ticketCost: 'asc' }
+  })
+}
+
+export async function createVoteOption(data: {
+  label: string
+  ticketCost: number
+  voteValue: number
+}) {
+  await ensureAdmin()
+  
+  try {
+    await prisma.voteOption.create({
+      data: {
+        ...data,
+        isActive: true
+      }
+    })
+    revalidatePath('/admin')
+    revalidatePath('/')
+    return { success: true }
+  } catch (e) {
+    console.error("Failed to create vote option:", e)
+    return { success: false, error: "Failed to create vote option" }
+  }
+}
+
+export async function updateVoteOption(id: string, data: {
+  label?: string
+  ticketCost?: number
+  voteValue?: number
+  isActive?: boolean
+}) {
+  await ensureAdmin()
+  
+  try {
+    await prisma.voteOption.update({
+      where: { id },
+      data
+    })
+    revalidatePath('/admin')
+    revalidatePath('/')
+    return { success: true }
+  } catch (e) {
+    console.error("Failed to update vote option:", e)
+    return { success: false, error: "Failed to update vote option" }
+  }
+}
+
+export async function deleteVoteOption(id: string) {
+  await ensureAdmin()
+  
+  try {
+    await prisma.voteOption.delete({
+      where: { id }
+    })
+    revalidatePath('/admin')
+    revalidatePath('/')
+    return { success: true }
+  } catch (e) {
+    console.error("Failed to delete vote option:", e)
+    return { success: false, error: "Failed to delete vote option" }
+  }
+}
