@@ -80,7 +80,7 @@ export default function AdminTicketPackages({ packages }: AdminTicketPackagesPro
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">Price ($)</label>
+          <label className="block text-sm font-medium text-gray-700">Price (¥)</label>
           <input 
             type="number" 
             required 
@@ -142,7 +142,7 @@ export default function AdminTicketPackages({ packages }: AdminTicketPackagesPro
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tickets</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price (¥)</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cooldown</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -153,7 +153,7 @@ export default function AdminTicketPackages({ packages }: AdminTicketPackagesPro
               <tr key={pkg.id}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{pkg.name}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{pkg.ticketCount}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${pkg.price}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">¥{pkg.price}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{pkg.duration}h</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{pkg.cooldown}h</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex gap-2">

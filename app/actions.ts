@@ -754,30 +754,13 @@ export async function buyPackage(packageId: string): Promise<{ success: boolean;
 
     // 2. Fallback to Mock if no config (or use a simple direct link if you prefer)
     if (!paymentApiUrl || !paymentAppId || !paymentSecret) {
-      // For now, return a placeholder or mock success for dev
-      // In production, this should throw error or show "Payment not configured"
+      // In production, we should NOT allow mock purchases.
+      // Returning error to prompt configuration.
+      console.warn("Payment env vars missing. Purchase failed.")
       
-      // MOCK: Simulate immediate success for now (or you can return a QR code url if you have one)
-      // Since user said "leave Wechat and Alipay", we can't really generate a real payment link without a provider.
-      // We will simulate a "Checkout Page" that would exist.
-      
-      // MOCK PURCHASE SUCCESS
-      await prisma.purchase.create({
-        data: {
-          userId: user.id,
-          packageId: pkg.id,
-          amount: pkg.price,
-          tickets: pkg.ticketCount,
-          remainingTickets: pkg.ticketCount,
-          expiresAt: new Date(Date.now() + pkg.duration * 60 * 60 * 1000),
-          provider: 'mock'
-        }
-      })
-      
-      revalidatePath('/', 'layout')
       return { 
-        success: true, 
-        // error: "Payment provider integration pending. Please configure API details." 
+        success: false, 
+        error: "Payment service not configured. Please contact admin." 
       }
     }
 
