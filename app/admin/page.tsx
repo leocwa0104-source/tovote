@@ -1,6 +1,7 @@
 import { ensureAdmin, getTicketPackages, getSystemSettings } from '@/app/actions/admin'
 import AdminTicketPackages from '@/app/components/AdminTicketPackages'
 import AdminSystemSettings from '@/app/components/AdminSystemSettings'
+import AdminDangerZone from '@/app/components/AdminDangerZone'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
@@ -32,6 +33,9 @@ export default async function AdminPage() {
             <AdminSystemSettings settings={settings} />
             <div className="mt-8">
               <AdminTicketPackages packages={packages} />
+            </div>
+            <div className="mt-8">
+              <AdminDangerZone />
             </div>
           </section>
         </div>

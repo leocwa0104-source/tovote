@@ -140,3 +140,42 @@ export async function updateSystemSetting(key: string, value: string) {
     return { success: false, error: "Failed to update setting" }
   }
 }
+
+// --- Data Management ---
+
+export async function resetAllUserData() {
+  await ensureAdmin()
+  
+  try {
+    // Use transaction to ensure partial cleanup doesn't happen
+    await prisma.$transaction([
+      // 1. Delete all Topics (cascades to Factions, Opinions, Memberships)
+      prisma.topic.deleteMany(),
+      
+      // 2. Delete all Purchases (resets ticket history)
+      prisma.purchase.deleteMany(),
+      
+      // 3. Delete all Transactions (resets voting spend history)
+      prisma.transaction.deleteMany(),
+
+      // 4. Delete all Opinion Votes (resets eye/trash votes)
+      prisma.opinionVote.deleteMany(),
+      
+      // 5. Reset User stats to default
+      prisma.user.updateMany({
+        data: {
+          eyesCount: 10,
+          trashCount: 10,
+          lastReplenishedAt: new Date()
+        }
+      })
+    ])
+
+    revalidatePath('/')
+    revalidatePath('/admin')
+    return { success: true }
+  } catch (e) {
+    console.error("Failed to reset all user data:", e)
+    return { success: false, error: "Failed to reset data" }
+  }
+}
