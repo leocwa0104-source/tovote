@@ -2,6 +2,29 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+### 1) Configure environment
+
+Create a local `.env` file (do not commit it) and set at least:
+
+```bash
+DATABASE_URL="postgresql://..."
+```
+
+You can copy from `.env.example` as a starting point.
+
+### 2) Sync database schema
+
+If you see errors like “数据库字段不存在 / 数据库表不存在”, your database schema is behind the Prisma schema.
+
+Run:
+
+```bash
+npm run db:generate
+npm run db:push
+```
+
+### 3) Run the app
+
 First, run the development server:
 
 ```bash
