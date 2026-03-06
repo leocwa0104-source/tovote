@@ -38,14 +38,14 @@ export default function TovoteLogo({ className }: Props) {
       ref={containerRef}
       onMouseMove={onMove}
       onMouseLeave={onLeave}
-      className={`inline-flex items-baseline gap-0.5 leading-none ${className ?? ''}`}
+      className={`inline-flex items-center justify-center gap-[0.05em] leading-none ${className ?? ''}`}
       style={{ color: 'rgb(31 41 55)' }}
       aria-label="ToVote"
       title="ToVote"
     >
       <TShape />
       <Eye refEl={leftEyeRef} dx={lx} dy={ly} />
-      <span>V</span>
+      <VShape />
       <Eye refEl={rightEyeRef} dx={rx} dy={ry} />
       <TeShape />
     </div>
@@ -55,10 +55,10 @@ export default function TovoteLogo({ className }: Props) {
 function TShape() {
   return (
     <svg
-      viewBox="0 0 10 12"
-      width="0.7em"
-      height="0.84em"
-      className="inline-block align-baseline"
+      viewBox="0 0 12 16"
+      width="0.75em"
+      height="1em"
+      className="inline-block"
       style={{
         overflow: 'visible',
         stroke: 'currentColor',
@@ -66,14 +66,36 @@ function TShape() {
         strokeLinecap: 'round',
         strokeLinejoin: 'round',
         fill: 'none',
-        position: 'relative',
-        top: '0.1em',
       }}
     >
-      {/* Body */}
-      <path d="M 5 12 L 5 3.5" />
-      {/* Arms raised (V shape) */}
-      <path d="M 1.5 1 L 5 3.5 L 8.5 1" />
+      {/* T: Body */}
+      <path d="M 6 15 L 6 5" />
+      {/* T: Raised Arm (Curved up) */}
+      <path d="M 2 5 C 2 3, 4 1, 6 1 C 8 1, 10 3, 10 5" />
+      {/* T: Hand/Palm at the top ends (optional small dots or just line caps) */}
+    </svg>
+  )
+}
+
+function VShape() {
+  return (
+    <svg
+      viewBox="0 0 12 16"
+      width="0.75em"
+      height="1em"
+      className="inline-block"
+      style={{
+        overflow: 'visible',
+        stroke: 'currentColor',
+        strokeWidth: '1.5',
+        strokeLinecap: 'round',
+        strokeLinejoin: 'round',
+        fill: 'none',
+      }}
+    >
+      {/* V: Simple Smile / Mouth shape */}
+      {/* Starting from top-left, going down to center, up to top-right */}
+      <path d="M 2 6 Q 6 14 10 6" />
     </svg>
   )
 }
@@ -81,32 +103,33 @@ function TShape() {
 function TeShape() {
   return (
     <svg
-      viewBox="0 0 16 12"
-      width="1.1em"
-      height="0.84em"
-      className="inline-block align-baseline"
+      viewBox="0 0 20 16"
+      width="1.25em"
+      height="1em"
+      className="inline-block"
       style={{
         overflow: 'visible',
         stroke: 'currentColor',
         strokeLinecap: 'round',
         strokeLinejoin: 'round',
         fill: 'none',
-        position: 'relative',
-        top: '0.1em',
       }}
     >
-      {/* t body */}
-      <path d="M 3 0 L 3 9 Q 3 12 6 12" strokeWidth="1.5" />
+      {/* t: Body with hook */}
+      <path d="M 4 2 L 4 12 Q 4 15 7 15" strokeWidth="1.5" />
       
-      {/* The Ticket (e) */}
-      <g transform="translate(5.5, 2.5) rotate(-5)">
-         <rect x="0" y="0" width="7.5" height="9.5" rx="1" strokeWidth="1.2" />
-         {/* Checkmark */}
-         <path d="M 2 5 L 3.5 7 L 6 3" strokeWidth="1.2" />
-      </g>
+      {/* t: Crossbar/Arm reaching out to hold e */}
+      <path d="M 2 6 L 8 6" strokeWidth="1.5" />
 
-      {/* t arm (holding the ticket) */}
-      <path d="M 1 4 L 7 4" strokeWidth="1.5" />
+      {/* e: The Scroll / Ballot */}
+      {/* Positioned to look like it's being held by the 't' arm */}
+      <g transform="translate(9, 5)">
+         {/* Scroll body: a slightly curved rectangular shape */}
+         <path d="M 1 0 L 8 0 L 8 8 Q 4.5 9 1 8 Z" strokeWidth="1.2" />
+         {/* Internal lines to suggest text/content */}
+         <path d="M 3 3 L 6 3" strokeWidth="1" />
+         <path d="M 3 5 L 6 5" strokeWidth="1" />
+      </g>
     </svg>
   )
 }
@@ -125,11 +148,12 @@ function Eye({
       ref={(el) => (refEl.current = el)}
       className="relative inline-flex items-center justify-center"
       style={{
-        width: '0.6em',
-        height: '0.6em',
+        width: '0.7em',
+        height: '0.7em',
         borderRadius: '50%',
         border: '0.1em solid currentColor',
-        margin: '0 0.02em',
+        margin: '0 0.05em',
+        // Align visually with the other letters
         position: 'relative',
         top: '0.05em',
       }}
