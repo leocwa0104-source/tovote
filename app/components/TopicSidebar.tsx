@@ -5,6 +5,7 @@ import AuthControl from './AuthControl'
 import TicketBalance from './TicketBalance'
 import TovoteDaily from './TovoteDaily'
 import TovoteStats from './TovoteStats'
+import EyeLogo from './EyeLogo'
 
 type Purchase = {
   packageId: string
@@ -26,9 +27,9 @@ export default async function TopicSidebar() {
       <div className="p-4 border-b border-gray-200 flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Link href="/" className="font-bold text-lg text-gray-800 tracking-tight">
-               ToVote
-             </Link>
+            <Link href="/" className="hover:opacity-80 transition-opacity">
+              <EyeLogo />
+            </Link>
              <TovoteDaily />
              <TovoteStats />
            </div>
