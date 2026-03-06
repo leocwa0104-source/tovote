@@ -38,7 +38,7 @@ export default function TovoteLogo({ className }: Props) {
       ref={containerRef}
       onMouseMove={onMove}
       onMouseLeave={onLeave}
-      className={`inline-flex items-center gap-1 leading-none ${className ?? ''}`}
+      className={`inline-flex items-center gap-0.5 leading-none ${className ?? ''}`}
       style={{ color: 'rgb(31 41 55)' }}
       aria-label="ToVote"
       title="ToVote"
@@ -67,11 +67,11 @@ function Eye({
       ref={(el) => (refEl.current = el)}
       className="relative inline-flex items-center justify-center"
       style={{
-        width: '0.8em',
-        height: '0.8em',
+        width: '0.6em',
+        height: '0.6em',
         borderRadius: '50%',
-        border: '0.12em solid currentColor',
-        margin: '0 0.05em',
+        border: '0.1em solid currentColor',
+        margin: '0 0.02em',
       }}
     >
       <div
@@ -79,8 +79,8 @@ function Eye({
           position: 'absolute',
           top: '50%',
           left: '50%',
-          width: '0.25em',
-          height: '0.25em',
+          width: '0.2em',
+          height: '0.2em',
           borderRadius: '50%',
           background: 'currentColor',
           transform: `translate(-50%, -50%) translate(${dx}px, ${dy}px)`,
