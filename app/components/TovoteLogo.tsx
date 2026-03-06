@@ -67,10 +67,11 @@ function Eye({
       ref={(el) => (refEl.current = el)}
       className="relative inline-flex items-center justify-center"
       style={{
-        width: '1em',
-        height: '1em',
-        borderRadius: '0.25em',
-        border: '1px solid currentColor',
+        width: '0.8em',
+        height: '0.8em',
+        borderRadius: '50%',
+        border: '0.12em solid currentColor',
+        margin: '0 0.05em',
       }}
     >
       <div
@@ -78,8 +79,8 @@ function Eye({
           position: 'absolute',
           top: '50%',
           left: '50%',
-          width: '0.35em',
-          height: '0.35em',
+          width: '0.25em',
+          height: '0.25em',
           borderRadius: '50%',
           background: 'currentColor',
           transform: `translate(-50%, -50%) translate(${dx}px, ${dy}px)`,
