@@ -3,7 +3,18 @@ import { sesClient } from './tencent';
 export const sendVerificationEmail = async (email: string, token: string) => {
   // Use environment variable for sender address or fallback
   // Note: This address MUST be verified in Tencent Cloud SES Console
-  const fromAddress = process.env.TENCENT_EMAIL_FROM || 'ToVote <onboarding@tovote.top>';
+  let fromAddress = 'ToVote <onboarding@tovote.top>';
+  
+  const envFrom = process.env.TENCENT_EMAIL_FROM;
+  if (envFrom) {
+    // If env var contains '<', assume it already includes a name (e.g. "Name <email@domain.com>")
+    if (envFrom.includes('<')) {
+      fromAddress = envFrom;
+    } else {
+      // If just an email, add the "ToVote" name
+      fromAddress = `ToVote <${envFrom}>`;
+    }
+  }
   // Template ID from Tencent Cloud Console
   const templateId = process.env.TENCENT_TEMPLATE_ID;
 
