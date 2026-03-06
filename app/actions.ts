@@ -546,6 +546,30 @@ export async function joinPrivateTopic(roomCode: string, password: string) {
 export async function getTopic(id: string) {
   try {
     const user = await getCurrentUser()
+    
+    // Check and cleanup expired zero-vote factions
+    // This is a "lazy" cleanup triggered on read.
+    // In a high-traffic app, move this to a cron job.
+    try {
+      const setting = await prisma.systemSetting.findUnique({
+        where: { key: 'zero_vote_faction_ttl_hours' }
+      })
+      const ttlHours = setting ? parseFloat(setting.value) : 0
+      
+      if (ttlHours > 0) {
+        await prisma.faction.deleteMany({
+          where: {
+            topicId: id,
+            lastZeroedAt: {
+              lt: new Date(Date.now() - ttlHours * 60 * 60 * 1000)
+            }
+          }
+        })
+      }
+    } catch (cleanupError) {
+      console.warn("Lazy cleanup failed:", cleanupError)
+      // Don't block the main read operation
+    }
 
     const topic = await prisma.topic.findUnique({
       where: { id },
@@ -691,19 +715,52 @@ export async function joinFaction(topicId: string, factionId: string, formData?:
         return { success: true }; // Already in this faction
       }
       // Switch faction
-      await prisma.$transaction([
-        prisma.membership.update({
-          where: { id: existingMembership.id },
-          data: { factionId }
-        }),
-        // If user was not in any faction before, increment topic total value
-        ...(existingMembership.factionId === null ? [
+      // We need to check if the old faction becomes empty
+      if (existingMembership.factionId) {
+        const oldFactionId = existingMembership.factionId
+        await prisma.$transaction(async (tx) => {
+          // 1. Move member
+          await tx.membership.update({
+            where: { id: existingMembership.id },
+            data: { factionId }
+          })
+          
+          // 2. Check old faction
+          const oldFaction = await tx.faction.findUnique({
+            where: { id: oldFactionId },
+            include: { _count: { select: { members: true } } }
+          })
+          
+          if (oldFaction && oldFaction._count.members === 0 && oldFaction.paidVoteCount === 0) {
+            await tx.faction.update({
+              where: { id: oldFactionId },
+              data: { lastZeroedAt: new Date() }
+            })
+          }
+
+          // 3. Clear new faction lastZeroedAt (it now has a member)
+          await tx.faction.update({
+            where: { id: factionId },
+            data: { lastZeroedAt: null }
+          })
+        })
+      } else {
+        // Was not in any faction, just joining
+        await prisma.$transaction([
+          prisma.membership.update({
+            where: { id: existingMembership.id },
+            data: { factionId }
+          }),
+          prisma.faction.update({
+            where: { id: factionId },
+            data: { lastZeroedAt: null }
+          }),
           prisma.topic.update({
             where: { id: topicId },
             data: { totalValue: { increment: 1 } }
           })
-        ] : [])
-      ])
+        ])
+      }
     } else {
       // Join new
       const hasAccess = await checkTopicAccess(topicId)
@@ -716,6 +773,10 @@ export async function joinFaction(topicId: string, factionId: string, formData?:
             topicId,
             factionId
           }
+        }),
+        prisma.faction.update({
+          where: { id: factionId },
+          data: { lastZeroedAt: null }
         }),
         prisma.topic.update({
           where: { id: topicId },
@@ -898,7 +959,10 @@ export async function rechargeFaction(topicId: string, factionId: string, votePa
       // Update faction
       prisma.faction.update({
         where: { id: factionId },
-        data: { paidVoteCount: { increment: votes } }
+        data: { 
+          paidVoteCount: { increment: votes },
+          lastZeroedAt: null // Reset zero timer as we now have votes
+        }
       }),
       // Update topic value
       prisma.topic.update({
@@ -930,19 +994,37 @@ export async function leaveFaction(topicId: string, formData?: FormData) {
       return { success: true }
     }
 
-    await prisma.$transaction([
-      prisma.membership.update({
+    const factionId = existingMembership.factionId
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Remove membership
+      await tx.membership.update({
         where: { userId_topicId: { userId: user.id, topicId } },
         data: { factionId: null }
-      }),
-      // Decrement topic total value
-      prisma.topic.update({
+      })
+      
+      // 2. Decrement topic total value
+      await tx.topic.update({
         where: { id: topicId },
         data: { totalValue: { decrement: 1 } }
       })
-    ])
-    
+
+      // 3. Check if faction is now empty
+      const faction = await tx.faction.findUnique({
+        where: { id: factionId },
+        include: { _count: { select: { members: true } } }
+      })
+      
+      if (faction && faction._count.members === 0 && faction.paidVoteCount === 0) {
+        await tx.faction.update({
+          where: { id: factionId },
+          data: { lastZeroedAt: new Date() }
+        })
+      }
+    })
+
     revalidatePath(`/topic/${topicId}`)
+    revalidatePath('/')
     return { success: true }
   } catch (e) {
     console.error("leaveFaction error:", e)

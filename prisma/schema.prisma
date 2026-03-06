@@ -115,6 +115,7 @@ model Faction {
   seekRational      Boolean @default(false)
   
   paidVoteCount     Int      @default(0)
+  lastZeroedAt      DateTime? // Tracks when (members + paidVoteCount) became 0
 
   members     Membership[]
   opinions    Opinion[]
