@@ -4,6 +4,7 @@ import Link from 'next/link'
 import AuthControl from './AuthControl'
 import TicketBalance from './TicketBalance'
 import TovoteDaily from './TovoteDaily'
+import TovoteStats from './TovoteStats'
 
 type Purchase = {
   packageId: string
@@ -26,11 +27,12 @@ export default async function TopicSidebar() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Link href="/" className="font-bold text-lg text-gray-800 tracking-tight">
-              ToVote
-            </Link>
-            <TovoteDaily />
-          </div>
-          <AuthControl user={user ? { username: user.username, role: user.role } : null} />
+               ToVote
+             </Link>
+             <TovoteDaily />
+             <TovoteStats />
+           </div>
+           <AuthControl user={user ? { username: user.username, role: user.role } : null} />
         </div>
         {user && (
           <TicketBalance
