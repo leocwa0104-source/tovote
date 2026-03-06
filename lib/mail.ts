@@ -3,7 +3,7 @@ import { sesClient } from './tencent';
 export const sendVerificationEmail = async (email: string, token: string) => {
   // Use environment variable for sender address or fallback
   // Note: This address MUST be verified in Tencent Cloud SES Console
-  const fromAddress = process.env.TENCENT_EMAIL_FROM || 'onboarding@tovote.top';
+  const fromAddress = process.env.TENCENT_EMAIL_FROM || 'ToVote <onboarding@tovote.top>';
   // Template ID from Tencent Cloud Console
   const templateId = process.env.TENCENT_TEMPLATE_ID;
 
@@ -14,7 +14,7 @@ export const sendVerificationEmail = async (email: string, token: string) => {
     const params: SendEmailParams = {
       FromEmailAddress: fromAddress,
       Destination: [email],
-      Subject: 'Verify your email for Tou',
+      Subject: 'Verify your email for ToVote',
     };
 
     if (templateId) {
@@ -30,14 +30,14 @@ export const sendVerificationEmail = async (email: string, token: string) => {
       params.Simple = {
         Html: Buffer.from(`
           <div style="font-family: sans-serif; padding: 20px;">
-            <h2>Verify your email</h2>
+            <h2>Verify your email for ToVote</h2>
             <p>Your verification code is:</p>
             <h1 style="font-size: 32px; letter-spacing: 5px;">${token}</h1>
             <p>This code will expire in 15 minutes.</p>
           </div>
         `).toString('base64'),
         // Plain text fallback
-        Text: Buffer.from(`Verify your email for Tou. Your verification code is: ${token}. This code will expire in 15 minutes.`).toString('base64')
+        Text: Buffer.from(`Verify your email for ToVote. Your verification code is: ${token}. This code will expire in 15 minutes.`).toString('base64')
       };
     }
 
