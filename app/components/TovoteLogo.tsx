@@ -38,7 +38,7 @@ export default function TovoteLogo({ className }: Props) {
       ref={containerRef}
       onMouseMove={onMove}
       onMouseLeave={onLeave}
-      className={`inline-flex items-center justify-center gap-[0.05em] leading-none ${className ?? ''}`}
+      className={`inline-flex items-center justify-center gap-0 leading-none ${className ?? ''}`}
       style={{ color: 'rgb(31 41 55)' }}
       aria-label="ToVote"
       title="ToVote"
@@ -68,6 +68,8 @@ function TShape() {
         fill: 'none',
         transform: 'rotate(-5deg)',
         transformOrigin: 'bottom center',
+        marginRight: '-0.1em',
+        zIndex: 1,
       }}
     >
       {/* T: Body */}
@@ -92,6 +94,8 @@ function VShape() {
         strokeLinecap: 'round',
         strokeLinejoin: 'round',
         fill: 'none',
+        marginLeft: '-0.15em',
+        marginRight: '-0.15em',
       }}
     >
       {/* V: Simple Smile / Mouth shape */}
@@ -114,6 +118,7 @@ function TeShape() {
         strokeLinecap: 'round',
         strokeLinejoin: 'round',
         fill: 'none',
+        marginLeft: '-0.1em',
       }}
     >
       {/* Group for t: rotated slightly left */}
@@ -153,10 +158,12 @@ function Eye({
         height: '0.7em',
         borderRadius: '50%',
         border: '0.1em solid currentColor',
-        margin: '0 0.05em',
+        margin: '0',
         // Align visually with the other letters
         position: 'relative',
         top: '0.05em',
+        zIndex: 2,
+        backgroundColor: 'white', // Add background to cover overlapping lines
       }}
     >
       <div
