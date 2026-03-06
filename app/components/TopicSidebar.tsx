@@ -32,7 +32,7 @@ export default async function TopicSidebar() {
              <TovoteDaily />
              <TovoteStats />
            </div>
-           <AuthControl user={user ? { username: user.username, role: user.role } : null} />
+           <AuthControl user={user ? { username: user.username, role: user.role, passphrase: user.passphrase } : null} />
         </div>
         {user && (
           <TicketBalance

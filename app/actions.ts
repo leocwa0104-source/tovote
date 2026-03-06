@@ -92,6 +92,43 @@ export async function updateUsername(newUsername: string) {
   }
 }
 
+export async function updatePassphrase(newPassphrase: string) {
+  try {
+    const cookieStore = await cookies()
+    const userId = cookieStore.get('userId')?.value
+    if (!userId) return { success: false, error: "Not authenticated" }
+
+    if (!newPassphrase || newPassphrase.trim().length < 1) {
+      return { success: false, error: "Passphrase cannot be empty" }
+    }
+
+    const trimmedPassphrase = newPassphrase.trim()
+
+    // Check if passphrase is taken by another user
+    const existingUser = await prisma.user.findFirst({
+      where: { 
+        passphrase: trimmedPassphrase,
+        NOT: { id: userId }
+      }
+    })
+
+    if (existingUser) {
+      return { success: false, error: "Passphrase already taken" }
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { passphrase: trimmedPassphrase }
+    })
+
+    revalidatePath('/', 'layout')
+    return { success: true }
+  } catch (e) {
+    console.error("updatePassphrase error:", e)
+    return { success: false, error: "Failed to update passphrase" }
+  }
+}
+
 export async function getCurrentUser() {
   try {
     const cookieStore = await cookies()
@@ -793,8 +830,6 @@ export async function joinFaction(topicId: string, factionId: string, formData?:
     return { success: false, error: "Failed to join faction" }
   }
 }
-
-import { TicketPackage } from '@/app/types'
 
 export async function getActiveTicketPackages() {
   try {

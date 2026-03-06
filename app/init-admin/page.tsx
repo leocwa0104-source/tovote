@@ -1,5 +1,4 @@
 
-import { setUserAsAdmin } from '@/app/actions/admin'
 import prisma from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'

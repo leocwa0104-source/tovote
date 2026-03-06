@@ -46,8 +46,9 @@ export async function register(_prevState: unknown, formData: FormData) {
     const otp = formData.get('otp') as string
     const username = formData.get('username') as string
     const password = formData.get('password') as string
+    const passphrase = (formData.get('passphrase') as string)?.trim()
 
-    if (!email || !otp || !username || !password) {
+    if (!email || !otp || !username || !password || !passphrase) {
       return { success: false, error: "All fields are required" }
     }
 
@@ -57,15 +58,19 @@ export async function register(_prevState: unknown, formData: FormData) {
       return { success: false, error: verification.error || "Invalid verification code" }
     }
 
-    // 2. Check email uniqueness (username can be duplicate)
-    if (email) {
-      const existingUser = await prisma.user.findFirst({
-        where: { email }
-      })
-
-      if (existingUser) {
-        return { success: false, error: "Email already registered" }
+    // 2. Check uniqueness (email and passphrase)
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email },
+          { passphrase }
+        ]
       }
+    })
+
+    if (existingUser) {
+      if (existingUser.email === email) return { success: false, error: "Email already registered" }
+      if (existingUser.passphrase === passphrase) return { success: false, error: "Passphrase already taken" }
     }
 
     // 3. Hash password
@@ -76,6 +81,7 @@ export async function register(_prevState: unknown, formData: FormData) {
       data: {
         username,
         email,
+        passphrase,
         password: hashedPassword,
         emailVerified: new Date(),
       }
@@ -95,29 +101,44 @@ export async function register(_prevState: unknown, formData: FormData) {
 
 export async function loginWithPassword(_prevState: unknown, formData: FormData) {
   try {
-    const emailRaw = formData.get('email') as string
-    const email = emailRaw ? emailRaw.toLowerCase() : ''
+    const identifierRaw = formData.get('email') as string
+    const identifier = identifierRaw ? identifierRaw.trim() : ''
     const password = formData.get('password') as string
 
-    if (!email || !password) {
-      return { success: false, error: "Email and password required" }
+    if (!identifier || !password) {
+      return { success: false, error: "Email/Passphrase and password required" }
     }
 
-    const user = await prisma.user.findUnique({ where: { email } })
+    // Find user by email (lowercase) OR passphrase (exact)
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: identifier.toLowerCase() },
+          { passphrase: identifier }
+        ]
+      }
+    })
+
     if (!user || !user.password) {
-      // Fallback: Check if user exists by username (legacy support?)
-      // But user asked for Email + Password.
-      // If user enters username in email field?
-      // Maybe support username OR email login?
-      // "Login: Email + Password" was the request.
-      // But existing users have username only.
-      // I'll stick to Email for now as requested.
       return { success: false, error: "Invalid credentials" }
     }
 
     const isValid = await bcrypt.compare(password, user.password)
     if (!isValid) {
       return { success: false, error: "Invalid credentials" }
+    }
+
+    // Lazy migration: If passphrase is null, set it to email (if unique)
+    if (!user.passphrase && user.email) {
+      try {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { passphrase: user.email }
+        })
+      } catch (e) {
+        // Ignore unique constraint error (passphrase already taken)
+        console.warn(`Failed to auto-set passphrase for user ${user.id}:`, e)
+      }
     }
 
     const cookieStore = await cookies()

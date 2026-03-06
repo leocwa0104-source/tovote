@@ -81,8 +81,8 @@ export default function AuthForm() {
        {mode === 'login' ? (
          <form action={handleLogin} className="flex flex-col gap-3">
            <div>
-             <label className="text-xs text-gray-500 mb-1 block">Email</label>
-             <input name="email" type="email" required className="w-full border border-gray-300 p-2 text-sm rounded focus:outline-none focus:ring-1 focus:ring-black" />
+             <label className="text-xs text-gray-500 mb-1 block">Email / Passphrase</label>
+             <input name="email" type="text" required className="w-full border border-gray-300 p-2 text-sm rounded focus:outline-none focus:ring-1 focus:ring-black" />
            </div>
            <div>
              <label className="text-xs text-gray-500 mb-1 block">Password</label>
@@ -117,6 +117,10 @@ export default function AuthForm() {
              <div>
                <label className="text-xs text-gray-500 mb-1 block">Username</label>
                <input name="username" placeholder="Choose a username" required className="w-full border border-gray-300 p-2 text-sm rounded focus:outline-none focus:ring-1 focus:ring-black" />
+             </div>
+             <div>
+               <label className="text-xs text-gray-500 mb-1 block">Passphrase (Login ID)</label>
+               <input name="passphrase" placeholder="e.g. Open Sesame" required className="w-full border border-gray-300 p-2 text-sm rounded focus:outline-none focus:ring-1 focus:ring-black" />
              </div>
              <div>
                <label className="text-xs text-gray-500 mb-1 block">Password</label>

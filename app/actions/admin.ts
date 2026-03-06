@@ -3,7 +3,6 @@
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/app/actions'
 import { revalidatePath } from 'next/cache'
-import { Role } from '@prisma/client'
 
 // --- Admin Check ---
 

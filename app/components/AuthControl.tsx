@@ -1,10 +1,10 @@
 'use client'
-import { logout, updateUsername } from '@/app/actions'
+import { logout, updateUsername, updatePassphrase } from '@/app/actions'
 import { useState } from 'react'
 import AuthForm from './AuthForm'
 import Link from 'next/link'
 
-export default function AuthControl({ user }: { user: { username: string; role?: string } | null }) {
+export default function AuthControl({ user }: { user: { username: string; role?: string; passphrase?: string | null } | null }) {
   const [showLogin, setShowLogin] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -14,6 +14,10 @@ export default function AuthControl({ user }: { user: { username: string; role?:
   const [editingUsername, setEditingUsername] = useState(false)
   const [usernameError, setUsernameError] = useState('')
 
+  const [newPassphrase, setNewPassphrase] = useState('')
+  const [editingPassphrase, setEditingPassphrase] = useState(false)
+  const [passphraseError, setPassphraseError] = useState('')
+
   if (user) {
     const initial = user.username.charAt(0).toUpperCase()
     
@@ -22,9 +26,12 @@ export default function AuthControl({ user }: { user: { username: string; role?:
         <button 
           onClick={() => {
             setNewUsername(user.username)
+            setNewPassphrase(user.passphrase || '')
             setShowSettings(true)
             setEditingUsername(false)
+            setEditingPassphrase(false)
             setUsernameError('')
+            setPassphraseError('')
           }}
           className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm hover:bg-indigo-200 transition-colors border border-indigo-200"
           title={user.username}
@@ -135,6 +142,107 @@ export default function AuthControl({ user }: { user: { username: string; role?:
                                 setUsernameError('')
                               } else {
                                 setUsernameError(res?.error || 'Failed')
+                              }
+                            }}
+                            className="text-xs px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 transition-colors shadow-sm"
+                            disabled={loading}
+                          >
+                            {loading ? 'Saving...' : 'Save'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Passphrase Section */}
+                  <div className="text-center w-full">
+                    {!editingPassphrase ? (
+                      <div className="flex items-center justify-center gap-2 group cursor-pointer p-2 rounded hover:bg-gray-50 transition-colors" onClick={() => setEditingPassphrase(true)}>
+                        <div className="flex flex-col items-center">
+                            <span className="text-xs text-gray-400 font-medium">Passphrase (Login ID)</span>
+                            <h3 className="text-lg font-medium text-gray-700">{user.passphrase || 'Set a Passphrase'}</h3>
+                        </div>
+                        <div className="text-gray-400 group-hover:text-indigo-600 transition-colors self-end mb-1">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-2 w-full max-w-[200px] mx-auto animate-in fade-in slide-in-from-top-2 duration-200">
+                        <span className="text-xs text-gray-400 font-medium">Passphrase</span>
+                        <input
+                          type="text"
+                          value={newPassphrase}
+                          onChange={(e) => {
+                              setNewPassphrase(e.target.value)
+                              setPassphraseError('')
+                          }}
+                          placeholder="e.g. Open Sesame"
+                          className="border border-gray-300 rounded px-3 py-1 text-center font-medium focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 w-full"
+                          autoFocus
+                          minLength={1}
+                          onKeyDown={async (e) => {
+                            if (e.key === 'Enter') {
+                                if (!newPassphrase || newPassphrase.trim().length < 1) {
+                                  setPassphraseError('Cannot be empty')
+                                  return
+                                }
+                                if (newPassphrase === user.passphrase) {
+                                  setEditingPassphrase(false)
+                                  return
+                                }
+                                
+                                setLoading(true)
+                                const res = await updatePassphrase(newPassphrase)
+                                setLoading(false)
+                                
+                                if (res?.success) {
+                                  setEditingPassphrase(false)
+                                  setPassphraseError('')
+                                } else {
+                                  setPassphraseError(res?.error || 'Failed')
+                                }
+                            } else if (e.key === 'Escape') {
+                                setEditingPassphrase(false)
+                                setNewPassphrase(user.passphrase || '')
+                            }
+                          }}
+                        />
+                        {passphraseError && <p className="text-xs text-red-500 font-medium">{passphraseError}</p>}
+                        
+                        <div className="flex justify-center gap-2 mt-1">
+                          <button 
+                            onClick={() => {
+                              setEditingPassphrase(false)
+                              setNewPassphrase(user.passphrase || '')
+                              setPassphraseError('')
+                            }}
+                            className="text-xs px-3 py-1 text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                            disabled={loading}
+                          >
+                            Cancel
+                          </button>
+                          <button 
+                            onClick={async () => {
+                              if (!newPassphrase || newPassphrase.trim().length < 1) {
+                                setPassphraseError('Cannot be empty')
+                                return
+                              }
+                              if (newPassphrase === user.passphrase) {
+                                setEditingPassphrase(false)
+                                return
+                              }
+                              
+                              setLoading(true)
+                              const res = await updatePassphrase(newPassphrase)
+                              setLoading(false)
+                              
+                              if (res?.success) {
+                                setEditingPassphrase(false)
+                                setPassphraseError('')
+                              } else {
+                                setPassphraseError(res?.error || 'Failed')
                               }
                             }}
                             className="text-xs px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 transition-colors shadow-sm"
