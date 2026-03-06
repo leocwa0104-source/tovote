@@ -3,6 +3,7 @@ import TopicNav from './TopicNav'
 import Link from 'next/link'
 import AuthControl from './AuthControl'
 import TicketBalance from './TicketBalance'
+import TovoteDaily from './TovoteDaily'
 
 type Purchase = {
   packageId: string
@@ -23,9 +24,12 @@ export default async function TopicSidebar() {
       {/* Header */}
       <div className="p-4 border-b border-gray-200 flex flex-col gap-2">
         <div className="flex items-center justify-between">
-          <Link href="/" className="font-bold text-lg text-gray-800 tracking-tight">
-            ToVote
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/" className="font-bold text-lg text-gray-800 tracking-tight">
+              ToVote
+            </Link>
+            <TovoteDaily />
+          </div>
           <AuthControl user={user ? { username: user.username, role: user.role } : null} />
         </div>
         {user && (
