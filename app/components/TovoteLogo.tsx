@@ -43,13 +43,71 @@ export default function TovoteLogo({ className }: Props) {
       aria-label="ToVote"
       title="ToVote"
     >
-      <span>T</span>
+      <TShape />
       <Eye refEl={leftEyeRef} dx={lx} dy={ly} />
       <span>V</span>
       <Eye refEl={rightEyeRef} dx={rx} dy={ry} />
-      <span>t</span>
-      <span>e</span>
+      <TeShape />
     </div>
+  )
+}
+
+function TShape() {
+  return (
+    <svg
+      viewBox="0 0 10 12"
+      width="0.7em"
+      height="0.84em"
+      className="inline-block align-baseline"
+      style={{
+        overflow: 'visible',
+        stroke: 'currentColor',
+        strokeWidth: '1.5',
+        strokeLinecap: 'round',
+        strokeLinejoin: 'round',
+        fill: 'none',
+        position: 'relative',
+        top: '0.1em',
+      }}
+    >
+      {/* Body */}
+      <path d="M 5 12 L 5 3.5" />
+      {/* Arms raised (V shape) */}
+      <path d="M 1.5 1 L 5 3.5 L 8.5 1" />
+    </svg>
+  )
+}
+
+function TeShape() {
+  return (
+    <svg
+      viewBox="0 0 16 12"
+      width="1.1em"
+      height="0.84em"
+      className="inline-block align-baseline"
+      style={{
+        overflow: 'visible',
+        stroke: 'currentColor',
+        strokeLinecap: 'round',
+        strokeLinejoin: 'round',
+        fill: 'none',
+        position: 'relative',
+        top: '0.1em',
+      }}
+    >
+      {/* t body */}
+      <path d="M 3 0 L 3 9 Q 3 12 6 12" strokeWidth="1.5" />
+      
+      {/* The Ticket (e) */}
+      <g transform="translate(5.5, 2.5) rotate(-5)">
+         <rect x="0" y="0" width="7.5" height="9.5" rx="1" strokeWidth="1.2" />
+         {/* Checkmark */}
+         <path d="M 2 5 L 3.5 7 L 6 3" strokeWidth="1.2" />
+      </g>
+
+      {/* t arm (holding the ticket) */}
+      <path d="M 1 4 L 7 4" strokeWidth="1.5" />
+    </svg>
   )
 }
 
