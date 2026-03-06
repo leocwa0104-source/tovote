@@ -66,13 +66,14 @@ function TShape() {
         strokeLinecap: 'round',
         strokeLinejoin: 'round',
         fill: 'none',
+        transform: 'rotate(-5deg)',
+        transformOrigin: 'bottom center',
       }}
     >
       {/* T: Body */}
       <path d="M 6 15 L 6 5" />
       {/* T: Raised Arm (Curved up) */}
       <path d="M 2 5 C 2 3, 4 1, 6 1 C 8 1, 10 3, 10 5" />
-      {/* T: Hand/Palm at the top ends (optional small dots or just line caps) */}
     </svg>
   )
 }
@@ -103,8 +104,8 @@ function VShape() {
 function TeShape() {
   return (
     <svg
-      viewBox="0 0 20 16"
-      width="1.25em"
+      viewBox="0 0 24 16"
+      width="1.5em"
       height="1em"
       className="inline-block"
       style={{
@@ -115,20 +116,20 @@ function TeShape() {
         fill: 'none',
       }}
     >
-      {/* t: Body with hook */}
-      <path d="M 4 2 L 4 12 Q 4 15 7 15" strokeWidth="1.5" />
-      
-      {/* t: Crossbar/Arm reaching out to hold e */}
-      <path d="M 2 6 L 8 6" strokeWidth="1.5" />
+      {/* Group for t: rotated slightly left */}
+      <g transform="rotate(-5, 6, 15)">
+        {/* t: Body with hook */}
+        <path d="M 6 2 L 6 12 Q 6 15 9 15" strokeWidth="1.5" />
+        {/* t: Crossbar/Arm reaching out to hold e */}
+        <path d="M 4 6 L 10 6" strokeWidth="1.5" />
+      </g>
 
-      {/* e: The Scroll / Ballot */}
-      {/* Positioned to look like it's being held by the 't' arm */}
-      <g transform="translate(9, 5)">
-         {/* Scroll body: a slightly curved rectangular shape */}
-         <path d="M 1 0 L 8 0 L 8 8 Q 4.5 9 1 8 Z" strokeWidth="1.2" />
-         {/* Internal lines to suggest text/content */}
-         <path d="M 3 3 L 6 3" strokeWidth="1" />
-         <path d="M 3 5 L 6 5" strokeWidth="1" />
+      {/* e: The Letter 'e' held by t */}
+      {/* Positioned to look like it's being held */}
+      <g transform="translate(11, 5)">
+         {/* e shape: Standard lowercase e but stylized as a scroll/ticket */}
+         {/* Start from middle bar, curve up, around, and down */}
+         <path d="M 2 5 L 8 5 C 9 5, 9 2, 5 2 C 2 2, 1 5, 1 8 C 1 11, 4 12, 7 11" strokeWidth="1.5" />
       </g>
     </svg>
   )
