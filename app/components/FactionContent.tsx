@@ -101,7 +101,7 @@ export default function FactionContent({ faction, user, isPrivateTopic, skinId =
   } 
 
   return (
-    <div className={`w-full h-full flex flex-col overflow-hidden relative ${activeSkinId === 'ink' ? 'bg-[#FAFAF7]' : 'bg-white'}`}>
+    <div className={`w-full h-full flex flex-col overflow-hidden relative ${skinId === 'ink' ? 'bg-[#FAFAF7]' : 'bg-white'}`}>
       {/* Unified Header Section */}
       <div className={`px-6 pt-4 pb-0 relative flex-shrink-0 border-b z-10 ${skin.container} border-b-${skin.borderColor}`}>
         
@@ -152,7 +152,7 @@ export default function FactionContent({ faction, user, isPrivateTopic, skinId =
       </div>
 
       {/* Map Area - Takes available space */}
-      <div className={`flex-grow relative overflow-hidden flex flex-col ${activeSkinId === 'ink' ? 'bg-[#FAFAF7]' : 'bg-gray-50'}`}>
+      <div className={`flex-grow relative overflow-hidden flex flex-col ${skinId === 'ink' ? 'bg-[#FAFAF7]' : 'bg-gray-50'}`}>
          <OpinionMap 
            opinions={currentOpinions}
            selectedId={selectedOpinionId || undefined}
