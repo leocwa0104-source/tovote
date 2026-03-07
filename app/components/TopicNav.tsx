@@ -280,7 +280,9 @@ export default function TopicNav({ topics, privateTopics = [], joinedTopicIds = 
                          if (color && color !== 'transparent') {
                              const x = i % w
                              const y = Math.floor(i / w)
-                             svgContent += `<rect x="${x}" y="${y}" width="1" height="1" fill="${color}" />`
+                             // Using exact coordinates and 1x1 dimensions
+                             // Ensure no anti-aliasing gaps by using shape-rendering="crispEdges"
+                             svgContent += `<rect x="${x}" y="${y}" width="1" height="1" fill="${color}" shape-rendering="crispEdges" />`
                          }
                      })
                     svgContent += `</svg>`
@@ -288,9 +290,10 @@ export default function TopicNav({ topics, privateTopics = [], joinedTopicIds = 
                     const encodedSvg = Buffer.from(svgContent).toString('base64')
                     skinStyle = {
                         backgroundImage: `url("data:image/svg+xml;base64,${encodedSvg}")`,
-                        backgroundSize: 'cover',
+                        backgroundSize: '100% 100%', // Use 100% 100% instead of cover to force full stretch without cropping
                         backgroundPosition: 'center',
-                        // Add a slight overlay to ensure text readability if skin is busy
+                        backgroundRepeat: 'no-repeat',
+                        imageRendering: 'pixelated' // Important for pixel art
                     }
                 } catch (e) {
                     console.error("Failed to parse skin data", e)
