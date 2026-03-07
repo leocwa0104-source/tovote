@@ -1,4 +1,4 @@
-import { getTopics, getCurrentUser, getJoinedPrivateTopics, getUserTopicMemberships, getActiveTicketPackages, getSystemLogo, getActiveSkinId } from '@/app/actions'
+import { getTopics, getCurrentUser, getJoinedPrivateTopics, getUserTopicMemberships, getActiveTicketPackages, getSystemLogo, getActiveSkin } from '@/app/actions'
 import TopicNav from './TopicNav'
 import Link from 'next/link'
 import AuthControl from './AuthControl'
@@ -21,12 +21,12 @@ export default async function TopicSidebar() {
   const joinedTopicIds = user ? await getUserTopicMemberships() : []
   const activePackages = user ? await getActiveTicketPackages() : []
   const logoData = await getSystemLogo()
-  const activeSkinId = await getActiveSkinId()
+  const activeSkin = await getActiveSkin()
 
   return (
-    <div className={`w-64 flex-shrink-0 border-r h-full flex flex-col ${activeSkinId === 'ink' ? 'bg-[#FAFAF7] border-gray-300' : 'bg-gray-50 border-gray-200'}`}>
+    <div className="w-64 flex-shrink-0 bg-gray-50 border-r border-gray-200 h-full flex flex-col">
       {/* Header */}
-      <div className={`p-4 border-b flex flex-col gap-2 ${activeSkinId === 'ink' ? 'border-gray-300' : 'border-gray-200'}`}>
+      <div className="p-4 border-b border-gray-200 flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Link href="/" className="font-bold text-lg text-gray-800 tracking-tight" aria-label="ToVote">
@@ -73,7 +73,7 @@ export default async function TopicSidebar() {
           }))}
           joinedTopicIds={joinedTopicIds}
           isAuthenticated={!!user}
-          skinId={activeSkinId}
+          activeSkin={activeSkin}
         />
       </div>
 

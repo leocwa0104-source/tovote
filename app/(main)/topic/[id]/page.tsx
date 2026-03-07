@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { getTopic, getUserMembership, getCurrentUser, checkTopicAccess, ensureTopicMembership, getActiveSkinId } from '@/app/actions'
+import { getTopic, getUserMembership, getCurrentUser, checkTopicAccess, ensureTopicMembership } from '@/app/actions'
 import { getVotePackages } from '@/app/actions/admin'
 import TopicGate from '@/app/components/TopicGate'
 import ShareButton from '@/app/components/ShareButton'
@@ -73,13 +73,11 @@ export default async function TopicPage(props: {
     if (!nameParam) return undefined
     return Array.isArray(nameParam) ? nameParam[0] : nameParam
   })()
-  
-  const activeSkinId = await getActiveSkinId()
 
   return (
-    <div className={`flex h-full flex-col text-gray-900 overflow-hidden ${activeSkinId === 'ink' ? 'bg-[#FAFAF7]' : 'bg-gray-50'}`}>
+    <div className="flex h-full flex-col bg-gray-50 text-gray-900 overflow-hidden">
       {/* Header */}
-      <div className={`flex-shrink-0 z-10 w-full flex items-center justify-between font-mono text-sm px-6 py-4 border-b ${activeSkinId === 'ink' ? 'bg-[#FAFAF7] border-gray-300' : 'bg-white border-gray-200'}`}>
+      <div className="flex-shrink-0 z-10 w-full flex items-center justify-between font-mono text-sm px-6 py-4 bg-white border-b border-gray-200">
         <div className="flex items-center gap-4">
           <h1 className="text-lg font-bold text-gray-800 truncate max-w-md" title={topic.title}>{topic.title}</h1>
           {topic.isPrivate && topic.roomCode && (
@@ -97,7 +95,7 @@ export default async function TopicPage(props: {
 
       <div className="flex-grow flex overflow-hidden">
         {/* Left Column: Faction List */}
-        <div className={`w-80 flex-shrink-0 border-r overflow-y-auto p-4 flex flex-col gap-6 ${activeSkinId === 'ink' ? 'bg-[#FAFAF7] border-gray-300' : 'bg-white border-gray-200'}`}>
+        <div className="w-80 flex-shrink-0 border-r border-gray-200 bg-white overflow-y-auto p-4 flex flex-col gap-6">
           <FactionList 
             topicId={topic.id} 
             factions={topic.factions} 
@@ -106,12 +104,11 @@ export default async function TopicPage(props: {
             user={user}
             votePackages={votePackages}
             isPrivateTopic={topic.isPrivate}
-            skinId={activeSkinId}
           />
         </div>
 
         {/* Right Column: Faction Content */}
-      <div className={`flex-grow overflow-hidden relative ${activeSkinId === 'ink' ? 'bg-[#FAFAF7]' : 'bg-white'}`}>
+      <div className="flex-grow bg-white overflow-hidden relative">
         {isCreatingFaction ? (
           <div className="h-full overflow-y-auto p-6 md:p-8 flex justify-center">
             <CreateFactionForm 
@@ -131,7 +128,6 @@ export default async function TopicPage(props: {
               isMember={currentFactionId === selectedFaction.id}
               isOtherMember={!!(currentFactionId && currentFactionId !== selectedFaction.id)}
               isPrivateTopic={topic.isPrivate}
-              skinId={activeSkinId}
             />
           </div>
         ) : (

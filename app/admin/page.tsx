@@ -4,6 +4,7 @@ import AdminSystemSettings from '@/app/components/AdminSystemSettings'
 import AdminDangerZone from '@/app/components/AdminDangerZone'
 import AdminVotePackages from '@/app/components/AdminVotePackages'
 import PixelEditor from '@/app/components/PixelEditor'
+import SkinEditor from '@/app/components/SkinEditor'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
@@ -39,6 +40,10 @@ export default async function AdminPage() {
             
             <div className="mt-8">
               <PixelEditor initialData={pixelData} />
+            </div>
+
+            <div className="mt-8">
+              <SkinEditor />
             </div>
 
             <div className="mt-8">

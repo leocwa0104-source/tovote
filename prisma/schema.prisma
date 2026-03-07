@@ -69,6 +69,15 @@ model SystemSetting {
   updatedAt   DateTime @updatedAt
 }
 
+model Skin {
+  id          String   @id @default(uuid())
+  name        String
+  pixelData   String   // JSON string of pixel data
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isActive    Boolean  @default(true)
+}
+
 model Purchase {
   id        String   @id @default(uuid())
   userId    String

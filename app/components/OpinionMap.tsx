@@ -5,24 +5,20 @@ import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import { computeTreemapLayout } from '../utils/treemap'
 import OpinionBlock from './OpinionBlock'
 import { Opinion } from '@/app/types'
-import { skins, SkinId } from '@/app/styles/skins/config'
 
 interface OpinionMapProps {
   opinions: Opinion[]
   selectedId?: string
   onSelect: (id: string) => void
-  skinId?: SkinId
 }
 
-export default function OpinionMap({ opinions, selectedId, onSelect, skinId = 'default' }: OpinionMapProps) {
+export default function OpinionMap({ opinions, selectedId, onSelect }: OpinionMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 })
-  
-  const skin = skins[skinId].opinionCard
   // expandedId removed as per previous refactor to modal interaction, keeping clean state
   
   const dragStart = useRef<{ x: number, y: number } | null>(null)
@@ -92,11 +88,11 @@ export default function OpinionMap({ opinions, selectedId, onSelect, skinId = 'd
     // Draw all nodes
     layout.forEach(node => {
         // Draw background
-        ctx.fillStyle = skinId === 'ink' ? '#FAFAF7' : '#ffffff' // bg-[#FAFAF7] for ink, bg-white for default
+        ctx.fillStyle = '#ffffff' // bg-white
         ctx.fillRect(node.x, node.y, node.w, node.h)
         
         // Draw border
-        ctx.strokeStyle = skinId === 'ink' ? '#9CA3AF' : '#e5e7eb' // border-gray-400 for ink, border-gray-200 for default
+        ctx.strokeStyle = '#e5e7eb' // border-gray-200
         ctx.lineWidth = 1
         ctx.strokeRect(node.x, node.y, node.w, node.h)
 
@@ -105,7 +101,7 @@ export default function OpinionMap({ opinions, selectedId, onSelect, skinId = 'd
     })
 
     ctx.restore()
-  }, [layout, size, skinId])
+  }, [layout, size])
 
 
   // Calculate Visible Nodes (Virtualization + LOD)

@@ -267,3 +267,102 @@ export async function saveSystemLogo(data: string[]) {
   }
 }
 
+// --- Skin Management ---
+
+export async function getSkins() {
+  // Publicly accessible for now, or maybe just admin? 
+  // Admin needs it for list, Users need it for display.
+  // Let's allow public read.
+  return await prisma.skin.findMany({
+    orderBy: { createdAt: 'desc' }
+  })
+}
+
+export async function createSkin(data: { name: string, pixelData: string }) {
+  await ensureAdmin()
+  
+  try {
+    await prisma.skin.create({
+      data: {
+        ...data,
+        isActive: true
+      }
+    })
+    revalidatePath('/admin')
+    revalidatePath('/')
+    return { success: true }
+  } catch (e) {
+    console.error("Failed to create skin:", e)
+    return { success: false, error: "Failed to create skin" }
+  }
+}
+
+export async function updateSkin(id: string, data: { name?: string, pixelData?: string, isActive?: boolean }) {
+  await ensureAdmin()
+  
+  try {
+    await prisma.skin.update({
+      where: { id },
+      data
+    })
+    revalidatePath('/admin')
+    revalidatePath('/')
+    return { success: true }
+  } catch (e) {
+    console.error("Failed to update skin:", e)
+    return { success: false, error: "Failed to update skin" }
+  }
+}
+
+export async function deleteSkin(id: string) {
+  await ensureAdmin()
+  
+  try {
+    await prisma.skin.delete({
+      where: { id }
+    })
+    revalidatePath('/admin')
+    revalidatePath('/')
+    return { success: true }
+  } catch (e) {
+    console.error("Failed to delete skin:", e)
+    return { success: false, error: "Failed to delete skin" }
+  }
+}
+
+// Set active skin for topic cards (Global setting for now, or random?)
+// For now, let's assume we pick one "default" skin or just list them all.
+// But the requirement says "topic cards HAVE skins".
+// Maybe we can set a global "active skin" that applies to all, or allow users to pick?
+// "管理员处能有一个像素画板来设计、保存皮肤" -> "Administrator can design and save skins".
+// Let's add a function to set a skin as the "default" one used by TopicNav.
+export async function setActiveSkin(skinId: string) {
+    await ensureAdmin()
+    try {
+        await prisma.systemSetting.upsert({
+            where: { key: 'active_topic_skin_id' },
+            update: { value: skinId },
+            create: { key: 'active_topic_skin_id', value: skinId }
+        })
+        revalidatePath('/')
+        return { success: true }
+    } catch (e) {
+        return { success: false, error: "Failed to set active skin" }
+    }
+}
+
+export async function getActiveSkin() {
+    try {
+        const setting = await prisma.systemSetting.findUnique({
+            where: { key: 'active_topic_skin_id' }
+        })
+        if (!setting) return null
+        return await prisma.skin.findUnique({
+            where: { id: setting.value }
+        })
+    } catch {
+        return null
+    }
+}
+
+

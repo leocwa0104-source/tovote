@@ -5,8 +5,6 @@ import { usePathname } from 'next/navigation'
 import { useMemo, useState, useRef } from 'react'
 import { Lock, Unlock, ChevronsUpDown, ArrowUp, ArrowDown } from './Icons'
 
-import { skins, SkinId } from '@/app/styles/skins/config'
-
 interface Topic {
   id: string
   title: string
@@ -23,16 +21,10 @@ interface TopicNavProps {
   privateTopics?: Topic[]
   joinedTopicIds?: string[]
   isAuthenticated: boolean
-  skinId?: SkinId
+  activeSkin?: { pixelData: string } | null
 }
 
-export default function TopicNav({ 
-  topics, 
-  privateTopics = [], 
-  joinedTopicIds = [], 
-  isAuthenticated,
-  skinId = 'default' 
-}: TopicNavProps) {
+export default function TopicNav({ topics, privateTopics = [], joinedTopicIds = [], isAuthenticated, activeSkin }: TopicNavProps) {
   const pathname = usePathname()
   const [query, setQuery] = useState('')
   const [activeTab, setActiveTab] = useState<'public' | 'private'>('public')
@@ -42,8 +34,6 @@ export default function TopicNav({
   const [scope, setScope] = useState<'society' | 'joined'>('society')
   const [isScopeOpen, setIsScopeOpen] = useState(false)
   const scopeBtnRef = useRef<HTMLButtonElement>(null)
-  
-  const skin = skins[skinId].topicCard
 
   const currentList = activeTab === 'public' 
     ? (scope === 'society' ? topics : topics.filter(t => joinedTopicIds.includes(t.id)))
@@ -261,44 +251,89 @@ export default function TopicNav({
         <div className="flex flex-col gap-1">
           {filteredTopics.map((topic) => {
             const isActive = pathname.startsWith(`/topic/${topic.id}`)
+            
+            // Parse skin data if available
+            let skinStyle = {}
+            if (activeSkin?.pixelData) {
+                try {
+                    const pixels: string[] = JSON.parse(activeSkin.pixelData)
+                    // Create a gradient or pattern from pixel data
+                    // Since it's a 48x16 grid, we can use CSS grid or background-image
+                    // For a background skin, a data URI SVG is efficient
+                    
+                    // Simple approach: Construct an SVG data URI
+                    // This is lightweight and scales perfectly
+                    const w = 48
+                    const h = 16
+                    let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">`
+                    pixels.forEach((color, i) => {
+                        if (color && color !== 'transparent') {
+                            const x = i % w
+                            const y = Math.floor(i / w)
+                            svgContent += `<rect x="${x}" y="${y}" width="1" height="1" fill="${color}" />`
+                        }
+                    })
+                    svgContent += `</svg>`
+                    
+                    const encodedSvg = Buffer.from(svgContent).toString('base64')
+                    skinStyle = {
+                        backgroundImage: `url("data:image/svg+xml;base64,${encodedSvg}")`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        // Add a slight overlay to ensure text readability if skin is busy
+                    }
+                } catch (e) {
+                    console.error("Failed to parse skin data", e)
+                }
+            }
+
             return (
               <Link
                 key={topic.id}
                 href={`/topic/${topic.id}`}
                 className={`
-                  relative overflow-hidden flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors
+                  relative overflow-hidden flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-all
                   ${isActive 
-                    ? skin.activeEffect 
-                    : skin.container}
+                    ? 'bg-blue-50 text-blue-700 font-medium' 
+                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'}
                 `}
+                style={isActive ? {} : skinStyle} // Apply skin only to non-active items or maybe active too? 
+                // Let's apply to all, but handle active state overlay
               >
+                {/* Overlay for readability if skin is present */}
+                {Object.keys(skinStyle).length > 0 && (
+                    <div className={`absolute inset-0 z-0 ${isActive ? 'bg-blue-50/90' : 'bg-white/80 group-hover:bg-white/90'}`} />
+                )}
+                
+                {/* Content wrapper with z-index to sit above skin */}
+                <div className="relative z-10 flex items-center gap-2 w-full">
                 {(topic.seekBrainstorming || topic.seekRational) && (
-                  <div className="absolute top-0 left-4 flex gap-1">
+                  <div className="flex gap-1 mr-1">
                     {topic.seekBrainstorming && <div className="w-1.5 h-3 bg-orange-400 rounded-b-sm shadow-sm" title="Brainstorming" />}
                     {topic.seekRational && <div className="w-1.5 h-3 bg-teal-400 rounded-b-sm shadow-sm" title="Rational" />}
                   </div>
                 )}
                 <div className="flex flex-col flex-grow min-w-0">
-                  <span className={`truncate ${isActive ? 'font-medium' : skin.header}`}>{topic.title}</span>
+                  <span className="truncate">{topic.title}</span>
                   {topic.isPrivate && topic.creator && (
-                    <span className={`text-xs truncate ${skin.content}`}>
+                    <span className="text-xs text-gray-400 truncate">
                       @{topic.creator.username}
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-1 text-xs flex-shrink-0">
                   {topic.memberCount !== undefined && topic.memberCount > 0 && (
-                    <span className={`${skin.footer} mr-1 flex items-center gap-1`} title="Participants">
-                      <svg className={skin.iconStyle} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                      {topic.memberCount}
+                    <span className="text-gray-400 mr-1" title="Participants">
+                      {topic.memberCount}👤
                     </span>
                   )}
                 </div>
                 {topic.isPrivate && (
                   activeTab === 'private' 
-                    ? <Unlock className={`${skin.iconStyle} flex-shrink-0 text-gray-400`} /> 
-                    : <Lock className={`${skin.iconStyle} flex-shrink-0 text-gray-400`} />
+                    ? <Unlock className="w-3 h-3 flex-shrink-0 text-gray-400" /> 
+                    : <Lock className="w-3 h-3 flex-shrink-0 text-gray-400" />
                 )}
+                </div>
               </Link>
             )
           })}
