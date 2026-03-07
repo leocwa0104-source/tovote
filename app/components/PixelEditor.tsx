@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { saveSystemLogo } from '@/app/actions/admin'
 import TovoteLogo from '@/app/components/TovoteLogo'
 
-const GRID_SIZE = 24
+const GRID_SIZE = 32
 const PALETTE = [
   'transparent', '#000000', '#FFFFFF', 
   '#EF4444', '#F97316', '#F59E0B', '#10B981', '#3B82F6', '#6366F1', '#8B5CF6', '#EC4899',

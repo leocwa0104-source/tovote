@@ -18,8 +18,8 @@ export default function TovoteLogo({ className, pixelData }: Props) {
         style={{
           display: 'inline-grid',
           gridTemplateColumns: `repeat(${size}, 1fr)`,
-          width: '1.5em', // Scaled relative to font size
-          height: '1.5em',
+          width: '2em', // Scaled relative to font size
+          height: '2em',
           gap: 0,
           verticalAlign: 'middle' // Ensure alignment with text if any
         }}
