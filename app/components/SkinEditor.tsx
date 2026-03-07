@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react'
 import { createSkin, getSkins, setActiveSkin, deleteSkin, getActiveSkin } from '@/app/actions/admin'
 
-const WIDTH = 48
-const HEIGHT = 16
+const WIDTH = 64
+const HEIGHT = 12
 
 type Skin = {
   id: string
@@ -141,7 +141,18 @@ export default function SkinEditor() {
             setName(skin.name)
             try {
                 const data = JSON.parse(skin.pixelData)
-                setGrid(data)
+                // If data length mismatch (old skins), we might need to pad or crop?
+                // Or just fill it in as much as possible
+                if (data.length !== WIDTH * HEIGHT) {
+                    const newGrid = Array(WIDTH * HEIGHT).fill('transparent')
+                    data.forEach((c: string, i: number) => {
+                        if (i < newGrid.length) newGrid[i] = c
+                    })
+                    setGrid(newGrid)
+                    alert('Note: Skin dimensions adjusted to new grid size.')
+                } else {
+                    setGrid(data)
+                }
             } catch (e) {
                 console.error("Failed to parse skin data", e)
             }
@@ -261,8 +272,12 @@ export default function SkinEditor() {
                                         {(() => {
                                             try {
                                                 const pixels = JSON.parse(skin.pixelData)
+                                                // Handle potential mismatch in saved skins
+                                                const displayWidth = pixels.length === 48 * 16 ? 48 : WIDTH
+                                                const displayHeight = pixels.length === 48 * 16 ? 16 : HEIGHT
+                                                
                                                 return (
-                                                    <div className="w-full h-full grid" style={{ gridTemplateColumns: `repeat(${WIDTH}, 1fr)` }}>
+                                                    <div className="w-full h-full grid" style={{ gridTemplateColumns: `repeat(${displayWidth}, 1fr)` }}>
                                                         {pixels.map((c: string, i: number) => (
                                                             <div key={i} style={{ backgroundColor: c === 'transparent' ? 'transparent' : c }} />
                                                         ))}

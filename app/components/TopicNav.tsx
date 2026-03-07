@@ -262,17 +262,27 @@ export default function TopicNav({ topics, privateTopics = [], joinedTopicIds = 
                     // For a background skin, a data URI SVG is efficient
                     
                     // Simple approach: Construct an SVG data URI
-                    // This is lightweight and scales perfectly
-                    const w = 48
-                    const h = 16
-                    let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">`
-                    pixels.forEach((color, i) => {
-                        if (color && color !== 'transparent') {
-                            const x = i % w
-                            const y = Math.floor(i / w)
-                            svgContent += `<rect x="${x}" y="${y}" width="1" height="1" fill="${color}" />`
-                        }
-                    })
+                     // This is lightweight and scales perfectly
+                     let w = 64
+                     let h = 12
+                     
+                     // Detect old format (48x16) vs new format
+                     if (pixels.length === 48 * 16) {
+                        w = 48
+                        h = 16
+                     } else if (pixels.length === 64 * 12) {
+                        w = 64
+                        h = 12
+                     }
+                     
+                     let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">`
+                     pixels.forEach((color, i) => {
+                         if (color && color !== 'transparent') {
+                             const x = i % w
+                             const y = Math.floor(i / w)
+                             svgContent += `<rect x="${x}" y="${y}" width="1" height="1" fill="${color}" />`
+                         }
+                     })
                     svgContent += `</svg>`
                     
                     const encodedSvg = Buffer.from(svgContent).toString('base64')
