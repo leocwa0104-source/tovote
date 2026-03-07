@@ -18,10 +18,11 @@ export default function TovoteLogo({ className, pixelData }: Props) {
         style={{
           display: 'inline-grid',
           gridTemplateColumns: `repeat(${size}, 1fr)`,
-          width: '2em', // Scaled relative to font size
-          height: '2em',
+          width: '2.5em', // Scaled relative to font size
+          height: '2.5em',
           gap: 0,
-          verticalAlign: 'middle' // Ensure alignment with text if any
+          verticalAlign: 'middle', // Ensure alignment with text if any
+          margin: '-0.25em' // Negative margin to reduce surrounding whitespace
         }}
         aria-label="ToVote Logo"
         title="ToVote"
