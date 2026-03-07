@@ -275,14 +275,16 @@ export default function TopicNav({ topics, privateTopics = [], joinedTopicIds = 
                         h = 12
                      }
                      
-                     let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">`
+                     // Optimized SVG generation
+                     // Use shape-rendering="crispEdges" to prevent anti-aliasing artifacts
+                     // Explicitly set width/height attributes to match viewBox
+                     
+                     let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" shape-rendering="crispEdges">`
                      pixels.forEach((color, i) => {
                          if (color && color !== 'transparent') {
                              const x = i % w
                              const y = Math.floor(i / w)
-                             // Using exact coordinates and 1x1 dimensions
-                             // Ensure no anti-aliasing gaps by using shape-rendering="crispEdges"
-                             svgContent += `<rect x="${x}" y="${y}" width="1" height="1" fill="${color}" shape-rendering="crispEdges" />`
+                             svgContent += `<rect x="${x}" y="${y}" width="1" height="1" fill="${color}" />`
                          }
                      })
                     svgContent += `</svg>`
@@ -290,10 +292,10 @@ export default function TopicNav({ topics, privateTopics = [], joinedTopicIds = 
                     const encodedSvg = Buffer.from(svgContent).toString('base64')
                     skinStyle = {
                         backgroundImage: `url("data:image/svg+xml;base64,${encodedSvg}")`,
-                        backgroundSize: '100% 100%', // Use 100% 100% instead of cover to force full stretch without cropping
-                        backgroundPosition: 'center',
+                        backgroundSize: '100% 100%',
+                        backgroundPosition: '0 0',
                         backgroundRepeat: 'no-repeat',
-                        imageRendering: 'pixelated' // Important for pixel art
+                        imageRendering: 'pixelated'
                     }
                 } catch (e) {
                     console.error("Failed to parse skin data", e)
