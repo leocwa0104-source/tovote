@@ -262,40 +262,25 @@ export default function TopicNav({ topics, privateTopics = [], joinedTopicIds = 
                     // For a background skin, a data URI SVG is efficient
                     
                     // Simple approach: Construct an SVG data URI
-                     // This is lightweight and scales perfectly
-                     let w = 64
-                     let h = 12
-                     
-                     // Detect old format (48x16) vs new format
-                     if (pixels.length === 48 * 16) {
-                        w = 48
-                        h = 16
-                     } else if (pixels.length === 64 * 12) {
-                        w = 64
-                        h = 12
-                     }
-                     
-                     // Optimized SVG generation
-                     // Use shape-rendering="crispEdges" to prevent anti-aliasing artifacts
-                     // Explicitly set width/height attributes to match viewBox
-                     
-                     let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" shape-rendering="crispEdges">`
-                     pixels.forEach((color, i) => {
-                         if (color && color !== 'transparent') {
-                             const x = i % w
-                             const y = Math.floor(i / w)
-                             svgContent += `<rect x="${x}" y="${y}" width="1" height="1" fill="${color}" />`
-                         }
-                     })
+                    // This is lightweight and scales perfectly
+                    const w = 60
+                    const h = 12
+                    let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">`
+                    pixels.forEach((color, i) => {
+                        if (color && color !== 'transparent') {
+                            const x = i % w
+                            const y = Math.floor(i / w)
+                            svgContent += `<rect x="${x}" y="${y}" width="1" height="1" fill="${color}" />`
+                        }
+                    })
                     svgContent += `</svg>`
                     
                     const encodedSvg = Buffer.from(svgContent).toString('base64')
                     skinStyle = {
                         backgroundImage: `url("data:image/svg+xml;base64,${encodedSvg}")`,
-                        backgroundSize: '100% 100%',
-                        backgroundPosition: '0 0',
-                        backgroundRepeat: 'no-repeat',
-                        imageRendering: 'pixelated'
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        // Add a slight overlay to ensure text readability if skin is busy
                     }
                 } catch (e) {
                     console.error("Failed to parse skin data", e)
@@ -307,7 +292,7 @@ export default function TopicNav({ topics, privateTopics = [], joinedTopicIds = 
                 key={topic.id}
                 href={`/topic/${topic.id}`}
                 className={`
-                  relative overflow-hidden flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-all aspect-[5.33/1]
+                  relative overflow-hidden flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-all
                   ${isActive 
                     ? 'bg-blue-50 text-blue-700 font-medium' 
                     : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'}
@@ -321,7 +306,7 @@ export default function TopicNav({ topics, privateTopics = [], joinedTopicIds = 
                 )}
                 
                 {/* Content wrapper with z-index to sit above skin */}
-                <div className="relative z-10 flex items-center gap-2 w-full h-8">
+                <div className="relative z-10 flex items-center gap-2 w-full">
                 {(topic.seekBrainstorming || topic.seekRational) && (
                   <div className="flex gap-1 mr-1">
                     {topic.seekBrainstorming && <div className="w-1.5 h-3 bg-orange-400 rounded-b-sm shadow-sm" title="Brainstorming" />}
