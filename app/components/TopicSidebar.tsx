@@ -1,4 +1,5 @@
-import { getTopics, getCurrentUser, getJoinedPrivateTopics, getUserTopicMemberships, getActiveTicketPackages, getSystemLogo, getActiveSkin } from '@/app/actions'
+import { getTopics, getCurrentUser, getJoinedPrivateTopics, getUserTopicMemberships, getActiveTicketPackages, getSystemLogo } from '@/app/actions'
+import { getActiveSkin } from '@/app/actions/admin'
 import TopicNav from './TopicNav'
 import Link from 'next/link'
 import AuthControl from './AuthControl'
