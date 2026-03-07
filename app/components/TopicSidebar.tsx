@@ -1,4 +1,4 @@
-import { getTopics, getCurrentUser, getJoinedPrivateTopics, getUserTopicMemberships, getActiveTicketPackages } from '@/app/actions'
+import { getTopics, getCurrentUser, getJoinedPrivateTopics, getUserTopicMemberships, getActiveTicketPackages, getSystemLogo } from '@/app/actions'
 import TopicNav from './TopicNav'
 import Link from 'next/link'
 import AuthControl from './AuthControl'
@@ -20,6 +20,7 @@ export default async function TopicSidebar() {
   const privateTopics = user ? await getJoinedPrivateTopics() : []
   const joinedTopicIds = user ? await getUserTopicMemberships() : []
   const activePackages = user ? await getActiveTicketPackages() : []
+  const logoData = await getSystemLogo()
 
   return (
     <div className="w-64 flex-shrink-0 bg-gray-50 border-r border-gray-200 h-full flex flex-col">
@@ -28,7 +29,7 @@ export default async function TopicSidebar() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Link href="/" className="font-bold text-lg text-gray-800 tracking-tight" aria-label="ToVote">
-              <TovoteLogo className="font-bold text-lg text-gray-800 tracking-tight" />
+              <TovoteLogo pixelData={logoData} className="font-bold text-lg text-gray-800 tracking-tight" />
             </Link>
              <TovoteDaily />
              <TovoteStats />

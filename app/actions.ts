@@ -92,6 +92,18 @@ export async function updateUsername(newUsername: string) {
   }
 }
 
+export async function getSystemLogo() {
+  try {
+    const setting = await prisma.systemSetting.findUnique({
+      where: { key: 'system_logo_pixel_data' }
+    })
+    return setting?.value ? JSON.parse(setting.value) : null
+  } catch (e) {
+    console.error("Failed to fetch system logo:", e)
+    return null
+  }
+}
+
 export async function updatePassphrase(newPassphrase: string) {
   try {
     const cookieStore = await cookies()

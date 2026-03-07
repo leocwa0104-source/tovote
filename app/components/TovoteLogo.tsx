@@ -3,9 +3,47 @@ import React, { useRef, useState } from 'react'
 
 type Props = {
   className?: string
+  pixelData?: string[] | null
 }
 
-export default function TovoteLogo({ className }: Props) {
+export default function TovoteLogo({ className, pixelData }: Props) {
+  // Check if we have valid pixel data (not empty, correct length)
+  // Assuming 12x12 = 144
+  const hasPixelData = pixelData && pixelData.length === 144 && pixelData.some(c => c !== 'transparent')
+
+  if (hasPixelData) {
+    return (
+      <div 
+        className={`inline-grid ${className ?? ''}`}
+        style={{
+          display: 'inline-grid',
+          gridTemplateColumns: 'repeat(12, 1fr)',
+          width: '1.5em', // Scaled relative to font size
+          height: '1.5em',
+          gap: 0,
+          verticalAlign: 'middle' // Ensure alignment with text if any
+        }}
+        aria-label="ToVote Logo"
+        title="ToVote"
+      >
+        {pixelData!.map((color, i) => (
+          <div 
+            key={i} 
+            style={{ 
+              backgroundColor: color === 'transparent' ? 'transparent' : color,
+              width: '100%',
+              height: '100%'
+            }} 
+          />
+        ))}
+      </div>
+    )
+  }
+
+  return <DefaultLogo className={className} />
+}
+
+function DefaultLogo({ className }: { className?: string }) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const leftEyeRef = useRef<HTMLDivElement | null>(null)
   const rightEyeRef = useRef<HTMLDivElement | null>(null)

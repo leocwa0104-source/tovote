@@ -3,6 +3,7 @@ import AdminTicketPackages from '@/app/components/AdminTicketPackages'
 import AdminSystemSettings from '@/app/components/AdminSystemSettings'
 import AdminDangerZone from '@/app/components/AdminDangerZone'
 import AdminVotePackages from '@/app/components/AdminVotePackages'
+import PixelEditor from '@/app/components/PixelEditor'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
@@ -12,6 +13,8 @@ export default async function AdminPage() {
   const packages = await getTicketPackages()
   const votePackages = await getVotePackages()
   const settings = await getSystemSettings()
+
+  const pixelData = settings['system_logo_pixel_data'] ? JSON.parse(settings['system_logo_pixel_data']) : undefined
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -33,6 +36,11 @@ export default async function AdminPage() {
             </div>
             
             <AdminSystemSettings settings={settings} />
+            
+            <div className="mt-8">
+              <PixelEditor initialData={pixelData} />
+            </div>
+
             <div className="mt-8">
               <AdminTicketPackages packages={packages} />
             </div>

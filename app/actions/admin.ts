@@ -246,3 +246,24 @@ export async function deleteVotePackage(id: string) {
     return { success: false, error: "Failed to delete package" }
   }
 }
+
+// --- System Logo ---
+
+export async function saveSystemLogo(data: string[]) {
+  await ensureAdmin()
+  
+  try {
+    await prisma.systemSetting.upsert({
+      where: { key: 'system_logo_pixel_data' },
+      update: { value: JSON.stringify(data) },
+      create: { key: 'system_logo_pixel_data', value: JSON.stringify(data) }
+    })
+    revalidatePath('/')
+    revalidatePath('/admin')
+    return { success: true }
+  } catch (e) {
+    console.error("Failed to save system logo:", e)
+    return { success: false, error: "Failed to save logo" }
+  }
+}
+
