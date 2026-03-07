@@ -8,6 +8,8 @@ import OpinionMap from './OpinionMap'
 import OpinionDetailView from './OpinionDetailView'
 import { Opinion, CitationTarget, FactionWithOpinions, User } from '@/app/types'
 
+import { skins, SkinId } from '@/app/styles/skins/config'
+
 interface FactionContentProps {
   faction: FactionWithOpinions
   user: User | null
@@ -16,9 +18,10 @@ interface FactionContentProps {
   isOtherMember?: boolean
   isPrivateTopic?: boolean
   userMembership?: unknown
+  skinId?: SkinId
 }
 
-export default function FactionContent({ faction, user, isPrivateTopic }: FactionContentProps) {
+export default function FactionContent({ faction, user, isPrivateTopic, skinId = 'default' }: FactionContentProps) {
   const currentOpinions = faction.opinions
   
   const [selectedOpinionId, setSelectedOpinionId] = useState<string | null>(null)
@@ -27,6 +30,8 @@ export default function FactionContent({ faction, user, isPrivateTopic }: Factio
   const [initialNeighborId, setInitialNeighborId] = useState<string | null>(null)
   
   const userOpinion = user ? currentOpinions.find((o: Opinion) => o.authorId === user.id) : undefined
+  
+  const skin = skins[skinId].factionCard
 
   // Auto-select removed to avoid popup on load
   // useEffect(() => {
@@ -96,14 +101,14 @@ export default function FactionContent({ faction, user, isPrivateTopic }: Factio
   } 
 
   return (
-    <div className="w-full bg-white h-full flex flex-col overflow-hidden relative">
+    <div className={`w-full h-full flex flex-col overflow-hidden relative ${activeSkinId === 'ink' ? 'bg-[#FAFAF7]' : 'bg-white'}`}>
       {/* Unified Header Section */}
-      <div className="bg-white text-gray-900 px-6 pt-4 pb-0 relative flex-shrink-0 border-b border-gray-100 z-10">
+      <div className={`px-6 pt-4 pb-0 relative flex-shrink-0 border-b z-10 ${skin.container} border-b-${skin.borderColor}`}>
         
         <div className="relative z-10">
           
           {faction.description && (
-            <p className="text-gray-600 text-sm leading-relaxed pl-3 border-l-2 border-gray-200 italic mb-6">
+            <p className={`text-sm leading-relaxed pl-3 border-l-2 italic mb-6 ${skin.content} ${skin.borderColor}`}>
               {faction.description}
             </p>
           )}
@@ -111,14 +116,14 @@ export default function FactionContent({ faction, user, isPrivateTopic }: Factio
           {/* Tab Navigation & Actions */}
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-center gap-4">
-              <div className="text-xs text-gray-400 font-mono flex items-center gap-2">
+              <div className={`text-xs font-mono flex items-center gap-2 ${skin.footer}`}>
                 <span className="flex items-center gap-1">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                  <svg className={skin.iconStyle} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                   {faction._count.members}
                 </span>
-                <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                <span className={`w-1 h-1 rounded-full ${skin.accentColor.replace('text-', 'bg-')}`}></span>
                 <span className="flex items-center gap-1">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <svg className={skin.iconStyle} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                   {currentOpinions.length}
                 </span>
               </div>
@@ -129,7 +134,7 @@ export default function FactionContent({ faction, user, isPrivateTopic }: Factio
               <div className="flex items-center gap-3">
                  <button
                    onClick={() => setShowCreateModal(true)}
-                   className="text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors"
+                   className={`text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded border transition-colors ${skin.activeEffect || 'border-gray-200 hover:bg-gray-50 text-gray-700'}`}
                  >
                    {userOpinion ? 'Edit Territory' : 'Claim Territory'}
                  </button>
@@ -147,7 +152,7 @@ export default function FactionContent({ faction, user, isPrivateTopic }: Factio
       </div>
 
       {/* Map Area - Takes available space */}
-      <div className="flex-grow relative bg-gray-50 overflow-hidden flex flex-col">
+      <div className={`flex-grow relative overflow-hidden flex flex-col ${activeSkinId === 'ink' ? 'bg-[#FAFAF7]' : 'bg-gray-50'}`}>
          <OpinionMap 
            opinions={currentOpinions}
            selectedId={selectedOpinionId || undefined}
@@ -158,6 +163,7 @@ export default function FactionContent({ faction, user, isPrivateTopic }: Factio
                  setModalStack([opinion])
              }
            }}
+           skinId={skinId}
          />
       </div>
 

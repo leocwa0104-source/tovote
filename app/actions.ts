@@ -104,6 +104,32 @@ export async function getSystemLogo() {
   }
 }
 
+export async function getSystemSettings() {
+  try {
+    const settings = await prisma.systemSetting.findMany()
+    return settings.reduce((acc, curr) => {
+      acc[curr.key] = curr.value
+      return acc
+    }, {} as Record<string, string>)
+  } catch (e) {
+    console.error("getSystemSettings error:", e)
+    return {}
+  }
+}
+
+export async function getActiveSkinId() {
+  try {
+    const setting = await prisma.systemSetting.findUnique({
+      where: { key: 'active_skin_id' }
+    })
+    // Cast the value to SkinId if it exists, otherwise default
+    return (setting?.value || 'default') as 'default' | 'ink' | 'cinnabar'
+  } catch (e) {
+    console.error("getActiveSkinId error:", e)
+    return 'default' as const
+  }
+}
+
 export async function updatePassphrase(newPassphrase: string) {
   try {
     const cookieStore = await cookies()

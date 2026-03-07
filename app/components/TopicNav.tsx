@@ -5,6 +5,8 @@ import { usePathname } from 'next/navigation'
 import { useMemo, useState, useRef } from 'react'
 import { Lock, Unlock, ChevronsUpDown, ArrowUp, ArrowDown } from './Icons'
 
+import { skins, SkinId } from '@/app/styles/skins/config'
+
 interface Topic {
   id: string
   title: string
@@ -21,9 +23,16 @@ interface TopicNavProps {
   privateTopics?: Topic[]
   joinedTopicIds?: string[]
   isAuthenticated: boolean
+  skinId?: SkinId
 }
 
-export default function TopicNav({ topics, privateTopics = [], joinedTopicIds = [], isAuthenticated }: TopicNavProps) {
+export default function TopicNav({ 
+  topics, 
+  privateTopics = [], 
+  joinedTopicIds = [], 
+  isAuthenticated,
+  skinId = 'default' 
+}: TopicNavProps) {
   const pathname = usePathname()
   const [query, setQuery] = useState('')
   const [activeTab, setActiveTab] = useState<'public' | 'private'>('public')
@@ -33,6 +42,8 @@ export default function TopicNav({ topics, privateTopics = [], joinedTopicIds = 
   const [scope, setScope] = useState<'society' | 'joined'>('society')
   const [isScopeOpen, setIsScopeOpen] = useState(false)
   const scopeBtnRef = useRef<HTMLButtonElement>(null)
+  
+  const skin = skins[skinId].topicCard
 
   const currentList = activeTab === 'public' 
     ? (scope === 'society' ? topics : topics.filter(t => joinedTopicIds.includes(t.id)))
@@ -257,8 +268,8 @@ export default function TopicNav({ topics, privateTopics = [], joinedTopicIds = 
                 className={`
                   relative overflow-hidden flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors
                   ${isActive 
-                    ? 'bg-blue-50 text-blue-700 font-medium' 
-                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'}
+                    ? skin.activeEffect 
+                    : skin.container}
                 `}
               >
                 {(topic.seekBrainstorming || topic.seekRational) && (
@@ -268,24 +279,25 @@ export default function TopicNav({ topics, privateTopics = [], joinedTopicIds = 
                   </div>
                 )}
                 <div className="flex flex-col flex-grow min-w-0">
-                  <span className="truncate">{topic.title}</span>
+                  <span className={`truncate ${isActive ? 'font-medium' : skin.header}`}>{topic.title}</span>
                   {topic.isPrivate && topic.creator && (
-                    <span className="text-xs text-gray-400 truncate">
+                    <span className={`text-xs truncate ${skin.content}`}>
                       @{topic.creator.username}
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-1 text-xs flex-shrink-0">
                   {topic.memberCount !== undefined && topic.memberCount > 0 && (
-                    <span className="text-gray-400 mr-1" title="Participants">
-                      {topic.memberCount}👤
+                    <span className={`${skin.footer} mr-1 flex items-center gap-1`} title="Participants">
+                      <svg className={skin.iconStyle} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                      {topic.memberCount}
                     </span>
                   )}
                 </div>
                 {topic.isPrivate && (
                   activeTab === 'private' 
-                    ? <Unlock className="w-3 h-3 flex-shrink-0 text-gray-400" /> 
-                    : <Lock className="w-3 h-3 flex-shrink-0 text-gray-400" />
+                    ? <Unlock className={`${skin.iconStyle} flex-shrink-0 text-gray-400`} /> 
+                    : <Lock className={`${skin.iconStyle} flex-shrink-0 text-gray-400`} />
                 )}
               </Link>
             )

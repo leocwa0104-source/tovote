@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { updateSystemSetting } from '@/app/actions/admin'
+import { skins, SkinId } from '@/app/styles/skins/config'
 
 interface AdminSystemSettingsProps {
   settings: Record<string, string>
@@ -11,6 +12,7 @@ export default function AdminSystemSettings({ settings }: AdminSystemSettingsPro
   const [publicTopicCooldown, setPublicTopicCooldown] = useState(settings['public_topic_cooldown_minutes'] || '0')
   const [voteCooldown, setVoteCooldown] = useState(settings['faction_vote_cooldown_hours'] || '12')
   const [zeroVoteTtl, setZeroVoteTtl] = useState(settings['zero_vote_faction_ttl_hours'] || '0')
+  const [activeSkin, setActiveSkin] = useState<SkinId>((settings['active_skin_id'] as SkinId) || 'default')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
 
@@ -21,7 +23,8 @@ export default function AdminSystemSettings({ settings }: AdminSystemSettingsPro
       await Promise.all([
         updateSystemSetting('public_topic_cooldown_minutes', publicTopicCooldown),
         updateSystemSetting('faction_vote_cooldown_hours', voteCooldown),
-        updateSystemSetting('zero_vote_faction_ttl_hours', zeroVoteTtl)
+        updateSystemSetting('zero_vote_faction_ttl_hours', zeroVoteTtl),
+        updateSystemSetting('active_skin_id', activeSkin)
       ])
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
@@ -37,6 +40,28 @@ export default function AdminSystemSettings({ settings }: AdminSystemSettingsPro
       <h2 className="text-xl font-bold mb-4">System Settings</h2>
       
       <div className="max-w-md flex flex-col gap-6">
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Global Theme Skin
+          </label>
+          <div className="text-xs text-gray-500 mb-2">
+            Select the visual theme for all users.
+          </div>
+          <select
+            value={activeSkin}
+            onChange={e => setActiveSkin(e.target.value as SkinId)}
+            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2 border"
+          >
+            {Object.entries(skins).map(([id, skin]) => (
+              <option key={id} value={id}>
+                {skin.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <hr className="border-gray-100" />
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Public Topic Creation Cooldown (Minutes)

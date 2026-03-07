@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { VotePackage } from '@/app/types'
 
+import { skins, SkinId } from '@/app/styles/skins/config'
+
 interface FactionListItem {
   id: string
   name: string
@@ -22,6 +24,7 @@ interface FactionListProps {
   user: { id: string } | null
   votePackages?: VotePackage[]
   isPrivateTopic?: boolean
+  skinId?: SkinId
 }
 
 export default function FactionList({ 
@@ -31,12 +34,15 @@ export default function FactionList({
   selectedFactionId,
   user,
   votePackages = [],
-  isPrivateTopic = false
+  isPrivateTopic = false,
+  skinId = 'default'
 }: FactionListProps) {
   const router = useRouter()
   const [query, setQuery] = useState('')
   const [rechargingFactionId, setRechargingFactionId] = useState<string | null>(null)
   const [isRecharging, setIsRecharging] = useState(false)
+  
+  const skin = skins[skinId].factionCard
 
   const handleRecharge = async (factionId: string, votePackageId: string) => {
     if (!user) return
@@ -122,8 +128,8 @@ export default function FactionList({
             className={`
               group relative p-4 rounded-lg border transition-all duration-200 overflow-hidden cursor-pointer
               ${isSelected 
-                ? 'bg-white border-gray-900 shadow-sm' 
-                : 'bg-white border-transparent hover:border-gray-200 hover:bg-gray-50'
+                ? skin.activeEffect 
+                : skin.container
               }
             `}
           >
@@ -136,25 +142,25 @@ export default function FactionList({
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <h4 className={`font-bold ${isSelected ? 'text-gray-900' : 'text-gray-600 group-hover:text-gray-900'}`}>
+                  <h4 className={`font-bold ${isSelected ? 'text-gray-900' : `${skin.header} group-hover:text-gray-900`}`}>
                     {faction.name}
                   </h4>
                 </div>
                 {isMember && (
-                  <span className="w-2 h-2 rounded-full bg-green-500" title="Your Faction"></span>
+                  <span className={`w-2 h-2 rounded-full ${skin.accentColor.replace('text-', 'bg-')}`} title="Your Faction"></span>
                 )}
               </div>
               
               <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between text-xs text-gray-400">
+                <div className={`flex items-center justify-between text-xs ${skin.footer}`}>
                   <div className="flex gap-2 items-center">
-                    <span className="flex items-center gap-1 font-medium text-gray-600">
-                      <svg className="w-3 h-3 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" /></svg>
+                    <span className={`flex items-center gap-1 font-medium ${skin.content}`}>
+                      <svg className={`${skin.iconStyle} ${skin.accentColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" /></svg>
                       {faction._count.members + (faction.paidVoteCount || 0)}
                     </span>
                     <span>·</span>
                     <span className="flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                      <svg className={skin.iconStyle} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                       {faction._count.members}
                     </span>
                   </div>
