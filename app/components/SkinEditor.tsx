@@ -261,12 +261,27 @@ export default function SkinEditor() {
                                         {(() => {
                                             try {
                                                 const pixels = JSON.parse(skin.pixelData)
+                                                // Generate SVG preview similar to TopicNav
+                                                let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${WIDTH} ${HEIGHT}" preserveAspectRatio="none">`
+                                                pixels.forEach((color: string, i: number) => {
+                                                    if (color && color !== 'transparent') {
+                                                        const x = i % WIDTH
+                                                        const y = Math.floor(i / WIDTH)
+                                                        svgContent += `<rect x="${x}" y="${y}" width="1" height="1" fill="${color}" />`
+                                                    }
+                                                })
+                                                svgContent += `</svg>`
+                                                const encodedSvg = btoa(svgContent)
+
                                                 return (
-                                                    <div className="w-full h-full grid" style={{ gridTemplateColumns: `repeat(${WIDTH}, 1fr)` }}>
-                                                        {pixels.map((c: string, i: number) => (
-                                                            <div key={i} style={{ backgroundColor: c === 'transparent' ? 'transparent' : c }} />
-                                                        ))}
-                                                    </div>
+                                                    <div 
+                                                        className="w-full h-full"
+                                                        style={{
+                                                            backgroundImage: `url("data:image/svg+xml;base64,${encodedSvg}")`,
+                                                            backgroundSize: 'cover',
+                                                            backgroundPosition: 'center'
+                                                        }}
+                                                    />
                                                 )
                                             } catch { return null }
                                         })()}
