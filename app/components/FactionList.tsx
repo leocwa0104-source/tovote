@@ -147,10 +147,16 @@ export default function FactionList({
               
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between text-xs text-gray-400">
-                  <div className="flex gap-2">
-                    <span className="font-medium text-gray-600">{faction._count.members + (faction.paidVoteCount || 0)} votes</span>
+                  <div className="flex gap-2 items-center">
+                    <span className="flex items-center gap-1 font-medium text-gray-600">
+                      <svg className="w-3 h-3 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" /></svg>
+                      {faction._count.members + (faction.paidVoteCount || 0)}
+                    </span>
                     <span>·</span>
-                    <span>{faction._count.members} members</span>
+                    <span className="flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                      {faction._count.members}
+                    </span>
                   </div>
                   
                   <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1">
