@@ -305,7 +305,7 @@ export default function TopicNav({ topics, privateTopics = [], joinedTopicIds = 
                 key={topic.id}
                 href={`/topic/${topic.id}`}
                 className={`
-                  relative overflow-hidden flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-all
+                  relative overflow-hidden flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-all aspect-[5.33/1]
                   ${isActive 
                     ? 'bg-blue-50 text-blue-700 font-medium' 
                     : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'}
@@ -319,7 +319,7 @@ export default function TopicNav({ topics, privateTopics = [], joinedTopicIds = 
                 )}
                 
                 {/* Content wrapper with z-index to sit above skin */}
-                <div className="relative z-10 flex items-center gap-2 w-full">
+                <div className="relative z-10 flex items-center gap-2 w-full h-8">
                 {(topic.seekBrainstorming || topic.seekRational) && (
                   <div className="flex gap-1 mr-1">
                     {topic.seekBrainstorming && <div className="w-1.5 h-3 bg-orange-400 rounded-b-sm shadow-sm" title="Brainstorming" />}
