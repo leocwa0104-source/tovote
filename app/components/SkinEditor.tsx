@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react'
 import { createSkin, getSkins, setActiveSkin, deleteSkin, getActiveSkin } from '@/app/actions/admin'
 
-const WIDTH = 60
-const HEIGHT = 12
+const WIDTH = 120
+const HEIGHT = 24
 
 type Skin = {
   id: string
@@ -186,7 +186,7 @@ export default function SkinEditor() {
                                 key={i}
                                 onMouseDown={() => handleMouseDown(i)}
                                 onMouseEnter={() => handleMouseEnter(i)}
-                                className="w-3 h-3 cursor-pointer hover:opacity-90"
+                                className="w-1.5 h-1.5 cursor-pointer hover:opacity-90"
                                 style={{ backgroundColor: color === 'transparent' ? 'white' : color }}
                                 title={`Pixel ${i}`}
                             />

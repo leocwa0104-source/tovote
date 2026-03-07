@@ -263,8 +263,8 @@ export default function TopicNav({ topics, privateTopics = [], joinedTopicIds = 
                     
                     // Simple approach: Construct an SVG data URI
                     // This is lightweight and scales perfectly
-                    const w = 60
-                    const h = 12
+                    const w = 120
+                    const h = 24
                     let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">`
                     pixels.forEach((color, i) => {
                         if (color && color !== 'transparent') {
