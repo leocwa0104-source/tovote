@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { saveSystemLogo } from '@/app/actions/admin'
+import TovoteLogo from '@/app/components/TovoteLogo'
 
-const GRID_SIZE = 12
+const GRID_SIZE = 24
 const PALETTE = [
   'transparent', '#000000', '#FFFFFF', 
   '#EF4444', '#F97316', '#F59E0B', '#10B981', '#3B82F6', '#6366F1', '#8B5CF6', '#EC4899',
@@ -18,6 +19,13 @@ export default function PixelEditor({ initialData }: { initialData?: string[] })
   )
   const [selectedColor, setSelectedColor] = useState('#000000')
   const [loading, setLoading] = useState(false)
+
+  // Reset grid if GRID_SIZE changes (dev environment mostly)
+  useEffect(() => {
+    if (grid.length !== GRID_SIZE * GRID_SIZE) {
+        setGrid(Array(GRID_SIZE * GRID_SIZE).fill('transparent'))
+    }
+  }, [grid.length])
 
   const handlePixelClick = (index: number) => {
     const newGrid = [...grid]
@@ -63,36 +71,58 @@ export default function PixelEditor({ initialData }: { initialData?: string[] })
                 key={i}
                 onMouseDown={() => handlePixelClick(i)}
                 onMouseEnter={(e) => { if (e.buttons === 1) handlePixelClick(i) }}
-                className="w-6 h-6 cursor-pointer hover:opacity-90"
+                className="w-4 h-4 cursor-pointer hover:opacity-90"
                 style={{ backgroundColor: color === 'transparent' ? 'white' : color }}
                 title={`Pixel ${i}`}
                 >
-                    {color === 'transparent' && <div className="w-full h-full bg-gray-50 text-[8px] flex items-center justify-center text-gray-200">.</div>}
+                    {color === 'transparent' && <div className="w-full h-full bg-gray-50 text-[6px] flex items-center justify-center text-gray-200">.</div>}
                 </div>
             ))}
             </div>
         </div>
 
-        {/* Palette */}
-        <div className="flex flex-col gap-2">
-          <div className="font-bold text-sm">Palette</div>
-          <div className="grid grid-cols-4 gap-2">
-            {PALETTE.map(color => (
-              <div
-                key={color}
-                onClick={() => setSelectedColor(color)}
-                className={`w-8 h-8 rounded border cursor-pointer transition-transform hover:scale-105 ${selectedColor === color ? 'ring-2 ring-offset-1 ring-black scale-110' : ''}`}
-                style={{ backgroundColor: color === 'transparent' ? 'white' : color }}
-                title={color}
-              >
-                  {color === 'transparent' && <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">/</div>}
-              </div>
-            ))}
-          </div>
-          
-          <div className="mt-4 p-2 bg-gray-50 rounded text-xs text-gray-500">
-              Selected: <span className="font-mono">{selectedColor}</span>
-          </div>
+        <div className="flex flex-col gap-6">
+            {/* Palette */}
+            <div className="flex flex-col gap-2">
+                <div className="font-bold text-sm">Palette</div>
+                <div className="grid grid-cols-4 gap-2">
+                    {PALETTE.map(color => (
+                    <div
+                        key={color}
+                        onClick={() => setSelectedColor(color)}
+                        className={`w-8 h-8 rounded border cursor-pointer transition-transform hover:scale-105 ${selectedColor === color ? 'ring-2 ring-offset-1 ring-black scale-110' : ''}`}
+                        style={{ backgroundColor: color === 'transparent' ? 'white' : color }}
+                        title={color}
+                    >
+                        {color === 'transparent' && <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">/</div>}
+                    </div>
+                    ))}
+                </div>
+                
+                <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-500">
+                    Selected: <span className="font-mono">{selectedColor}</span>
+                </div>
+            </div>
+
+            {/* Preview */}
+            <div className="flex flex-col gap-2">
+                <div className="font-bold text-sm">Preview</div>
+                <div className="p-4 bg-gray-100 rounded flex items-center justify-center gap-4">
+                     {/* Preview at different scales */}
+                     <div className="flex flex-col items-center gap-1">
+                        <div className="text-xs text-gray-400">Normal</div>
+                        <div className="bg-white p-2 rounded shadow-sm">
+                             <TovoteLogo pixelData={grid} className="text-xl" />
+                        </div>
+                     </div>
+                     <div className="flex flex-col items-center gap-1">
+                        <div className="text-xs text-gray-400">Large</div>
+                        <div className="bg-white p-2 rounded shadow-sm">
+                             <TovoteLogo pixelData={grid} className="text-4xl" />
+                        </div>
+                     </div>
+                </div>
+            </div>
         </div>
       </div>
 

@@ -7,17 +7,17 @@ type Props = {
 }
 
 export default function TovoteLogo({ className, pixelData }: Props) {
-  // Check if we have valid pixel data (not empty, correct length)
-  // Assuming 12x12 = 144
-  const hasPixelData = pixelData && pixelData.length === 144 && pixelData.some(c => c !== 'transparent')
-
-  if (hasPixelData) {
+  // Check if we have valid pixel data (not empty, correct length is square number)
+  const isValid = pixelData && pixelData.length > 0 && Math.sqrt(pixelData.length) % 1 === 0 && pixelData.some(c => c !== 'transparent')
+  
+  if (isValid) {
+    const size = Math.sqrt(pixelData!.length)
     return (
       <div 
         className={`inline-grid ${className ?? ''}`}
         style={{
           display: 'inline-grid',
-          gridTemplateColumns: 'repeat(12, 1fr)',
+          gridTemplateColumns: `repeat(${size}, 1fr)`,
           width: '1.5em', // Scaled relative to font size
           height: '1.5em',
           gap: 0,
