@@ -197,6 +197,7 @@ export default function SkinEditor() {
                                 key={i}
                                 onMouseDown={() => handleMouseDown(i)}
                                 onMouseEnter={() => handleMouseEnter(i)}
+                                onDragStart={(e) => e.preventDefault()}
                                 className="w-3 h-3 cursor-pointer hover:opacity-90"
                                 style={{ backgroundColor: color === 'transparent' ? 'white' : color }}
                                 title={`Pixel ${i}`}
@@ -268,13 +269,12 @@ export default function SkinEditor() {
                                     </div>
                                     
                                     {/* Preview */}
-                                    <div className="h-8 w-full bg-gray-100 rounded overflow-hidden relative">
+                                    <div className="w-full bg-gray-100 rounded overflow-hidden relative" style={{ aspectRatio: `${WIDTH}/${HEIGHT}` }}>
                                         {(() => {
                                             try {
                                                 const pixels = JSON.parse(skin.pixelData)
                                                 // Handle potential mismatch in saved skins
                                                 const displayWidth = pixels.length === 48 * 16 ? 48 : WIDTH
-                                                const displayHeight = pixels.length === 48 * 16 ? 16 : HEIGHT
                                                 
                                                 return (
                                                     <div className="w-full h-full grid" style={{ gridTemplateColumns: `repeat(${displayWidth}, 1fr)` }}>
