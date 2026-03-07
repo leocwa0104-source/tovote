@@ -61,6 +61,27 @@ export default function OpinionDetailView({
         return
     }
 
+    // Check if it's a private topic
+    // Since we don't have isPrivateTopic prop here (and opinion structure might be partial),
+    // let's rely on backend check mostly, but we can also check if we can pass it down.
+    // However, the user request is "cancel paid vote function for private topic".
+    // "Paid vote" usually refers to faction voting, but here we are in OpinionDetailView which is "Eye/Trash" (Free daily tokens).
+    // Wait, is "paid vote" the Eye/Trash vote?
+    // Based on memory: "Ticket Package system: Daily (¥2/3t)..." tickets are for FACTION voting (boosting faction).
+    // Eye/Trash are free tokens (10/10) that replenish.
+    
+    // "Opinion Voting System (Eye/Trash)" memory says: "User starts with 10 Eyes / 10 Trash... Replenishment: Automatically resets...".
+    // This seems to be the "free" voting system.
+    
+    // There is another voting system: "Faction Vote" which costs Tickets (paid).
+    // The user said "取消对私有话题阵营的付费票功能" -> "Cancel paid ticket function for private topic FACTIONS".
+    
+    // So I might be looking at the wrong file if this is Eye/Trash voting.
+    // Eye/Trash is Opinion Voting.
+    // Faction Voting is likely in FactionList or somewhere else.
+    
+    // Let's revert this change and look for Faction Voting logic.
+    
     if (isVoteLocked) {
         alert("This vote is locked from a previous cycle and cannot be changed.")
         return

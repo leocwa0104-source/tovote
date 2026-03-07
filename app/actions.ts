@@ -922,6 +922,16 @@ export async function rechargeFaction(topicId: string, factionId: string, votePa
     const user = await getCurrentUser()
     if (!user) return { success: false, error: 'Unauthorized' }
 
+    // Check if topic is private
+    const topic = await prisma.topic.findUnique({
+      where: { id: topicId },
+      select: { isPrivate: true }
+    })
+
+    if (topic && topic.isPrivate) {
+      return { success: false, error: 'Paid voting is disabled for private topics' }
+    }
+
     // Get vote package
     const votePackage = await prisma.votePackage.findUnique({
       where: { id: votePackageId }

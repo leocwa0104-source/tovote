@@ -21,6 +21,7 @@ interface FactionListProps {
   selectedFactionId?: string | null
   user: { id: string } | null
   votePackages?: VotePackage[]
+  isPrivateTopic?: boolean
 }
 
 export default function FactionList({ 
@@ -29,7 +30,8 @@ export default function FactionList({
   currentFactionId, 
   selectedFactionId,
   user,
-  votePackages = []
+  votePackages = [],
+  isPrivateTopic = false
 }: FactionListProps) {
   const router = useRouter()
   const [query, setQuery] = useState('')
@@ -152,7 +154,7 @@ export default function FactionList({
                   </div>
                   
                   <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1">
-                    {user && (
+                    {user && !isPrivateTopic && (
                       <button 
                         onClick={() => setRechargingFactionId(faction.id === rechargingFactionId ? null : faction.id)}
                         className="p-1 rounded hover:bg-amber-50 text-amber-500 transition-colors"

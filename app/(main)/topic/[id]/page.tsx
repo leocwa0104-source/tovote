@@ -103,6 +103,7 @@ export default async function TopicPage(props: {
             selectedFactionId={selectedFactionId}
             user={user}
             votePackages={votePackages}
+            isPrivateTopic={topic.isPrivate}
           />
         </div>
 
