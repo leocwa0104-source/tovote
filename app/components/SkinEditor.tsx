@@ -1,10 +1,18 @@
 'use client'
 
-import { useState } from 'react'
-import { createSkin } from '@/app/actions/admin'
+import { useState, useEffect } from 'react'
+import { createSkin, getSkins, setActiveSkin, deleteSkin, getActiveSkin } from '@/app/actions/admin'
 
 const WIDTH = 48
 const HEIGHT = 16
+
+type Skin = {
+  id: string
+  name: string
+  pixelData: string
+  createdAt: Date
+  isActive: boolean
+}
 
 const NEO_CHINESE_PALETTE = [
     { name: 'Transparent', value: 'transparent' },
@@ -28,6 +36,21 @@ export default function SkinEditor() {
     const [selectedColor, setSelectedColor] = useState(NEO_CHINESE_PALETTE[1].value)
     const [loading, setLoading] = useState(false)
     const [isDrawing, setIsDrawing] = useState(false)
+    const [skins, setSkins] = useState<Skin[]>([])
+    const [activeSkinId, setActiveSkinId] = useState<string | null>(null)
+
+    useEffect(() => {
+        loadSkins()
+    }, [])
+
+    const loadSkins = async () => {
+        const [skinsRes, activeRes] = await Promise.all([
+            getSkins(),
+            getActiveSkin()
+        ])
+        if (skinsRes) setSkins(skinsRes as Skin[])
+        if (activeRes) setActiveSkinId(activeRes.id)
+    }
 
     const handlePixelAction = (index: number) => {
         const newGrid = [...grid]
@@ -64,7 +87,8 @@ export default function SkinEditor() {
             if (res.success) {
                 alert('Skin created successfully!')
                 setName('')
-                // Optionally reset grid or keep for variations
+                // Reload list
+                loadSkins()
             } else {
                 alert(res.error || 'Failed to create skin')
             }
@@ -73,6 +97,54 @@ export default function SkinEditor() {
             alert('An error occurred')
         } finally {
             setLoading(false)
+        }
+    }
+
+    const handleApply = async (skinId: string) => {
+        if (loading) return
+        setLoading(true)
+        try {
+            const res = await setActiveSkin(skinId)
+            if (res.success) {
+                setActiveSkinId(skinId)
+            } else {
+                alert(res.error || 'Failed to apply skin')
+            }
+        } catch (e) {
+            console.error(e)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleDelete = async (skinId: string) => {
+        if (!confirm('Are you sure you want to delete this skin?')) return
+        if (loading) return
+        setLoading(true)
+        try {
+            const res = await deleteSkin(skinId)
+            if (res.success) {
+                loadSkins()
+                if (activeSkinId === skinId) setActiveSkinId(null)
+            } else {
+                alert(res.error || 'Failed to delete skin')
+            }
+        } catch (e) {
+            console.error(e)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleLoad = (skin: Skin) => {
+        if (confirm('Load this skin into editor? Current unsaved changes will be lost.')) {
+            setName(skin.name)
+            try {
+                const data = JSON.parse(skin.pixelData)
+                setGrid(data)
+            } catch (e) {
+                console.error("Failed to parse skin data", e)
+            }
         }
     }
 
@@ -168,6 +240,66 @@ export default function SkinEditor() {
                     >
                         Clear Canvas
                     </button>
+                </div>
+
+                {/* Saved Skins List */}
+                <div className="border-t pt-4 mt-4">
+                    <h4 className="text-lg font-bold mb-4">Saved Skins</h4>
+                    {skins.length === 0 ? (
+                        <p className="text-gray-400 italic">No skins saved yet.</p>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            {skins.map(skin => (
+                                <div key={skin.id} className={`border rounded p-3 flex flex-col gap-2 ${activeSkinId === skin.id ? 'border-green-500 ring-1 ring-green-500 bg-green-50' : 'border-gray-200'}`}>
+                                    <div className="flex justify-between items-center">
+                                        <span className="font-medium truncate" title={skin.name}>{skin.name}</span>
+                                        {activeSkinId === skin.id && <span className="text-xs text-green-600 font-bold bg-green-100 px-2 py-0.5 rounded-full">Active</span>}
+                                    </div>
+                                    
+                                    {/* Preview */}
+                                    <div className="h-8 w-full bg-gray-100 rounded overflow-hidden relative">
+                                        {(() => {
+                                            try {
+                                                const pixels = JSON.parse(skin.pixelData)
+                                                return (
+                                                    <div className="w-full h-full grid" style={{ gridTemplateColumns: `repeat(${WIDTH}, 1fr)` }}>
+                                                        {pixels.map((c: string, i: number) => (
+                                                            <div key={i} style={{ backgroundColor: c === 'transparent' ? 'transparent' : c }} />
+                                                        ))}
+                                                    </div>
+                                                )
+                                            } catch { return null }
+                                        })()}
+                                    </div>
+
+                                    <div className="flex gap-2 text-xs mt-1">
+                                        <button 
+                                            onClick={() => handleApply(skin.id)}
+                                            disabled={loading || activeSkinId === skin.id}
+                                            className="flex-1 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded border border-blue-200 disabled:opacity-50 transition-colors"
+                                        >
+                                            {activeSkinId === skin.id ? 'Applied' : 'Apply'}
+                                        </button>
+                                        <button 
+                                            onClick={() => handleLoad(skin)}
+                                            className="px-2 py-1 bg-gray-50 text-gray-700 hover:bg-gray-100 rounded border border-gray-200"
+                                            title="Edit"
+                                        >
+                                            ✏️
+                                        </button>
+                                        <button 
+                                            onClick={() => handleDelete(skin.id)}
+                                            disabled={loading}
+                                            className="px-2 py-1 bg-red-50 text-red-700 hover:bg-red-100 rounded border border-red-200 disabled:opacity-50"
+                                            title="Delete"
+                                        >
+                                            🗑️
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
