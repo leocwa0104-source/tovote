@@ -3,11 +3,13 @@
 import React, { useState, useCallback } from 'react'
 import MapComponent from './MapComponent'
 import PhotoFeed from './PhotoFeed'
+import CameraModal from './CameraModal'
 
 export default function RealWorldLayout() {
   const [photos, setPhotos] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [currentBounds, setCurrentBounds] = useState<any>(null)
+  const [isCameraOpen, setIsCameraOpen] = useState(false)
 
   const handleBoundsChange = useCallback((bounds: any) => {
     setCurrentBounds(bounds)
@@ -28,6 +30,13 @@ export default function RealWorldLayout() {
     }, 500)
   }, [])
 
+  const handleCapture = (photoDataUrl: string) => {
+    // Here we would upload the photo
+    console.log('Photo captured:', photoDataUrl)
+    // For now, just close camera
+    setIsCameraOpen(false)
+  }
+
   return (
     <div className="flex h-full w-full">
       {/* Map Section - Takes up 60% of width on large screens, or top half on mobile (responsive needed) */}
@@ -36,7 +45,10 @@ export default function RealWorldLayout() {
         
         {/* Camera Button Overlay */}
         <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-10">
-           <button className="bg-black text-white px-6 py-3 rounded-full shadow-lg font-bold flex items-center gap-2 hover:scale-105 transition-transform">
+           <button 
+             onClick={() => setIsCameraOpen(true)}
+             className="bg-black text-white px-6 py-3 rounded-full shadow-lg font-bold flex items-center gap-2 hover:scale-105 transition-transform"
+           >
              <span>📷</span> Snap
            </button>
         </div>
@@ -52,6 +64,17 @@ export default function RealWorldLayout() {
           <PhotoFeed photos={photos} loading={loading} />
         </div>
       </div>
+
+      {/* Camera Modal */}
+      {isCameraOpen && (
+        <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center">
+            <CameraModal 
+              isOpen={isCameraOpen} 
+              onClose={() => setIsCameraOpen(false)} 
+              onCapture={handleCapture} 
+            />
+        </div>
+      )}
     </div>
   )
 }
