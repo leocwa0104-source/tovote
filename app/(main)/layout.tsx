@@ -1,5 +1,4 @@
 import TopicSidebar from '@/app/components/TopicSidebar'
-import MainLayoutClient from '@/app/components/MainLayoutClient'
 
 export default function MainLayout({
   children,
@@ -7,8 +6,11 @@ export default function MainLayout({
   children: React.ReactNode
 }) {
   return (
-    <MainLayoutClient sidebar={<TopicSidebar />}>
-      {children}
-    </MainLayoutClient>
+    <div className="flex h-screen overflow-hidden bg-gray-50">
+      <TopicSidebar />
+      <main className="flex-grow overflow-hidden relative">
+        {children}
+      </main>
+    </div>
   )
 }
