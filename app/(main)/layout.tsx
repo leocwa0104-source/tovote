@@ -1,3 +1,5 @@
+'use client'
+
 import TopicSidebar from '@/app/components/TopicSidebar'
 import { WorldProvider } from '@/app/components/WorldContext'
 import dynamic from 'next/dynamic'
