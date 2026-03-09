@@ -22,6 +22,8 @@ export default function CameraModal({ isOpen, onClose, onCapture }: CameraModalP
       setStream(mediaStream)
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream
+        // Explicitly play the video
+        videoRef.current.play().catch(e => console.error("Error playing video:", e))
       }
       setError('')
     } catch (err: any) {
@@ -91,6 +93,7 @@ export default function CameraModal({ isOpen, onClose, onCapture }: CameraModalP
             ref={videoRef}
             autoPlay
             playsInline
+            muted
             className="max-w-full max-h-full object-contain"
           />
         )}
