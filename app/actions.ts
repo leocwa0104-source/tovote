@@ -606,17 +606,45 @@ export async function getTopic(id: string) {
       const ttlHours = setting ? parseFloat(setting.value) : 0
       
       if (ttlHours > 0) {
-        await prisma.faction.deleteMany({
+        // Find expired factions first to handle potential deletion errors individually
+        const expiredFactions = await prisma.faction.findMany({
           where: {
             topicId: id,
             lastZeroedAt: {
               lt: new Date(Date.now() - ttlHours * 60 * 60 * 1000)
             }
-          }
+          },
+          select: { id: true }
         })
+
+        if (expiredFactions.length > 0) {
+          console.log(`Found ${expiredFactions.length} expired factions in topic ${id}, attempting cleanup...`)
+          
+          for (const faction of expiredFactions) {
+            try {
+              // Use a transaction to ensure clean removal of dependencies if constraints exist
+              // Note: We should ideally have onDelete: Cascade in schema, but this is a safeguard
+              await prisma.$transaction(async (tx) => {
+                // Manually delete transactions first (safeguard for missing cascade)
+                await tx.transaction.deleteMany({
+                  where: { factionId: faction.id }
+                })
+                
+                // Then delete the faction
+                await tx.faction.delete({
+                  where: { id: faction.id }
+                })
+              })
+              console.log(`Successfully cleaned up faction ${faction.id}`)
+            } catch (e) {
+              console.error(`Failed to cleanup faction ${faction.id}:`, e)
+              // Continue to next faction
+            }
+          }
+        }
       }
     } catch (cleanupError) {
-      console.warn("Lazy cleanup failed:", cleanupError)
+      console.warn("Lazy cleanup process failed:", cleanupError)
       // Don't block the main read operation
     }
 

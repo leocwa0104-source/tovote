@@ -137,7 +137,7 @@ model Transaction {
   userId    String
   user      User     @relation(fields: [userId], references: [id])
   factionId String
-  faction   Faction  @relation(fields: [factionId], references: [id])
+  faction   Faction  @relation(fields: [factionId], references: [id], onDelete: Cascade)
   amount    Float
   votes     Int
   createdAt DateTime @default(now())
